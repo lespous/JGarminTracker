@@ -89,6 +89,32 @@ def test_progress_pace_improves_and_records(synced):
     assert monthly["labels"][0] == "janv. 25" and monthly["count"][0] == 4
 
 
+def test_period_bounds():
+    from jgarmintracker.stats import period_bounds, previous_period
+
+    assert period_bounds("3m", TODAY) == (date(2025, 4, 1), TODAY, "3m")
+    assert period_bounds(None, TODAY)[2] == "12m"
+    assert period_bounds("ytd", TODAY)[:2] == (date(2025, 1, 1), TODAY)
+    assert period_bounds("last_year", TODAY)[:2] == (date(2024, 1, 1), date(2024, 12, 31))
+    assert period_bounds("all", TODAY, first=date(2023, 5, 2))[0] == date(2023, 5, 2)
+    # Dates choisies : inversées remises dans l'ordre, fin bornée à aujourd'hui.
+    assert period_bounds("custom", TODAY, frm=date(2025, 12, 1), to=date(2025, 3, 1)) == (date(2025, 3, 1), TODAY, "custom")
+    assert period_bounds("custom", TODAY)[2] == "12m"  # sans date : retour au défaut
+    assert previous_period(date(2025, 3, 1), date(2025, 3, 31)) == (date(2025, 1, 29), date(2025, 2, 28))
+
+
+def test_volume_series_weekly_or_monthly(synced):
+    from jgarmintracker.stats import volume_series
+
+    acts = activities_between(synced, date(2025, 6, 2), TODAY)
+    weekly = volume_series(acts, date(2025, 6, 2), TODAY)
+    assert weekly["step"] == "semaine" and weekly["labels"] == ["S23 · 02/06", "S24 · 09/06", "S25 · 16/06"]
+    assert sum(weekly["count"]) == len(acts)
+    acts = activities_between(synced, date(2025, 1, 1), TODAY)
+    monthly = volume_series(acts, date(2025, 1, 1), TODAY)
+    assert monthly["step"] == "mois" and monthly["labels"][0] == "janv." and len(monthly["labels"]) == 6
+
+
 def test_health_series_and_summary(synced):
     h = health_series(synced, TODAY, days=30)
     assert len(h["labels"]) == 30 and h["labels"][-1] == "mer. 18/06"

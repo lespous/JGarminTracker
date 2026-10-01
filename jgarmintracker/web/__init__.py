@@ -31,15 +31,18 @@ from ..classifier import (
 from .. import settings, themes, tracks
 from ..models import PACE_UNITS, Activity, ActivityTrack, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
 from ..stats import (
+    PERIODS,
     SPLITS,
     activities_between,
     add_months,
     health_series,
     health_summary,
-    monthly_volume,
     pace_series,
+    period_bounds,
+    previous_period,
     records,
     totals,
+    volume_series,
     week_compare,
     weekly_volume,
 )
@@ -177,6 +180,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     app.jinja_env.globals.update(
         VERSION=__version__, FIELDS=FIELDS, MATCH_TYPES=MATCH_TYPES, PACE_UNITS=PACE_UNITS, SOURCES=SOURCES,
         ORIGINS=ORIGINS, units_bpm=units.bpm, units_h=lambda h: units.hmm(h * 3600), units_int=units.number,
+        units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0),
     )
 
     @app.teardown_appcontext
@@ -451,10 +455,18 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         families = load_families(s)
         key = request.args.get("sport") or (f"f{families[0].id}" if families else "")
         label, sport_ids, unit, sel = resolve_selection(s, key)
-        months = request.args.get("months", type=int) if request.args.get("months", type=int) in (3, 6, 12, 24) else 12
+        a = request.args
         t = today()
-        start = add_months(t.replace(day=1), -(months - 1))
-        acts = activities_between(s, start, t, sport_ids)
+        period = a.get("period") or (f"{a.get('months')}m" if a.get("months") else "12m")  # ancien lien ?months=6
+        first_stmt = select(func.min(Activity.start))
+        if sport_ids is not None:
+            first_stmt = first_stmt.where(Activity.sport_id.in_(sport_ids))
+        first = s.scalar(first_stmt)
+        start, end, period = period_bounds(period, t, first.date() if first else None,
+                                           parse_date(a.get("from")), parse_date(a.get("to")))
+        acts = activities_between(s, start, end, sport_ids)
+        prev_start, prev_end = previous_period(start, end)
+        prev = totals(activities_between(s, prev_start, prev_end, sport_ids))
         pace = pace_series(acts, unit)
         trend = None
         if (change := pace["change"]) is not None and unit != "none":
@@ -464,9 +476,10 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                 suffix = " /km" if unit == "min_km" else " /100 m"
                 trend = SimpleNamespace(faster=change < 0, text=units.mmss(abs(change)) + suffix)
         return render_template(
-            "progress.html", families=families, sel=sel, label=label, unit=unit, months=months, acts=acts,
-            monthly=monthly_volume(acts, t, months), pace=pace, trend=trend, rec=records(acts, unit), tot=totals(acts),
-            start=start, today=t,
+            "progress.html", families=families, sel=sel, label=label, unit=unit, acts=acts,
+            volume=volume_series(acts, start, end), pace=pace, trend=trend, rec=records(acts, unit), tot=totals(acts),
+            prev=prev, prev_start=prev_start, prev_end=prev_end, start=start, end=end, today=t,
+            period=period, PERIODS=PERIODS,
         )
 
     # ---------------------------------------------------------------- santé

@@ -69,6 +69,19 @@ def test_sport_selects_are_filled(client):
     assert "Musculation" in bulk.group(0)
 
 
+def test_progress_periods(client):
+    for url in ["/progress?period=ytd", "/progress?period=last_year", "/progress?period=all", "/progress?months=6",
+                "/progress?period=custom&from=2025-06-20&to=2025-01-01", "/progress?period=custom&from=abc",
+                "/progress?period=3m&from=2020-01-01"]:
+        assert client.get(url).status_code == 200, url
+    html = client.get("/progress?period=custom&from=2025-03-01&to=2025-03-31").get_data(as_text=True)
+    assert "du 01/03/2025 au 31/03/2025" in html and "par semaine" in html and "période préc." in html
+    html = client.get("/progress?period=ytd").get_data(as_text=True)
+    assert "Période analysée : du 01/01/2025 au 18/06/2025" in html and "par mois" in html
+    assert 'value="ytd" selected' in html
+    assert "Aucune activité" in client.get("/progress?period=last_year").get_data(as_text=True)
+
+
 def test_dashboard_shows_week_and_charts(client):
     html = client.get("/").get_data(as_text=True)
     assert "Semaine du 16/06/2025" in html

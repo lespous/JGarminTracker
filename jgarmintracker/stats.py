@@ -170,6 +170,66 @@ def monthly_volume(activities: list[Activity], today: date, months: int = 12) ->
     }
 
 
+PERIODS = {
+    "3m": "3 derniers mois", "6m": "6 derniers mois", "12m": "12 derniers mois", "24m": "24 derniers mois",
+    "ytd": "Cette année", "last_year": "L'année dernière", "all": "Tout l'historique", "custom": "Dates choisies",
+}
+
+
+def period_bounds(key: str | None, today: date, first: date | None = None, frm: date | None = None,
+                  to: date | None = None) -> tuple[date, date, str]:
+    """Période d'analyse -> (début, fin, clé normalisée). « first » : plus ancienne activité, pour « all »."""
+    if key == "custom" and (frm or to):
+        start, end = sorted((frm or first or today, to or today))
+        end = min(end, today)
+        return min(start, end), end, "custom"
+    if key == "ytd":
+        return date(today.year, 1, 1), today, key
+    if key == "last_year":
+        return date(today.year - 1, 1, 1), date(today.year - 1, 12, 31), key
+    if key == "all":
+        return (first or today), today, key
+    months = {"3m": 3, "6m": 6, "12m": 12, "24m": 24}.get(key or "", 12)
+    return add_months(month_start(today), -(months - 1)), today, f"{months}m"
+
+
+def previous_period(start: date, end: date) -> tuple[date, date]:
+    """Période de même longueur juste avant, pour comparer."""
+    length = (end - start).days + 1
+    return start - timedelta(days=length), start - timedelta(days=1)
+
+
+def volume_series(activities: list[Activity], start: date, end: date) -> dict:
+    """Distance (km) et durée (h) par semaine (période de 3 mois au plus) ou par mois."""
+    weekly = (end - start).days <= 92
+    if weekly:
+        keys = [week_start(start) + timedelta(weeks=i)
+                for i in range((week_start(end) - week_start(start)).days // 7 + 1)]
+        key_of, label_of = (lambda d: week_start(d)), week_label
+    else:
+        keys, cur = [], month_start(start)
+        while cur <= end:
+            keys.append(cur)
+            cur = add_months(cur, 1)
+        key_of = month_start
+        span_years = end.year != start.year
+        label_of = lambda m: units.month_label(m.year, m.month, short=True) if span_years or len(keys) > 12 \
+            else units.MONTHS_SHORT[m.month - 1]
+    dist, dur, count = Counter(), Counter(), Counter()
+    for a in activities:
+        k = key_of(a.day)
+        dist[k] += (a.distance_m or 0) / 1000
+        dur[k] += (a.duration_s or 0) / 3600
+        count[k] += 1
+    return {
+        "step": "semaine" if weekly else "mois",
+        "labels": [label_of(k) for k in keys],
+        "distance": [round(dist[k], 1) for k in keys],
+        "duration": [round(dur[k], 2) for k in keys],
+        "count": [count[k] for k in keys],
+    }
+
+
 def pace_series(activities: list[Activity], unit: str, min_distance_m: float = 0) -> dict:
     """Allure (secondes par km / 100 m) ou vitesse (km/h) de chaque sortie, avec tendance linéaire."""
     points = []

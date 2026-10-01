@@ -9,7 +9,7 @@
 <div class="head">
   <h1>Progression · {{ label }}</h1>
   <div class="spacer"></div>
-  <form method="get" class="filters">
+  <form method="get" class="filters" id="period-form">
     <label>Sport
       <select name="sport" onchange="this.form.submit()">
         {% for f in families %}
@@ -21,21 +21,29 @@
       </select>
     </label>
     <label>Période
-      <select name="months" onchange="this.form.submit()">
-        {% for m in (3, 6, 12, 24) %}<option value="{{ m }}" {{ 'selected' if m == months }}>{{ m }} mois</option>{% endfor %}
+      <select name="period" id="period" onchange="this.form.submit()">
+        {% for k, v in PERIODS.items() %}<option value="{{ k }}" {{ 'selected' if k == period }}>{{ v }}</option>{% endfor %}
       </select>
     </label>
+    <label>Du<input type="date" name="from" id="p-from" value="{{ start.isoformat() }}" max="{{ today.isoformat() }}"></label>
+    <label>Au<input type="date" name="to" id="p-to" value="{{ end.isoformat() }}" max="{{ today.isoformat() }}"></label>
+    <button type="submit">Analyser</button>
   </form>
 </div>
+<p class="muted small" style="margin:0">Période analysée : du {{ start|day }} au {{ end|day }} ({{ ((end - start).days + 1)|number }} jours).
+  Comparée au {{ prev_start|day }} – {{ prev_end|day }} (même durée, juste avant).</p>
 
+{% macro delta(cur, old, fmt) -%}
+  <span class="delta {{ 'up' if cur > old else 'down' if cur < old }}">période préc. {{ fmt(old) if old else '—' }}</span>
+{%- endmacro %}
 {% if not acts %}
-<section class="panel"><p class="muted">Aucune activité « {{ label }} » depuis le {{ start|day }}.</p></section>
+<section class="panel"><p class="muted">Aucune activité « {{ label }} » du {{ start|day }} au {{ end|day }}.</p></section>
 {% else %}
 <div class="kpis">
-  <div class="kpi"><small>Sorties</small><b>{{ acts|length }}</b><span class="sub">depuis le {{ start|day }}</span></div>
-  <div class="kpi"><small>Distance totale</small><b>{{ tot.distance_m|km(0) }}</b></div>
-  <div class="kpi"><small>Durée totale</small><b>{{ tot.duration_s|hmm }}</b></div>
-  <div class="kpi"><small>Dénivelé + total</small><b>{{ tot.elevation_m|meters }}</b></div>
+  <div class="kpi"><small>Sorties</small><b>{{ acts|length }}</b>{{ delta(acts|length, prev.count, units_int) }}</div>
+  <div class="kpi"><small>Distance totale</small><b>{{ tot.distance_m|km(0) }}</b>{{ delta(tot.distance_m, prev.distance_m, km_int) }}</div>
+  <div class="kpi"><small>Durée totale</small><b>{{ tot.duration_s|hmm }}</b>{{ delta(tot.duration_s, prev.duration_s, units_hmm) }}</div>
+  <div class="kpi"><small>Dénivelé + total</small><b>{{ tot.elevation_m|meters }}</b>{{ delta(tot.elevation_m, prev.elevation_m, units_m) }}</div>
   {% if trend %}
   <div class="kpi"><small>Tendance {{ 'de la vitesse' if unit == 'kmh' else "de l'allure" }}</small>
     <b class="{{ 'pos' if trend.faster else 'neg' }}">{{ trend.text }}</b>
@@ -66,13 +74,13 @@
 
 <div class="grid2">
   <section class="panel">
-    <h2>Distance et durée par mois <small>{{ months }} derniers mois</small></h2>
-    <div class="chart-box"><canvas id="monthly" aria-label="Distance et durée par mois"></canvas></div>
-    <p class="note">Barres : kilomètres (axe de gauche). Trait : heures (axe de droite).</p>
+    <h2>Distance et durée par {{ volume.step }} <small>du {{ start|day }} au {{ end|day }}</small></h2>
+    <div class="chart-box"><canvas id="monthly" aria-label="Distance et durée par {{ volume.step }}"></canvas></div>
+    <p class="note">Barres : kilomètres (axe de gauche). Trait : durée (axe de droite).{% if volume.step == 'semaine' %} Par semaine (lundi → dimanche) car la période fait moins de 3 mois.{% endif %}</p>
   </section>
   {% if pace_label %}
   <section class="panel">
-    <h2>{{ pace_label }} de chaque sortie <small>{{ months }} derniers mois</small></h2>
+    <h2>{{ pace_label }} de chaque sortie <small>du {{ start|day }} au {{ end|day }}</small></h2>
     <div class="chart-box"><canvas id="pace" aria-label="{{ pace_label }} de chaque sortie, avec tendance"></canvas></div>
     <p class="note">{% if unit == 'kmh' %}Plus haut = plus rapide.{% else %}Axe inversé : plus haut = plus rapide.{% endif %}
       Points : allure moyenne de chaque sortie (pauses comprises). Trait : tendance linéaire.</p>
@@ -82,7 +90,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  const m = {{ monthly|tojson }};
+  const m = {{ volume|tojson }};
   chart("monthly", {
     type: "bar",
     data: { labels: m.labels, datasets: [
@@ -118,4 +126,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 {% endif %}
+<script>
+// Modifier une date passe en « Dates choisies ».
+for (const id of ["p-from", "p-to"]) {
+  document.getElementById(id).addEventListener("change", () => { document.getElementById("period").value = "custom"; });
+}
+</script>
 {% endblock %}
