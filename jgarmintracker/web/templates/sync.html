@@ -34,7 +34,7 @@
   <h2>Journal des dernières synchros</h2>
   <div class="tbl">
   <table>
-    <thead><tr><th>Début</th><th>Durée</th><th>Mode</th><th>Statut</th><th class="r">Activités +</th><th class="r">Mises à jour</th><th class="r">Jours +</th><th class="r">Mis à jour</th><th>Message</th></tr></thead>
+    <thead><tr><th>Début</th><th>Durée</th><th>Mode</th><th>Statut</th><th class="r">Activités +</th><th class="r">Mises à jour</th><th class="r">Jours +</th><th class="r">Mis à jour</th><th class="r">Tracés +</th><th>Message</th></tr></thead>
     <tbody>
     {% for r in runs %}
       <tr>
@@ -43,11 +43,11 @@
         <td>{{ 'complète' if r.mode == 'full' else 'incrémentale' }}</td>
         <td class="status-{{ r.status }}">{{ {'ok': 'terminée', 'error': 'erreur', 'running': 'en cours'}[r.status] }}</td>
         <td class="r num">{{ r.activities_added }}</td><td class="r num">{{ r.activities_updated }}</td>
-        <td class="r num">{{ r.days_added }}</td><td class="r num">{{ r.days_updated }}</td>
+        <td class="r num">{{ r.days_added }}</td><td class="r num">{{ r.days_updated }}</td><td class="r num">{{ r.tracks_added }}</td>
         <td class="small">{{ r.message }}</td>
       </tr>
     {% else %}
-      <tr><td colspan="9" class="muted">Aucune synchro pour l'instant.</td></tr>
+      <tr><td colspan="10" class="muted">Aucune synchro pour l'instant.</td></tr>
     {% endfor %}
     </tbody>
   </table>

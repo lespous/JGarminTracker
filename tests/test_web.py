@@ -89,6 +89,27 @@ def test_activity_detail_shows_extras(client):
     assert "Meilleur 1 km" in progress and "Allure max" in progress
 
 
+def test_maps(client):
+    import json
+    import re
+
+    with dbm.new_session() as s:
+        outdoor = s.scalar(select(Activity.id).where(Activity.name == "Course du soir 1"))
+        indoor = s.scalar(select(Activity.id).where(Activity.name == "Renfo maison"))
+    html = client.get(f"/activities/{outdoor}").get_data(as_text=True)
+    assert 'id="track-map"' in html and "leaflet.js" in html
+    assert 'id="track-map"' not in client.get(f"/activities/{indoor}").get_data(as_text=True)
+    listing = client.get("/activities").get_data(as_text=True)
+    assert listing.count('<td class="preview"><a') == 25
+    html = client.get("/map?months=24").get_data(as_text=True)
+    routes = json.loads(re.search(r'routesMap\("routes-map", (.*?)\)\);', html).group(1))
+    assert len(routes) == 25 and all(len(r["points"]) >= 2 and r["color"].startswith("#") for r in routes)
+    with dbm.new_session() as s:
+        course = f"f{s.scalar(select(SportFamily.id).where(SportFamily.name == 'Course'))}"
+    for url in ["/map", f"/map?sport={course}&months=0", "/map?months=1"]:
+        assert client.get(url).status_code == 200, url
+
+
 def test_sync_page_logs_run(client):
     html = client.get("/sync").get_data(as_text=True)
     assert "32 activité(s)" in html and "terminée" in html

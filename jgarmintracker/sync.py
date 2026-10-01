@@ -5,6 +5,7 @@ Reçoit une « source » (GarminSource en vrai, FakeSource dans les tests) qui e
   daily_summary(day) -> dict | None      (FC au repos, Body Battery, pas, stress)
   sleep(day) -> dict | None              (nuit terminée le matin de `day`)
   vo2max(start, end) -> list | dict | None
+  track(garmin_id) -> dict | None       (détails de l'activité, dont le tracé GPS)
 Clés : identifiant Garmin pour les activités, date pour les jours.
 """
 
@@ -19,9 +20,10 @@ from typing import Callable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from . import tracks
 from .classifier import Classifier
 from .garmin import GarminError, SyncError
-from .models import Activity, DailyHealth, SyncRun
+from .models import Activity, ActivityTrack, DailyHealth, SyncRun
 
 DEFAULT_HISTORY_DAYS = 365
 RESYNC_DAYS = 3  # Garmin complète les nuits et les résumés après coup
@@ -220,6 +222,21 @@ def _vo2max_map(source, start: date, end: date) -> dict[date, tuple[float, dict]
     return out
 
 
+def missing_tracks(session: Session) -> list[Activity]:
+    """Activités avec un tracé chez Garmin mais pas encore demandé, plus récentes d'abord."""
+    stmt = (select(Activity).outerjoin(ActivityTrack, ActivityTrack.activity_id == Activity.id)
+            .where(ActivityTrack.activity_id.is_(None)).order_by(Activity.start.desc()))
+    return [a for a in session.scalars(stmt) if tracks.has_track(json.loads(a.raw_json or "{}"))]
+
+
+def save_track(session: Session, act: Activity, details: dict | None) -> bool:
+    """Enregistre le tracé (ou son absence, pour ne pas le redemander). Renvoie True s'il y a des points."""
+    points = tracks.parse_track(details)
+    session.add(ActivityTrack(activity_id=act.id, points_json=tracks.dumps(points), n_points=len(points),
+                              preview_path=tracks.preview_path(points)))
+    return bool(points)
+
+
 def plan(session: Session, today: date, full: bool, days: int, history_days: int) -> tuple[date, date]:
     """Dates de départ (activités, santé). Premier lancement ou --full : tout l'historique demandé."""
     first = today - timedelta(days=history_days - 1)
@@ -263,6 +280,15 @@ def sync(session: Session, source, *, today: date | None = None, full: bool = Fa
             run.days_updated += status == "updated"
             session.commit()
             if pause and i < len(span):
+                time.sleep(pause)
+
+        # Tracés GPS en dernier : un blocage ici ne retarde pas la santé. Une interruption reprend au suivant.
+        todo = missing_tracks(session) if hasattr(source, "track") else []
+        for i, act in enumerate(todo, 1):
+            notify(Progress("tracks", i - 1, len(todo), act.day))
+            run.tracks_added += save_track(session, act, source.track(act.garmin_id))
+            session.commit()
+            if pause and i < len(todo):
                 time.sleep(pause)
         run.status = "ok"
         notify(Progress("done", len(span), len(span)))

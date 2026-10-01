@@ -104,7 +104,7 @@ def sync(
         tasks: dict[str, int] = {}
 
         def on_progress(p):
-            label = {"activities": "Activités", "health": "Santé (jour par jour)"}.get(p.step)
+            label = {"activities": "Activités", "health": "Santé (jour par jour)", "tracks": "Tracés GPS"}.get(p.step)
             if not label:
                 return
             if p.step not in tasks:
@@ -114,7 +114,7 @@ def sync(
 
         run = run_sync(s, source, full=full, days=days, history_days=round(months * 30.44), progress=on_progress)
     summary = (f"{run.activities_added} activité(s) ajoutée(s), {run.activities_updated} mise(s) à jour ; "
-               f"{run.days_added} jour(s) ajouté(s), {run.days_updated} mis à jour.")
+               f"{run.days_added} jour(s) ajouté(s), {run.days_updated} mis à jour ; {run.tracks_added} tracé(s) GPS.")
     if run.status == "ok":
         console.print(f"[green]Synchro terminée.[/green] {summary}")
     else:

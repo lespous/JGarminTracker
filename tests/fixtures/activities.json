@@ -38,7 +38,8 @@
   "avgStrideLength": 103.5,
   "steps": 7728,
   "fastestSplit_1000": 342.0,
-  "fastestSplit_5000": 1764.0
+  "fastestSplit_5000": 1764.0,
+  "hasPolyline": true
  },
  {
   "activityId": 10000002,
@@ -79,7 +80,8 @@
   "avgStrideLength": 103.4,
   "steps": 9189,
   "fastestSplit_1000": 340.3,
-  "fastestSplit_5000": 1755.5
+  "fastestSplit_5000": 1755.5,
+  "hasPolyline": true
  },
  {
   "activityId": 10000003,
@@ -120,7 +122,8 @@
   "avgStrideLength": 103.2,
   "steps": 10654,
   "fastestSplit_1000": 338.7,
-  "fastestSplit_5000": 1747.0
+  "fastestSplit_5000": 1747.0,
+  "hasPolyline": true
  },
  {
   "activityId": 10000004,
@@ -161,7 +164,8 @@
   "avgStrideLength": 103.1,
   "steps": 7758,
   "fastestSplit_1000": 337.0,
-  "fastestSplit_5000": 1738.4
+  "fastestSplit_5000": 1738.4,
+  "hasPolyline": true
  },
  {
   "activityId": 10000005,
@@ -202,7 +206,8 @@
   "avgStrideLength": 103.0,
   "steps": 9223,
   "fastestSplit_1000": 335.4,
-  "fastestSplit_5000": 1729.9
+  "fastestSplit_5000": 1729.9,
+  "hasPolyline": true
  },
  {
   "activityId": 10000006,
@@ -243,7 +248,8 @@
   "avgStrideLength": 102.9,
   "steps": 10691,
   "fastestSplit_1000": 333.7,
-  "fastestSplit_5000": 1721.4
+  "fastestSplit_5000": 1721.4,
+  "hasPolyline": true
  },
  {
   "activityId": 10000007,
@@ -284,7 +290,8 @@
   "avgStrideLength": 102.8,
   "steps": 7784,
   "fastestSplit_1000": 332.1,
-  "fastestSplit_5000": 1712.9
+  "fastestSplit_5000": 1712.9,
+  "hasPolyline": true
  },
  {
   "activityId": 10000008,
@@ -325,7 +332,8 @@
   "avgStrideLength": 102.7,
   "steps": 9252,
   "fastestSplit_1000": 330.4,
-  "fastestSplit_5000": 1704.3
+  "fastestSplit_5000": 1704.3,
+  "hasPolyline": true
  },
  {
   "activityId": 10000009,
@@ -366,7 +374,8 @@
   "avgStrideLength": 102.6,
   "steps": 10723,
   "fastestSplit_1000": 328.8,
-  "fastestSplit_5000": 1695.8
+  "fastestSplit_5000": 1695.8,
+  "hasPolyline": true
  },
  {
   "activityId": 10000010,
@@ -407,7 +416,8 @@
   "avgStrideLength": 108.9,
   "steps": 7346,
   "fastestSplit_1000": 327.1,
-  "fastestSplit_5000": 1687.3
+  "fastestSplit_5000": 1687.3,
+  "hasPolyline": true
  },
  {
   "activityId": 10000011,
@@ -448,7 +458,8 @@
   "avgStrideLength": 108.8,
   "steps": 8734,
   "fastestSplit_1000": 325.5,
-  "fastestSplit_5000": 1678.8
+  "fastestSplit_5000": 1678.8,
+  "hasPolyline": true
  },
  {
   "activityId": 10000012,
@@ -489,7 +500,8 @@
   "avgStrideLength": 108.7,
   "steps": 10124,
   "fastestSplit_1000": 323.8,
-  "fastestSplit_5000": 1670.3
+  "fastestSplit_5000": 1670.3,
+  "hasPolyline": true
  },
  {
   "activityId": 10000013,
@@ -530,7 +542,8 @@
   "avgStrideLength": 108.5,
   "steps": 7370,
   "fastestSplit_1000": 322.2,
-  "fastestSplit_5000": 1661.7
+  "fastestSplit_5000": 1661.7,
+  "hasPolyline": true
  },
  {
   "activityId": 10000014,
@@ -571,7 +584,8 @@
   "avgStrideLength": 108.4,
   "steps": 8761,
   "fastestSplit_1000": 320.5,
-  "fastestSplit_5000": 1653.2
+  "fastestSplit_5000": 1653.2,
+  "hasPolyline": true
  },
  {
   "activityId": 10000015,
@@ -612,7 +626,8 @@
   "avgStrideLength": 108.3,
   "steps": 10153,
   "fastestSplit_1000": 318.9,
-  "fastestSplit_5000": 1644.7
+  "fastestSplit_5000": 1644.7,
+  "hasPolyline": true
  },
  {
   "activityId": 10000016,
@@ -653,7 +668,8 @@
   "avgStrideLength": 108.2,
   "steps": 7391,
   "fastestSplit_1000": 317.2,
-  "fastestSplit_5000": 1636.2
+  "fastestSplit_5000": 1636.2,
+  "hasPolyline": true
  },
  {
   "activityId": 10000017,
@@ -694,7 +710,8 @@
   "avgStrideLength": 108.2,
   "steps": 8783,
   "fastestSplit_1000": 315.6,
-  "fastestSplit_5000": 1627.7
+  "fastestSplit_5000": 1627.7,
+  "hasPolyline": true
  },
  {
   "activityId": 10000018,
@@ -735,7 +752,8 @@
   "avgStrideLength": 108.1,
   "steps": 10177,
   "fastestSplit_1000": 313.9,
-  "fastestSplit_5000": 1619.1
+  "fastestSplit_5000": 1619.1,
+  "hasPolyline": true
  },
  {
   "activityId": 10000019,
@@ -776,7 +794,8 @@
   "avgStrideLength": 108.0,
   "steps": 7407,
   "fastestSplit_1000": 312.3,
-  "fastestSplit_5000": 1610.6
+  "fastestSplit_5000": 1610.6,
+  "hasPolyline": true
  },
  {
   "activityId": 10000020,
@@ -817,7 +836,8 @@
   "avgStrideLength": 114.7,
   "steps": 8283,
   "fastestSplit_1000": 310.6,
-  "fastestSplit_5000": 1602.1
+  "fastestSplit_5000": 1602.1,
+  "hasPolyline": true
  },
  {
   "activityId": 10000021,
@@ -858,7 +878,8 @@
   "avgStrideLength": 114.6,
   "steps": 9599,
   "fastestSplit_1000": 309.0,
-  "fastestSplit_5000": 1593.6
+  "fastestSplit_5000": 1593.6,
+  "hasPolyline": true
  },
  {
   "activityId": 10000022,
@@ -899,7 +920,8 @@
   "avgStrideLength": 114.5,
   "steps": 6987,
   "fastestSplit_1000": 307.3,
-  "fastestSplit_5000": 1585.0
+  "fastestSplit_5000": 1585.0,
+  "hasPolyline": true
  },
  {
   "activityId": 10000023,
@@ -940,7 +962,8 @@
   "avgStrideLength": 114.4,
   "steps": 8304,
   "fastestSplit_1000": 305.7,
-  "fastestSplit_5000": 1576.5
+  "fastestSplit_5000": 1576.5,
+  "hasPolyline": true
  },
  {
   "activityId": 10000024,
@@ -981,7 +1004,8 @@
   "avgStrideLength": 114.3,
   "steps": 9621,
   "fastestSplit_1000": 304.0,
-  "fastestSplit_5000": 1568.0
+  "fastestSplit_5000": 1568.0,
+  "hasPolyline": true
  },
  {
   "activityId": 10000025,
@@ -1013,7 +1037,8 @@
   "hrTimeInZone_2": 540.0,
   "hrTimeInZone_3": 720.0,
   "hrTimeInZone_4": 270.0,
-  "hrTimeInZone_5": 90.0
+  "hrTimeInZone_5": 90.0,
+  "hasPolyline": false
  },
  {
   "activityId": 10000026,
@@ -1048,7 +1073,8 @@
   "hrTimeInZone_2": 1620.0,
   "hrTimeInZone_3": 2160.0,
   "hrTimeInZone_4": 810.0,
-  "hrTimeInZone_5": 270.0
+  "hrTimeInZone_5": 270.0,
+  "hasPolyline": true
  },
  {
   "activityId": 10000027,
@@ -1079,7 +1105,8 @@
   "hrTimeInZone_2": 810.0,
   "hrTimeInZone_3": 1080.0,
   "hrTimeInZone_4": 405.0,
-  "hrTimeInZone_5": 135.0
+  "hrTimeInZone_5": 135.0,
+  "hasPolyline": false
  },
  {
   "activityId": 10000028,
@@ -1114,7 +1141,8 @@
   "hrTimeInZone_2": 3240.0,
   "hrTimeInZone_3": 4320.0,
   "hrTimeInZone_4": 1620.0,
-  "hrTimeInZone_5": 540.0
+  "hrTimeInZone_5": 540.0,
+  "hasPolyline": true
  },
  {
   "activityId": 10000029,
@@ -1151,7 +1179,8 @@
   "hrTimeInZone_4": 1170.0,
   "hrTimeInZone_5": 390.0,
   "fastestSplit_40000": 4881.3,
-  "pr": true
+  "pr": true,
+  "hasPolyline": true
  },
  {
   "activityId": 10000030,
@@ -1192,7 +1221,8 @@
   "avgStrideLength": 100.0,
   "steps": 12000,
   "fastestSplit_1000": 356.2,
-  "fastestSplit_5000": 1837.5
+  "fastestSplit_5000": 1837.5,
+  "hasPolyline": true
  },
  {
   "activityId": 10000031,
@@ -1224,7 +1254,8 @@
   "hrTimeInZone_2": 900.0,
   "hrTimeInZone_3": 1200.0,
   "hrTimeInZone_4": 450.0,
-  "hrTimeInZone_5": 150.0
+  "hrTimeInZone_5": 150.0,
+  "hasPolyline": false
  },
  {
   "activityId": 10000032,
@@ -1256,6 +1287,7 @@
   "hrTimeInZone_2": 1080.0,
   "hrTimeInZone_3": 1440.0,
   "hrTimeInZone_4": 540.0,
-  "hrTimeInZone_5": 180.0
+  "hrTimeInZone_5": 180.0,
+  "hasPolyline": true
  }
 ]

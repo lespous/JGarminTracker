@@ -18,13 +18,16 @@ class FakeSource:
 
     pause = 0
 
-    def __init__(self, fail_on: date | None = None):
+    def __init__(self, fail_on: date | None = None, tracks_before_429: int | None = None):
         self.activities = json.loads((FIXTURES / "activities.json").read_text(encoding="utf-8"))
         self.summaries = json.loads((FIXTURES / "summaries.json").read_text(encoding="utf-8"))
         self.sleeps = json.loads((FIXTURES / "sleep.json").read_text(encoding="utf-8"))
         self.vo2 = json.loads((FIXTURES / "vo2max.json").read_text(encoding="utf-8"))
+        self.tracks = json.loads((FIXTURES / "tracks.json").read_text(encoding="utf-8"))
         self.fail_on = fail_on
+        self.tracks_before_429 = tracks_before_429
         self.days_asked: list[date] = []
+        self.tracks_asked: list[int] = []
 
     def activities_between(self, start: date, end: date) -> list[dict]:
         return [a for a in self.activities if start.isoformat() <= a["startTimeLocal"][:10] <= end.isoformat()]
@@ -37,6 +40,12 @@ class FakeSource:
 
     def sleep(self, day: date):
         return self.sleeps.get(day.isoformat())
+
+    def track(self, garmin_id: int):
+        if self.tracks_before_429 is not None and len(self.tracks_asked) >= self.tracks_before_429:
+            raise RateLimited()
+        self.tracks_asked.append(garmin_id)
+        return self.tracks.get(str(garmin_id))
 
     def vo2max(self, start: date, end: date):
         return [v for v in self.vo2 if start.isoformat() <= v["generic"]["calendarDate"] <= end.isoformat()]

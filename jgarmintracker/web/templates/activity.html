@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ a.name }}{% endblock %}
+{% block head %}{% if points %}
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
+<script src="{{ url_for('static', filename='leaflet.js') }}" defer></script>
+<script src="{{ url_for('static', filename='maps.js') }}" defer></script>
+{% endif %}{% endblock %}
 {% block content %}
 {% set unit = a.sport.pace_unit if a.sport else 'none' %}
 <div class="head">
@@ -40,6 +45,19 @@
   </div>
   {% if a.is_pr %}<p class="flash">Garmin a enregistré un record personnel pendant cette sortie.</p>{% endif %}
 </section>
+
+{% if points %}
+<section class="panel">
+  <h2>Parcours <small>{{ points|length }} points · départ en vert, arrivée en rouge</small></h2>
+  <div id="track-map" class="map-box" role="img" aria-label="Carte du parcours"></div>
+  <p class="note">Fond de carte © contributeurs OpenStreetMap, chargé depuis internet. Le tracé, lui, vient de ta base locale.</p>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", () => trackMap("track-map", {{ points|tojson }}, {{ (a.sport.color if a.sport else '#2A6B62')|tojson }}));
+</script>
+{% elif a.track %}
+<p class="note">Pas de tracé GPS pour cette activité (en salle, ou GPS coupé).</p>
+{% endif %}
 
 {% set zones = a.hr_zones %}
 {% set zone_total = zones|select|sum %}

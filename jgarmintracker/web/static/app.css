@@ -223,3 +223,12 @@ pre.raw { max-height: 360px; overflow: auto; background: var(--soft); padding: 1
 .zones-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--soft); }
 .zones-bar i { display: block; height: 100%; }
 table.zones td { padding: 5px 4px; }
+
+/* cartes (0.3.0) */
+.map-box { height: 380px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); z-index: 0; }
+.map-box.lg { height: 640px; max-height: 75vh; }
+td.preview { padding: 2px 6px; }
+td.preview svg { display: block; background: var(--soft); border-radius: 4px; }
+td.preview path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.topbar { z-index: 1000; }  /* au-dessus des calques Leaflet */

@@ -26,6 +26,7 @@ NEW_COLUMNS: dict[str, dict[str, str]] = {
         "steps": "INTEGER",
         "is_pr": "BOOLEAN NOT NULL DEFAULT 0",
     },
+    "sync_runs": {"tracks_added": "INTEGER NOT NULL DEFAULT 0"},  # 0.3.0
 }
 
 

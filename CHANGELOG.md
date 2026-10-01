@@ -3,6 +3,18 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.3.0 — 2026-10-01
+
+### Ajouté
+- **Tracés GPS** : récupérés à la synchro (une fois par activité en extérieur, après la santé ; une
+  interruption reprend au tracé suivant), stockés simplifiés dans la base locale (table `activity_tracks`).
+- Fiche d'une activité : carte du parcours (fond OpenStreetMap via Leaflet 1.9.4 copié en local), départ et
+  arrivée marqués.
+- Liste des activités : mini-carte du parcours sur chaque ligne.
+- Nouvelle page **Carte** : tous les parcours superposés aux couleurs des sports, filtres sport et période,
+  survol pour voir la sortie, clic pour ouvrir sa fiche.
+- Journal de synchro : nombre de tracés ajoutés.
+
 ## 0.2.0 — 2026-10-01
 
 ### Ajouté

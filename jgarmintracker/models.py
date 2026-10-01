@@ -160,6 +160,8 @@ class Activity(Base):
     sport: Mapped[Sport | None] = relationship()
     rule: Mapped[SportRule | None] = relationship()
     tags: Mapped[list[Tag]] = relationship(secondary=activity_tags, back_populates="activities", order_by="Tag.name")
+    track: Mapped[ActivityTrack | None] = relationship(back_populates="activity", cascade="all, delete-orphan",
+                                                       lazy="select")
 
     @property
     def day(self) -> date:
@@ -172,6 +174,23 @@ class Activity(Base):
     @property
     def garmin_url(self) -> str:
         return f"https://connect.garmin.com/modern/activity/{self.garmin_id}"
+
+
+class ActivityTrack(Base):
+    """Tracé GPS simplifié d'une activité (0.3.0). Table à part : la liste des activités reste légère.
+
+    Une ligne sans points (n_points = 0) signifie « demandé, pas de tracé » (activité en salle) : pas de nouvelle demande.
+    """
+
+    __tablename__ = "activity_tracks"
+
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activities.id"), primary_key=True)
+    points_json: Mapped[str] = mapped_column(Text, default="[]")  # [[lat, lon], …] arrondis à 5 décimales (~1 m)
+    n_points: Mapped[int] = mapped_column(Integer, default=0)
+    preview_path: Mapped[str] = mapped_column(Text, default="")  # chemin SVG de la mini-carte
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    activity: Mapped[Activity] = relationship(back_populates="track")
 
 
 class DailyHealth(Base):
@@ -213,5 +232,6 @@ class SyncRun(Base):
     activities_updated: Mapped[int] = mapped_column(Integer, default=0)
     days_added: Mapped[int] = mapped_column(Integer, default=0)
     days_updated: Mapped[int] = mapped_column(Integer, default=0)
+    tracks_added: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(12), default="running")  # running | ok | error
     message: Mapped[str] = mapped_column(Text, default="")

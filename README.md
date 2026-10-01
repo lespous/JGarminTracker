@@ -66,6 +66,15 @@ Règles personnelles hors du dépôt (noms de parcours, de clubs) : `sports.loca
 
 Motifs : `X` = type égal à X, `~X` = contient X, `re:X` = expression régulière, préfixe `name:` = sur le nom.
 
+## Cartes
+
+La synchro récupère aussi le tracé GPS simplifié de chaque sortie en extérieur (un appel par activité, une
+seule fois). Il s'affiche dans la fiche de l'activité, en mini-carte dans la liste, et sur la page **Carte**
+qui superpose tous les parcours (filtres sport et période).
+
+Le fond de carte vient d'OpenStreetMap (tuiles chargées depuis internet : le serveur voit la zone affichée,
+jamais tes tracés). Leaflet 1.9.4 est copié dans `static/`. Les tracés restent dans `jgarmin.db`.
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, h:mm)

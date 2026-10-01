@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Carte{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
+<script src="{{ url_for('static', filename='leaflet.js') }}" defer></script>
+<script src="{{ url_for('static', filename='maps.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Carte de mes parcours</h1>
+  <span class="muted">{{ routes|length }} parcours · {{ total_km|km(0) }}</span>
+  <div class="spacer"></div>
+  <form method="get" class="filters">
+    <label>Sport
+      <select name="sport" onchange="this.form.submit()">
+        <option value="">Tous</option>
+        {% for f in families %}
+          <optgroup label="{{ f.name }}">
+            <option value="f{{ f.id }}" {{ 'selected' if sel == 'f' ~ f.id }}>Toute la famille {{ f.name }}</option>
+            {% for sp in f.sports %}<option value="s{{ sp.id }}" {{ 'selected' if sel == 's' ~ sp.id }}>{{ sp.name }}</option>{% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Période
+      <select name="months" onchange="this.form.submit()">
+        {% for m, l in [(1, 'Ce mois-ci'), (3, '3 mois'), (6, '6 mois'), (12, '12 mois'), (24, '24 mois'), (0, 'Tout')] %}
+          <option value="{{ m }}" {{ 'selected' if m == months }}>{{ l }}</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+</div>
+
+<section class="panel">
+  {% if routes %}
+  <div class="chips">
+    {% for name, (color, n) in legend.items() %}<span class="sport-chip"><i class="sdot" style="background: {{ color }}"></i>{{ name }} · {{ n }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  <div id="routes-map" class="map-box lg" role="img" aria-label="Carte de tous les parcours"></div>
+  <p class="note">{% if routes %}Survole un tracé pour voir la sortie, clique pour ouvrir sa fiche. Les zones les plus foncées sont celles où tu passes le plus souvent.{% else %}Aucun parcours avec tracé GPS pour ces filtres. Les tracés sont récupérés à la synchro (page Synchronisation).{% endif %}
+    Fond de carte © contributeurs OpenStreetMap.</p>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", () => routesMap("routes-map", {{ routes|tojson }}));
+</script>
+{% endblock %}

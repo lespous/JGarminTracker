@@ -155,5 +155,12 @@ class GarminSource:
         return self.api.get_sleep_data(day.isoformat())
 
     @_translate
+    def track(self, garmin_id: int) -> dict | None:
+        """Détails d'une activité, dont le tracé GPS simplifié (geoPolylineDTO.polyline)."""
+        from .tracks import MAX_POINTS
+
+        return self.api.get_activity_details(str(garmin_id), maxchart=1, maxpoly=MAX_POINTS)
+
+    @_translate
     def vo2max(self, start: date, end: date) -> list | dict | None:
         return self.api.get_max_metrics_range(start.isoformat(), end.isoformat())

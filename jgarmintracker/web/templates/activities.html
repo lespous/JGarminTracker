@@ -69,7 +69,7 @@
 <table>
   <thead><tr>
     <th><input type="checkbox" id="check-all" aria-label="Tout cocher"></th>
-    <th>Date</th><th>Sport</th><th>Activité</th><th class="r">Distance</th><th class="r">Durée</th>
+    <th>Date</th><th>Sport</th><th>Parcours</th><th>Activité</th><th class="r">Distance</th><th class="r">Durée</th>
     <th class="r">Allure / vitesse</th><th class="r">Max</th><th class="r">FC moy.</th><th class="r">D+</th><th>Classée par</th>
   </tr></thead>
   <tbody>
@@ -84,6 +84,7 @@
           {{ sport_options(families, a.sport_id) }}
         </select></span>
       </td>
+      <td class="preview">{% if a.track and a.track.preview_path %}<a href="{{ url_for('activity_detail', act_id=a.id) }}" aria-label="Voir le parcours"><svg viewBox="0 0 64 40" width="64" height="40"><path d="{{ a.track.preview_path }}" stroke="{{ a.sport.color if a.sport else '#888' }}"/></svg></a>{% endif %}</td>
       <td class="name">
         <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
         <div class="labels"><span class="type-key">{{ a.type_key }}</span>
@@ -108,9 +109,9 @@
         {% else %}{{ SOURCES[a.sport_source] }}{% endif %}
       </td>
     </tr>
-    <tr class="recat"><td colspan="11" id="pop-{{ a.id }}"></td></tr>
+    <tr class="recat"><td colspan="12" id="pop-{{ a.id }}"></td></tr>
   {% else %}
-    <tr><td colspan="11" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
+    <tr><td colspan="12" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
   {% endfor %}
   </tbody>
 </table>

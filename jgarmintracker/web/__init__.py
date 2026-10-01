@@ -25,7 +25,8 @@ from ..classifier import (
     reclassify,
     validate_rule,
 )
-from ..models import PACE_UNITS, Activity, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
+from .. import tracks
+from ..models import PACE_UNITS, Activity, ActivityTrack, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
 from ..stats import (
     SPLITS,
     activities_between,
@@ -199,7 +200,10 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         a = request.args
         date_from, date_to = parse_date(a.get("from")), parse_date(a.get("to"))
         label, sport_ids, _unit, sel = resolve_selection(s, a.get("sport"))
-        stmt = select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family), selectinload(Activity.tags))
+        stmt = select(Activity).options(
+            joinedload(Activity.sport).joinedload(Sport.family), selectinload(Activity.tags),
+            selectinload(Activity.track).defer(ActivityTrack.points_json),  # la mini-carte suffit ici
+        )
         if date_from:
             stmt = stmt.where(Activity.start >= datetime.combine(date_from, datetime.min.time()))
         if date_to:
@@ -235,8 +239,39 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s = db()
         act = s.get(Activity, act_id) or abort(404)
         splits = [(label, meters, getattr(act, attr)) for label, meters, attr in SPLITS if getattr(act, attr)]
-        return render_template("activity.html", a=act, families=load_families(s), splits=splits,
+        points = tracks.loads(act.track.points_json) if act.track and act.track.n_points else []
+        return render_template("activity.html", a=act, families=load_families(s), splits=splits, points=points,
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
+
+    # ---------------------------------------------------------------- carte de tous les parcours
+    @app.get("/map")
+    def map_page():
+        s = db()
+        label, sport_ids, _unit, sel = resolve_selection(s, request.args.get("sport"))
+        months = request.args.get("months", type=int)
+        months = months if months in (1, 3, 6, 12, 24, 0) else 12
+        stmt = (select(Activity, ActivityTrack.points_json)
+                .join(ActivityTrack, ActivityTrack.activity_id == Activity.id)
+                .options(joinedload(Activity.sport).joinedload(Sport.family))
+                .where(ActivityTrack.n_points > 1).order_by(Activity.start))
+        if months:
+            start = add_months(today().replace(day=1), -(months - 1))
+            stmt = stmt.where(Activity.start >= datetime.combine(start, datetime.min.time()))
+        if sport_ids is not None:
+            stmt = stmt.where(Activity.sport_id.in_(sport_ids))
+        rows = s.execute(stmt).all()
+        routes = [{
+            "id": a.id, "name": a.name, "date": units.day(a.start), "sport": a.sport.label if a.sport else "",
+            "color": a.sport.color if a.sport else "#888888", "km": units.km(a.distance_m) if a.distance_m else "",
+            "url": url_for("activity_detail", act_id=a.id), "points": tracks.thin(tracks.loads(pts), 300),
+        } for a, pts in rows]
+        legend = {}
+        for a, _ in rows:
+            if a.sport:
+                legend.setdefault(a.sport.label, [a.sport.color, 0])[1] += 1
+        return render_template("map.html", routes=routes, legend=legend, families=load_families(s), sel=sel,
+                               label=label, months=months,
+                               total_km=sum(a.distance_m or 0 for a, _ in rows))
 
     @app.get("/activities/<int:act_id>/sport")
     def sport_form(act_id: int):
