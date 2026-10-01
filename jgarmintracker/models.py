@@ -139,6 +139,7 @@ class Friend(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str] = mapped_column(String(80))
     last_name: Mapped[str] = mapped_column(String(80), default="")
+    nickname: Mapped[str] = mapped_column(String(40), default="")  # pseudo : nom affiché s'il est rempli
     note: Mapped[str] = mapped_column(Text, default="")
     photo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
     has_photo: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -147,8 +148,13 @@ class Friend(Base):
     activities: Mapped[list[Activity]] = relationship(secondary=activity_friends, back_populates="friends")
 
     @property
-    def name(self) -> str:
+    def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def name(self) -> str:
+        """Nom affiché partout : le pseudo s'il existe, sinon prénom et nom."""
+        return self.nickname or self.full_name
 
 
 class Profile(Base):

@@ -29,6 +29,7 @@
   <form class="rule-form" method="post" action="{{ url_for('friend_add') }}" enctype="multipart/form-data">
     <label>Prénom<input name="first_name" required maxlength="80"></label>
     <label>Nom<input name="last_name" maxlength="80"></label>
+    <label>Pseudo (nom affiché)<input name="nickname" maxlength="40" placeholder="facultatif"></label>
     <label class="wide">Note<input name="note" placeholder="ex. club du mardi, beau-frère…"></label>
     <label class="wide">Photo<input type="file" name="photo" accept="image/*"></label>
     <div class="actions" style="justify-content:flex-start;align-self:end"><button class="primary">Ajouter</button></div>

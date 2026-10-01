@@ -112,6 +112,36 @@ def test_friends_flow(client):
         assert s.get(Friend, lea_id) is None and s.get(Activity, act_id("Vélo dimanche")).friends == []
 
 
+def test_friend_nickname(client, tmp_path):
+    client.post("/friends/add", data={"first_name": "Marie", "last_name": "Durand", "nickname": "Mimi"})
+    with dbm.new_session() as s:
+        fr = s.scalar(select(Friend).where(Friend.first_name == "Marie"))
+        assert fr.name == "Mimi" and fr.full_name == "Marie Durand"
+        fid = fr.id
+    page = client.get(f"/friends/{fid}").get_data(as_text=True)
+    assert "<h1>Mimi</h1>" in page and "Marie Durand" in page
+    client.post(f"/activities/{act_id('Course du soir 24')}/friends", data={"friend": [fid]})
+    listing = client.get(f"/activities?friend={fid}").get_data(as_text=True)
+    assert "Avec Mimi" in listing and 'title="Mimi"' in listing
+    client.post(f"/friends/{fid}/update", data={"first_name": "Marie", "last_name": "Durand", "nickname": ""})
+    assert "<h1>Marie Durand</h1>" in client.get(f"/friends/{fid}").get_data(as_text=True)
+
+
+def test_existing_friends_table_gets_nickname(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "v090.db"
+    dbm.init_db(path)
+    con = sqlite3.connect(path)
+    con.execute("ALTER TABLE friends DROP COLUMN nickname")
+    con.execute("INSERT INTO friends (first_name, last_name, note, has_photo, created_at) VALUES ('Léo', '', '', 0, '2026-01-01')")
+    con.commit()
+    con.close()
+    dbm.init_db(path)
+    with dbm.new_session() as s:
+        assert s.scalar(select(Friend)).name == "Léo"
+
+
 def test_profile(client):
     html = client.get("/profile").get_data(as_text=True)
     assert "Bilan depuis 07/01/2025" in html and "Indique ta FC max" in html

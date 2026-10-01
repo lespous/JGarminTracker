@@ -3,6 +3,12 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.9.1 — 2026-10-01
+
+### Ajouté
+- Amis : champ **Pseudo**, nom affiché partout (liste, fiche, « Avec qui », filtre, photos) ; prénom et nom
+  restent visibles dans la fiche de l'ami. Dans le profil, « Surnom » devient « Pseudo (nom affiché) ».
+
 ## 0.9.0 — 2026-10-01
 
 ### Ajouté

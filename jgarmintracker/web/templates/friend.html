@@ -6,7 +6,7 @@
   {{ friend_avatar(fr, 88) }}
   <div>
     <h1>{{ fr.name }}</h1>
-    {% if fr.note %}<span class="muted">{{ fr.note }}</span>{% endif %}
+    <span class="muted">{% if fr.nickname %}{{ fr.full_name }}{% if fr.note %} · {% endif %}{% endif %}{{ fr.note }}</span>
   </div>
   <div class="spacer"></div>
   <a class="btn" href="{{ url_for('activities', friend=fr.id) }}">Voir ses sorties dans Activités</a>
@@ -50,6 +50,7 @@
     <form class="fam-block" method="post" action="{{ url_for('friend_update', friend_id=fr.id) }}" enctype="multipart/form-data">
       <label>Prénom<input name="first_name" value="{{ fr.first_name }}" required maxlength="80"></label>
       <label>Nom<input name="last_name" value="{{ fr.last_name }}" maxlength="80"></label>
+      <label>Pseudo (nom affiché)<input name="nickname" value="{{ fr.nickname }}" maxlength="40" placeholder="facultatif : sinon prénom et nom"></label>
       <label>Note<input name="note" value="{{ fr.note }}"></label>
       <label>{{ 'Remplacer la photo' if fr.has_photo else 'Photo' }}<input type="file" name="photo" accept="image/*"></label>
       {% if fr.has_photo %}<label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="remove_photo"> Retirer la photo</label>{% endif %}

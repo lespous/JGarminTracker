@@ -48,7 +48,7 @@
     <form class="rule-form" method="post" action="{{ url_for('profile_save') }}" enctype="multipart/form-data">
       <label>Prénom<input name="first_name" value="{{ prof.first_name }}" maxlength="80"></label>
       <label>Nom<input name="last_name" value="{{ prof.last_name }}" maxlength="80"></label>
-      <label>Surnom (navigation)<input name="nickname" value="{{ prof.nickname }}" maxlength="40"></label>
+      <label>Pseudo (nom affiché)<input name="nickname" value="{{ prof.nickname }}" maxlength="40"></label>
       <label>Date de naissance<input type="date" name="birth_date" value="{{ prof.birth_date.isoformat() if prof.birth_date else '' }}" max="{{ today.isoformat() }}"></label>
       <label>Sexe<select name="sex"><option value="">—</option><option value="F" {{ 'selected' if prof.sex == 'F' }}>Femme</option><option value="H" {{ 'selected' if prof.sex == 'H' }}>Homme</option></select></label>
       <label>Ville<input name="city" value="{{ prof.city }}" maxlength="80"></label>

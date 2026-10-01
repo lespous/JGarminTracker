@@ -436,7 +436,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             flash("Indique au moins un prénom.", "error")
             return redirect(url_for("friends_page"))
         fr = Friend(first_name=first, last_name=request.form.get("last_name", "").strip()[:80],
-                    note=request.form.get("note", "").strip())
+                    nickname=request.form.get("nickname", "").strip()[:40], note=request.form.get("note", "").strip())
         try:
             data = read_photo()
         except photos.PhotoError as e:
@@ -463,6 +463,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         if first:
             fr.first_name = first
         fr.last_name = request.form.get("last_name", "").strip()[:80]
+        fr.nickname = request.form.get("nickname", "").strip()[:40]
         fr.note = request.form.get("note", "").strip()
         if request.form.get("remove_photo") == "on":
             fr.photo, fr.has_photo = None, False
