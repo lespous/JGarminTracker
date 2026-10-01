@@ -623,7 +623,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                               .order_by(func.count().desc())).all()
         return render_template("sports.html", families=load_families(s), rules=rules, hits=hits, counts=counts,
                                edit=edit, f=edit or prefill, type_keys=type_keys,
-                               confirm=a.get("confirm", type=int))
+                               confirm=a.get("confirm", type=int), confirm_family=a.get("confirm_family", type=int))
 
     @app.get("/sports/rules/test")
     def rules_test():
@@ -745,6 +745,15 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         if sport.fallback:
             flash("Le sport par défaut « Autre » ne peut pas être supprimé.", "error")
             return redirect(url_for("sports"))
+        label = sport.label
+        n_rules = remove_sport(s, sport)
+        n = reclassify(s)
+        s.commit()
+        flash(f"Sport « {label} » supprimé avec {n_rules} règle(s). {n} activité(s) reclassée(s).")
+        return redirect(url_for("sports"))
+
+    def remove_sport(s, sport: Sport) -> int:
+        """Supprime un sport et ses règles ; ses activités repassent par les règles restantes. Renvoie le nb de règles."""
         rules = s.scalars(select(SportRule).where(SportRule.sport_id == sport.id)).all()
         fallback = fallback_sport(s)
         for act in s.scalars(select(Activity).where(Activity.sport_id == sport.id)):
@@ -753,11 +762,69 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             act.rule_id = None
         for r in rules:
             s.delete(r)
-        label = sport.label
         s.delete(sport)
+        s.flush()
+        return len(rules)
+
+    @app.post("/families/<int:family_id>/delete")
+    def family_delete(family_id: int):
+        s = db()
+        family = s.get(SportFamily, family_id) or abort(404)
+        if any(sp.fallback for sp in family.sports):
+            flash(f"La famille « {family.name} » contient le sport par défaut « Autre » : elle ne peut pas être supprimée.",
+                  "error")
+            return redirect(url_for("sports"))
+        name, sports_ = family.name, list(family.sports)
+        n_rules = sum(remove_sport(s, sp) for sp in sports_)
+        s.delete(family)
         n = reclassify(s)
         s.commit()
-        flash(f"Sport « {label} » supprimé avec {len(rules)} règle(s). {n} activité(s) reclassée(s).")
+        flash(f"Famille « {name} » supprimée avec {len(sports_)} sport(s) et {n_rules} règle(s). "
+              f"{n} activité(s) reclassée(s).")
+        return redirect(url_for("sports"))
+
+    def _swap(items: list, item, direction: str) -> bool:
+        """Échange item avec son voisin (up | down) en renumérotant les positions. False s'il est déjà au bout."""
+        i = items.index(item)
+        j = i - 1 if direction == "up" else i + 1
+        if not 0 <= j < len(items):
+            return False
+        items[i], items[j] = items[j], items[i]
+        for pos, it in enumerate(items):
+            it.position = pos
+        return True
+
+    @app.post("/families/<int:family_id>/move")
+    def family_move(family_id: int):
+        s = db()
+        family = s.get(SportFamily, family_id) or abort(404)
+        _swap(list(load_families(s)), family, request.args.get("dir", "up"))
+        s.commit()
+        return redirect(url_for("sports") + f"#family-{family.id}")
+
+    @app.post("/sports/<int:sport_id>/move")
+    def sport_move(sport_id: int):
+        s = db()
+        sport = s.get(Sport, sport_id) or abort(404)
+        _swap(list(sport.family.sports), sport, request.args.get("dir", "up"))
+        s.commit()
+        return redirect(url_for("sports") + f"#sport-{sport.id}")
+
+    @app.post("/sports/sort-by-usage")
+    def sports_sort_by_usage():
+        """Familles puis sports du plus pratiqué au moins pratiqué (« Autre » reste en dernier)."""
+        s = db()
+        counts = dict(s.execute(select(Activity.sport_id, func.count()).group_by(Activity.sport_id)).all())
+        families = list(load_families(s))
+        fam_count = {f.id: sum(counts.get(sp.id, 0) for sp in f.sports) for f in families}
+        is_other = lambda f: any(sp.fallback for sp in f.sports)  # noqa: E731
+        families.sort(key=lambda f: (is_other(f), -fam_count[f.id], f.position))
+        for pos, f in enumerate(families):
+            f.position = pos
+            for spos, sp in enumerate(sorted(f.sports, key=lambda sp: (-counts.get(sp.id, 0), sp.position))):
+                sp.position = spos
+        s.commit()
+        flash("Familles et sports triés du plus pratiqué au moins pratiqué. Cet ordre est repris dans toutes les listes.")
         return redirect(url_for("sports"))
 
     @app.post("/families/<int:family_id>/rename")

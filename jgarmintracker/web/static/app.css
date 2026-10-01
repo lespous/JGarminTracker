@@ -301,9 +301,20 @@ table.cov .c { width: 6.5%; }
 tr.excluded-row td { opacity: .55; }
 tr.excluded-row td:first-child { opacity: 1; }
 .excluded-chip { font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
-.check-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.check-actions form { display: flex; gap: 4px; align-items: center; }
-.check-actions select { max-width: 150px; }
+.check-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.check-actions form { display: flex; gap: 6px; align-items: center; }
+.check-actions .decide { display: flex; gap: 6px; flex-wrap: wrap; }
+.check-actions select { width: 190px; }
+.ok-btn { color: var(--in); border-color: color-mix(in oklab, var(--in) 45%, var(--line)); }
+.ok-btn:hover { background: color-mix(in oklab, var(--in) 12%, var(--surface)); border-color: var(--in); }
+button.danger:hover { border-color: var(--out); }
+/* Ordre des familles et des sports (flèches) */
+.mover { display: inline-flex; flex-direction: column; gap: 2px; flex: none; }
+.icon-btn.sm { width: 22px; height: 15px; border-radius: 3px; font-size: .55rem; line-height: 1; }
+.icon-btn.sm:disabled { opacity: .3; cursor: default; }
+.fam-head .fam-del { margin-left: auto; }
 .excluded-banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .limits-grid { display: grid; grid-template-columns: minmax(140px, 1fr) repeat(2, minmax(110px, 160px)); gap: 6px 12px; align-items: center; max-width: 620px; }
 .limits-grid .hd { font: 600 .72rem var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+
+.check-actions button { white-space: nowrap; }

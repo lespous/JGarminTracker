@@ -9,16 +9,42 @@
 
 <div class="grid2 sports-layout">
   <section class="panel">
-    <h2>Familles et sports</h2>
-    <p class="muted small">La couleur sert dans tous les graphiques. L'unité décide de l'affichage de l'allure (min/km, km/h, min/100 m).</p>
+    <div class="head">
+      <h2>Familles et sports</h2>
+      <div class="spacer"></div>
+      <form method="post" action="{{ url_for('sports_sort_by_usage') }}"><button title="Familles et sports du plus pratiqué au moins pratiqué">Trier par utilisation</button></form>
+    </div>
+    <p class="muted small">La couleur sert dans tous les graphiques. L'unité décide de l'affichage de l'allure (min/km, km/h, min/100 m).
+      L'ordre (flèches ▲ ▼) est celui de toutes les listes de sports et des légendes.</p>
     {% for fam in families %}
-    <div class="fam-block">
-      <form class="filters" method="post" action="{{ url_for('family_rename', family_id=fam.id) }}">
+    {% set ns = namespace(total=0) %}{% for sp in fam.sports %}{% set ns.total = ns.total + counts.get(sp.id, 0) %}{% endfor %}
+    {% set fam_total = ns.total %}
+    <div class="fam-block" id="family-{{ fam.id }}">
+      <form class="filters fam-head" method="post" action="{{ url_for('family_rename', family_id=fam.id) }}">
+        <span class="mover">
+          <button class="icon-btn sm" formaction="{{ url_for('family_move', family_id=fam.id, dir='up') }}" title="Monter la famille" aria-label="Monter la famille {{ fam.name }}" {{ 'disabled' if loop.first }}>▲</button>
+          <button class="icon-btn sm" formaction="{{ url_for('family_move', family_id=fam.id, dir='down') }}" title="Descendre la famille" aria-label="Descendre la famille {{ fam.name }}" {{ 'disabled' if loop.last }}>▼</button>
+        </span>
         <input name="name" value="{{ fam.name }}" aria-label="Nom de la famille" style="font-weight:600">
         <button>Renommer</button>
+        <span class="muted small">{{ fam_total }} activité(s)</span>
+        {% if not fam.sports|selectattr('fallback')|list %}
+        <a class="btn danger fam-del" href="{{ url_for('sports', confirm_family=fam.id) }}#family-{{ fam.id }}">Supprimer la famille</a>
+        {% endif %}
       </form>
+      {% if confirm_family == fam.id %}
+      <form class="confirm" method="post" action="{{ url_for('family_delete', family_id=fam.id) }}">
+        <span>Supprimer la famille « {{ fam.name }} », ses {{ fam.sports|length }} sport(s) et leurs règles ?
+          {% if fam_total %}Ses {{ fam_total }} activité(s) seront reclassées par les règles restantes (ou en « Autre ») ; elles sont conservées.{% else %}Aucune activité n'y est classée.{% endif %}</span>
+        <div class="actions"><a class="btn" href="{{ url_for('sports') }}#family-{{ fam.id }}">Annuler</a><button class="primary">Supprimer</button></div>
+      </form>
+      {% endif %}
       {% for sp in fam.sports %}
       <form id="sport-{{ sp.id }}" class="sport-row" method="post" action="{{ url_for('sport_update', sport_id=sp.id) }}">
+        <span class="mover">
+          <button class="icon-btn sm" formaction="{{ url_for('sport_move', sport_id=sp.id, dir='up') }}" title="Monter" aria-label="Monter {{ sp.name }}" {{ 'disabled' if loop.first }}>▲</button>
+          <button class="icon-btn sm" formaction="{{ url_for('sport_move', sport_id=sp.id, dir='down') }}" title="Descendre" aria-label="Descendre {{ sp.name }}" {{ 'disabled' if loop.last }}>▼</button>
+        </span>
         <input type="color" name="color" value="{{ sp.color }}" aria-label="Couleur de {{ sp.name }}">
         <input name="name" value="{{ sp.name }}" aria-label="Nom du sport">
         <select name="family_id" aria-label="Famille">{% for f in families %}<option value="{{ f.id }}" {{ 'selected' if f.id == sp.family_id }}>{{ f.name }}</option>{% endfor %}</select>

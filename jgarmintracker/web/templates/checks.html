@@ -49,16 +49,20 @@
         <td class="small">{{ f.detail }}</td>
         <td>
           <div class="check-actions">
-            <form method="post" action="{{ url_for('bulk_exclude') }}"><input type="hidden" name="act" value="{{ a.id }}">
-              <input type="hidden" name="reason" value="{{ 'Pointe GPS' if key == 'spike' else 'Montre prêtée' if key == 'unusual' else 'Sport incorrect' }}">
-              <button name="action" value="exclude">Exclure</button></form>
+            {# Ligne 1 : corriger (pointe ou sport). Ligne 2 : décider (garder ou exclure). #}
             {% if key == 'spike' %}
             <form method="post" action="{{ url_for('activity_ignore_max', act_id=a.id) }}"><button class="primary">Ignorer la pointe</button></form>
             {% else %}
-            <form method="post" action="{{ url_for('bulk_sport') }}" class="inline-sport"><input type="hidden" name="act" value="{{ a.id }}">
+            <form method="post" action="{{ url_for('bulk_sport') }}"><input type="hidden" name="act" value="{{ a.id }}">
               {{ sport_select(a) }}<button>Changer de sport</button></form>
             {% endif %}
-            <form method="post" action="{{ url_for('activity_review', act_id=a.id) }}"><button class="linkish" title="L'alerte disparaît pour cette activité">C'est bien moi</button></form>
+            <div class="decide">
+              <form method="post" action="{{ url_for('activity_review', act_id=a.id) }}">
+                <button class="ok-btn" title="L'activité est correcte : l'alerte disparaît">✓ C'est bien moi</button></form>
+              <form method="post" action="{{ url_for('bulk_exclude') }}"><input type="hidden" name="act" value="{{ a.id }}">
+                <input type="hidden" name="reason" value="{{ 'Pointe GPS' if key == 'spike' else 'Montre prêtée' if key == 'unusual' else 'Sport incorrect' }}">
+                <button class="danger" name="action" value="exclude" title="Retirer des statistiques ; elle reste dans la liste">Exclure des stats</button></form>
+            </div>
           </div>
         </td>
       </tr>

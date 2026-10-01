@@ -3,6 +3,18 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.7.1 — 2026-10-01
+
+### Ajouté
+- Page Sports : ordre des familles et des sports avec des flèches ▲ ▼, et bouton « Trier par utilisation »
+  (du plus pratiqué au moins pratiqué, « Autre » en dernier). L'ordre est repris dans toutes les listes.
+- « Supprimer la famille » (avec confirmation) : retire une famille, ses sports et leurs règles d'un coup ;
+  ses activités sont reclassées par les règles restantes.
+
+### Modifié
+- Vérifications : actions sur deux lignes nettes (corriger, puis « ✓ C'est bien moi » / « Exclure des stats »)
+  et liste des sports avec le nom complet de la famille.
+
 ## 0.7.0 — 2026-10-01
 
 ### Ajouté

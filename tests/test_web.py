@@ -203,6 +203,41 @@ def test_rules_and_sports_management(client):
         assert s.scalar(select(Activity).where(Activity.name == "Piscine midi")).sport.label == "Autre"
 
 
+def test_sports_order_and_family_delete(client):
+    def order():
+        with dbm.new_session() as s:
+            fams = s.scalars(select(SportFamily).order_by(SportFamily.position)).all()
+            return [f.name for f in fams], {f.name: [sp.name for sp in f.sports] for f in fams}
+
+    fams, sports = order()
+    assert fams[:2] == ["Course", "Vélo"]
+    with dbm.new_session() as s:
+        velo = s.scalar(select(SportFamily.id).where(SportFamily.name == "Vélo"))
+        trail = s.scalar(select(Sport.id).where(Sport.name == "Trail"))
+        natation = s.scalar(select(SportFamily.id).where(SportFamily.name == "Natation"))
+    client.post(f"/families/{velo}/move?dir=up")
+    client.post(f"/sports/{trail}/move?dir=up")
+    fams, sports = order()
+    assert fams[:2] == ["Vélo", "Course"] and sports["Course"][:2] == ["Trail", "Route"]
+    client.post(f"/families/{velo}/move?dir=up")  # déjà en tête : rien ne bouge
+    assert order()[0][0] == "Vélo"
+    # Tri par utilisation : Course (24 + 2 sorties) avant Vélo, « Autre » toujours en dernier.
+    client.post("/sports/sort-by-usage")
+    fams, sports = order()
+    assert fams[0] == "Course" and fams[-1] == "Autre" and sports["Course"][0] == "Route"
+    # Supprimer une famille entière (confirmation, puis activités reclassées).
+    html = client.get(f"/sports?confirm_family={natation}").get_data(as_text=True)
+    assert "Supprimer la famille « Natation »" in html
+    r = client.post(f"/families/{natation}/delete", follow_redirects=True)
+    assert "Famille « Natation » supprimée avec 2 sport(s)" in r.get_data(as_text=True)
+    assert "Natation" not in order()[0]
+    with dbm.new_session() as s:
+        assert s.scalar(select(Activity).where(Activity.name == "Piscine midi")).sport.label == "Autre"
+        autre = s.scalar(select(SportFamily.id).where(SportFamily.name == "Autre"))
+    r = client.post(f"/families/{autre}/delete", follow_redirects=True)
+    assert "ne peut pas être supprimée" in r.get_data(as_text=True)
+
+
 def test_fallback_sport_cannot_be_deleted(client):
     r = client.post(f"/sports/{ids('Autre', 'Autre')}/delete", follow_redirects=True)
     assert "ne peut pas être supprimé" in r.get_data(as_text=True)
