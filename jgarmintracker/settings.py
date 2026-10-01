@@ -25,6 +25,8 @@ DEFAULTS = {
     "home": None,  # [lat, lon] posé à la main ; None = déduit des départs (voir home())
     "check_limits": {},  # {family_id: {avg, max}} en m/s ; vide = défauts de checks.py
     "unusual_pct": 25,  # « allure inhabituelle » : % plus rapide que ta médiane
+    "weight_reminder_days": 7,  # rappel de pesée après N jours sans pesée (0 = pas de rappel)
+    "weight_goal": None,  # objectif de poids en kg
 }
 
 

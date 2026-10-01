@@ -278,6 +278,16 @@ class ActivityTrack(Base):
     activity: Mapped[Activity] = relationship(back_populates="track")
 
 
+class WeightEntry(Base):
+    """Pesée saisie à la main (0.10.0) : une par jour, la dernière saisie du jour l'emporte."""
+
+    __tablename__ = "weights"
+
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    weight_kg: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
 class DailyHealth(Base):
     """Une ligne par jour. La nuit de sommeil est rattachée au jour du réveil."""
 

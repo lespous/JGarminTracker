@@ -138,17 +138,16 @@
 </table>
 </div>
 
-{# Menu des sports : un seul, déplacé sous l'icône cliquée. #}
-<div id="sport-menu" class="sport-menu" role="menu" hidden>
-  {% for f in families %}
-  <div class="sm-family">
-    <span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
-    <div class="sm-sports">
-      {% for sp in f.sports %}
-      <button type="button" role="menuitem" data-sport="{{ sp.id }}" title="{{ sp.label }}">
-        <i class="ph ph-{{ sp.icon_name }}" style="color: {{ sp.color }}" aria-hidden="true"></i>{{ sp.name }}</button>
-      {% endfor %}
-    </div>
+{# Menu des sports (proposition A, « palette d'icônes ») : une ligne par famille, de grandes tuiles colorées.
+   Un seul menu, déplacé sous l'icône cliquée. #}
+<div id="sport-menu" class="sport-menu" role="menu" aria-label="Choisir un sport" hidden>
+  {% for f in families if f.sports %}
+  <span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
+  <div class="sm-sports">
+    {% for sp in f.sports %}
+    <button type="button" role="menuitem" class="sm-tile" data-sport="{{ sp.id }}" title="{{ sp.label }}" style="--c: {{ sp.color }}">
+      <i class="ph ph-{{ sp.icon_name }}" aria-hidden="true"></i><span>{{ sp.name }}</span></button>
+    {% endfor %}
   </div>
   {% endfor %}
 </div>
@@ -166,7 +165,7 @@ function closeMenu() { menu.hidden = true; if (current) current.setAttribute("ar
 function openMenu(btn) {
   current = btn;
   btn.setAttribute("aria-expanded", "true");
-  menu.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.sport === btn.dataset.sport));
+  menu.querySelectorAll(".sm-tile").forEach(b => b.classList.toggle("on", b.dataset.sport === btn.dataset.sport));
   menu.hidden = false;
   const r = btn.getBoundingClientRect();
   const left = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - menu.offsetWidth - 12);

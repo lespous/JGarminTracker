@@ -10,6 +10,20 @@
   <span class="muted">en cours, jusqu'à {{ today|weekday_day }}</span>
 </div>
 
+{% if weight_due and weight_due.due %}
+<form class="weigh-banner" method="post" action="{{ url_for('weight_add') }}">
+  <i class="ph ph-person" aria-hidden="true"></i>
+  <span><b>Pesée de la semaine</b>
+    <span class="muted small">{% if weight_due.days_since is none %}Aucune pesée enregistrée pour l'instant.{% else %}Dernière pesée il y a {{ weight_due.days_since }} jours ({{ last_weight.weight_kg|number(1) }} kg).{% endif %}</span></span>
+  <input type="hidden" name="next" value="{{ url_for('dashboard') }}">
+  <label class="sr-only" for="dash-weight">Poids du jour en kg</label>
+  <input id="dash-weight" name="weight_kg" inputmode="decimal" placeholder="{{ last_weight.weight_kg|number(1) if last_weight else 'kg' }}" required class="amount">
+  <span class="muted small">kg</span>
+  <button class="primary">Enregistrer</button>
+  <a class="small" href="{{ url_for('health') }}#weight">Voir l'évolution</a>
+</form>
+{% endif %}
+
 <div class="kpis">
   <div class="kpi"><small>Activités</small><b>{{ wc.current.count }}</b>
     <span class="delta {{ 'up' if wc.current.count > wc.previous.count else 'down' if wc.current.count < wc.previous.count }}">sem. préc. {{ wc.previous.count }}</span></div>

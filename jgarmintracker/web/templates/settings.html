@@ -95,6 +95,16 @@ document.addEventListener("DOMContentLoaded", () => homePicker("home-map", {{ ho
   <p class="note">La médiane se calcule sur au moins 5 sorties d'1 km ou plus du même sport.</p>
 </section>
 
+<section class="panel" id="weight">
+  <h2>Poids</h2>
+  <form method="post" action="{{ url_for('settings_weight') }}" class="rule-form">
+    <label>Rappel de pesée tous les (jours)<input type="number" name="weight_reminder_days" min="0" max="90" value="{{ weight_reminder_days }}" required></label>
+    <label>Objectif de poids (kg)<input name="weight_goal" inputmode="decimal" value="{{ weight_goal|number(1) if weight_goal else '' }}" placeholder="facultatif"></label>
+    <div class="actions" style="justify-content:flex-start;align-self:end"><button class="primary">Enregistrer</button></div>
+  </form>
+  <p class="note">Le rappel s'affiche sur le tableau de bord (avec un champ pour saisir le poids) et par un point sur l'onglet Santé quand la dernière pesée date de ce nombre de jours ou plus. 0 = pas de rappel.</p>
+</section>
+
 <section class="panel" id="import">
   <h2>Importer des palettes de Labs</h2>
   <p class="small">Tes palettes personnalisées de Labs sont dans la base MySQL du site (réglage <span class="mono">palettes</span>). Dans phpMyAdmin, lance

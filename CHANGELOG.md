@@ -3,6 +3,20 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.10.0 — 2026-10-01
+
+### Ajouté
+- **Suivi du poids** (section Poids de la page Santé) : saisie d'une pesée par jour, historique avec IMC,
+  évolution sur la période choisie, courbe avec moyenne des 7 dernières pesées et ligne d'objectif. Le poids
+  du profil suit la dernière pesée.
+- **Rappel de pesée** : bandeau sur le tableau de bord avec un champ pour saisir le poids, et point sur
+  l'onglet Santé, quand la dernière pesée date de N jours ou plus. N et l'objectif de poids se règlent dans
+  Paramètres (0 = pas de rappel).
+
+### Modifié
+- Activités : le menu des sports devient une palette d'icônes (une ligne par famille, grandes tuiles aux
+  couleurs des sports), la proposition A retenue.
+
 ## 0.9.4 — 2026-10-01
 
 ### Ajouté

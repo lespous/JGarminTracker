@@ -28,7 +28,7 @@ from ..classifier import (
     reclassify,
     validate_rule,
 )
-from .. import checks, icons, photos, settings, themes, tracks
+from .. import checks, icons, photos, settings, themes, tracks, weight
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -41,6 +41,7 @@ from ..models import (
     SportRule,
     SyncRun,
     Tag,
+    WeightEntry,
 )
 from ..stats import (
     HEALTH_PERIODS,
@@ -224,6 +225,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "ui_layout": settings.get(s, "layout"), "ui_mode": mode if mode in settings.MODES else "system",
             "checks_count": checks.count_issues(s) if request.endpoint not in ("sync_chip", "static") else 0,
             "me": s.get(Profile, 1),
+            "weight_due": weight.reminder(s, today()) if request.endpoint not in ("sync_chip", "static") else None,
             "theme_css": themes.theme_css(settings.active_palette(s), mode),
         }
 
@@ -242,7 +244,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         t = today()
         return render_template(
             "dashboard.html", wc=week_compare(s, t), volume=weekly_volume(s, t, 12, metric), metric=metric,
-            health=health_series(s, t, 30), hs=health_summary(s, t, 7), today=t,
+            health=health_series(s, t, 30), hs=health_summary(s, t, 7), today=t, last_weight=weight.latest(s),
             recent=s.scalars(select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
                              .where(Activity.excluded.is_(False)).order_by(Activity.start.desc()).limit(6)).all(),
         )
@@ -804,8 +806,62 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         first = s.scalar(select(func.min(DailyHealth.day)))
         start, end, key = health_period_bounds(key, t, first, parse_date(a.get("from")), parse_date(a.get("to")))
         days = (end - start).days + 1
-        return render_template("health.html", days=days, h=health_series(s, end, days), hs=health_summary(s, end, days),
-                               today=t, start=start, end=end, period=key, PERIODS=HEALTH_PERIODS)
+        prof = s.get(Profile, 1)
+        height = prof.height_cm if prof else None
+        return render_template(
+            "health.html", days=days, h=health_series(s, end, days), hs=health_summary(s, end, days),
+            today=t, start=start, end=end, period=key, PERIODS=HEALTH_PERIODS,
+            w=weight.series(s, start, end, height), ws=weight.summary(s, start, end, height), height=height,
+            weights=s.scalars(select(WeightEntry).order_by(WeightEntry.day.desc()).limit(12)).all(),
+            confirm_weight=a.get("confirm_weight"), bmi_label=weight.bmi_label,
+        )
+
+    # ---------------------------------------------------------------- poids
+    @app.post("/weight/add")
+    def weight_add():
+        s = db()
+        day = parse_date(request.form.get("day")) or today()
+        kg = parse_float(request.form.get("weight_kg"))
+        if day > today():
+            flash("La date de pesée ne peut pas être dans le futur.", "error")
+        elif kg is None:
+            flash("Indique ton poids en kg, par exemple 74,5.", "error")
+        else:
+            try:
+                entry = weight.add(s, day, kg)
+            except ValueError as e:
+                flash(str(e), "error")
+            else:
+                s.commit()
+                flash(f"Pesée du {units.day(entry.day)} enregistrée : {units.number(entry.weight_kg, 1)} kg.")
+        return back("health")
+
+    @app.post("/weight/<day>/delete")
+    def weight_delete(day: str):
+        s = db()
+        entry = s.get(WeightEntry, parse_date(day)) or abort(404)
+        s.delete(entry)
+        s.flush()
+        weight.sync_profile(s)
+        s.commit()
+        flash(f"Pesée du {units.day(entry.day)} supprimée.")
+        return redirect(url_for("health") + "#weight")
+
+    @app.post("/settings/weight")
+    def settings_weight():
+        s = db()
+        every = request.form.get("weight_reminder_days", type=int)
+        goal = parse_float(request.form.get("weight_goal"))
+        if every is None or not 0 <= every <= 90:
+            flash("Rappel : un nombre de jours entre 0 (pas de rappel) et 90.", "error")
+        elif goal is not None and not weight.MIN_KG <= goal <= weight.MAX_KG:
+            flash(f"Objectif : entre {weight.MIN_KG} et {weight.MAX_KG} kg, ou vide.", "error")
+        else:
+            settings.put(s, "weight_reminder_days", every)
+            settings.put(s, "weight_goal", round(goal, 1) if goal else None)
+            s.commit()
+            flash("Réglages du poids enregistrés.")
+        return back("settings_page")
 
     # ---------------------------------------------------------------- sports et règles
     def rule_from_form(form):
@@ -1185,6 +1241,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             resync_days=settings.get(s, "resync_days"), auto_sync=settings.get(s, "auto_sync"),
             confirm=request.args.get("confirm"), home=home, home_manual=manual,
             check_rows=check_rows, unusual_pct=settings.get(s, "unusual_pct"),
+            weight_reminder_days=settings.get(s, "weight_reminder_days"), weight_goal=settings.get(s, "weight_goal"),
         )
 
     @app.post("/settings/home")
