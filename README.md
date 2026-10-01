@@ -1,5 +1,7 @@
 # JGarminTracker
 
+![JGarminTracker : activités, santé et progression de ta montre Garmin, en local](docs/jgarmintracker-cover.png)
+
 Récupère les données de ta montre Garmin (activités, sommeil, FC au repos, Body Battery, pas, stress, VO2max),
 les garde dans une base SQLite **locale** et montre leur évolution : volume par semaine et par sport,
 progression de l'allure, tendances santé.

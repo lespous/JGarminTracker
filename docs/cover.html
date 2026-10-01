@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<title>JGarminTracker cover 1600x1000</title>
+<!-- Image de présentation (même composition que docs/cover.html de JBudget). Données INVENTÉES uniquement.
+     Icônes : Phosphor (licence MIT). Rendu : Edge sans fenêtre, 1600 × 1000, voir README. -->
+<style>
+  :root {
+    --bg: #1A1530; --bg2: #241D42; --paper: #F6F5FB; --ink: #1D1A2E; --muted: #6E6888; --line: #E3E0EE;
+    --accent: #AD94FF; --accent-d: #6B4FC1; --ok: #2D7A4C;
+    --run: #E4572E; --bike: #2E86DE; --walk: #3F9A3A; --gym: #8E6CC9; --trail: #B5452A;
+    --mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+    --sans: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1600px; height: 1000px; overflow: hidden; }
+  body {
+    font-family: var(--sans); color: var(--paper); position: relative;
+    background:
+      radial-gradient(900px 700px at 78% 45%, #3A2C6B 0%, transparent 70%),
+      linear-gradient(160deg, var(--bg2), var(--bg));
+  }
+  /* quadrillage de carte */
+  body::before {
+    content: ""; position: absolute; inset: 0; opacity: .07;
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .ic { width: 1em; height: 1em; fill: currentColor; display: block; flex: none; }
+
+  .left { position: absolute; left: 110px; top: 150px; width: 580px; display: flex; flex-direction: column; gap: 34px; }
+  .brand { font: 600 22px var(--mono); letter-spacing: .22em; color: var(--accent); }
+  h1 { font-size: 78px; line-height: 1.02; font-weight: 700; letter-spacing: -.02em; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .sub { font-size: 25px; line-height: 1.45; color: #C9C2E2; max-width: 520px; }
+  .flow { display: flex; align-items: center; gap: 14px; font: 500 19px var(--mono); color: #E4DEF7; }
+  .flow span.box { padding: 9px 14px; border: 1.5px solid #6A5A9E; border-radius: 6px; background: rgba(173,148,255,.08); }
+  .flow span.box.hot { border-color: var(--accent); color: var(--bg); background: var(--accent); font-weight: 700; }
+  .flow i { color: var(--accent); font-style: normal; font-size: 22px; }
+
+  .card { position: absolute; background: var(--paper); color: var(--ink); border-radius: 14px;
+    box-shadow: 0 40px 80px -30px rgba(0,0,0,.65), 0 2px 0 rgba(255,255,255,.4) inset; }
+  .card h3 { font: 600 15px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    display: flex; justify-content: space-between; }
+
+  /* Volume des semaines, barres empilées par sport */
+  .chart { left: 1050px; top: 50px; width: 450px; height: 300px; padding: 28px 30px; transform: rotate(2.5deg); }
+  .cols { margin-top: 22px; height: 170px; display: flex; align-items: flex-end; gap: 13px; border-bottom: 1.5px solid var(--line); }
+  .col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; }
+  .col i { display: block; border-radius: 2px; }
+  .legend { margin-top: 14px; display: flex; gap: 18px; font-size: 15px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .ic { font-size: 18px; }
+
+  /* Liste des activités */
+  .tx { left: 690px; top: 395px; width: 780px; padding: 30px 34px 26px; transform: rotate(-1.5deg); }
+  .rows { margin-top: 18px; display: flex; flex-direction: column; }
+  .row { display: grid; grid-template-columns: 34px 62px 40px 1fr 92px 110px; gap: 12px; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 18px; }
+  .row:last-child { border-bottom: 0; }
+  .day { width: 30px; height: 30px; border-radius: 50%; background: #ECEAF4; display: grid; place-items: center; font: 600 13px var(--sans); color: var(--ink); }
+  .day.we { background: #ECE6FB; color: var(--accent-d); }
+  .row .d { font: 15px var(--mono); color: var(--muted); }
+  .sp { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--line); display: grid; place-items: center; font-size: 22px; background: #fff; }
+  .row .m { font-weight: 600; font-size: 18px; }
+  .row .k, .row .p { text-align: right; font: 500 17px var(--mono); }
+  .row .p { color: var(--muted); }
+  .row.hot { background: linear-gradient(90deg, rgba(173,148,255,.22), rgba(173,148,255,0)); margin: 0 -34px; padding-left: 34px; padding-right: 34px; }
+  .rule { margin-top: 14px; display: flex; align-items: center; gap: 12px; font-size: 16px; color: var(--muted); }
+  .rule code { font: 600 15px var(--mono); color: var(--ink); background: #EAE7F3; padding: 3px 8px; border-radius: 4px; }
+  .rule .ok { color: var(--accent-d); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Parcours GPS (tracé inventé) */
+  .map { left: 1300px; top: 730px; width: 250px; height: 250px; padding: 18px; transform: rotate(7deg); background: #FBFBFE;
+    display: flex; flex-direction: column-reverse; gap: 10px; }
+  .map .tag { align-self: flex-start; font: 700 14px var(--mono); color: #fff; background: var(--accent-d); padding: 3px 8px; border-radius: 3px; }
+  .map svg.route { width: 100%; flex: 1; border-radius: 8px;
+    background: repeating-linear-gradient(0deg, #F0EEF7 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, #F0EEF7 0 1px, transparent 1px 22px), #F8F7FC; }
+</style></head>
+<body>
+  <div class="left">
+    <div class="brand">JGARMINTRACKER</div>
+    <h1>Chaque sortie<br>raconte<br><em>ta forme.</em></h1>
+    <p class="sub">Activités, sommeil et santé de ta montre Garmin, gardés sur ton PC, classés par sport et suivis semaine après semaine.</p>
+    <div class="flow">
+      <span class="box">Garmin</span><i>→</i>
+      <span class="box">sync</span><i>→</i>
+      <span class="box">sports</span><i>→</i>
+      <span class="box hot">progrès</span>
+    </div>
+  </div>
+
+  <div class="card chart">
+    <h3><span>12 semaines · volume</span><span style="text-transform:none">8h20</span></h3>
+    <div class="cols" id="cols"></div>
+    <div class="legend">
+      <span style="color:var(--run)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M608 608c70.692 0 128 57.308 128 128s-57.308 128-128 128c-70.692 0-128-57.308-128-128v0c0-70.692 57.308-128 128-128v0zM608 800c35.346 0 64-28.654 64-64s-28.654-64-64-64c-35.346 0-64 28.654-64 64v0c0 35.346 28.654 64 64 64v0zM877.24 397.28c-2.44-1.12-29.96-13.12-78.68-13.12-55.4 0-138.2 15.52-242.76 80-17.673-49.617-38.47-92.312-63.306-132.234l1.666 2.874c47.838-14.969 89.442-36.518 126.343-64.027l-1.103 0.787c76.28-58.16 116.6-140.96 116.6-239.56 0-17.673-14.327-32-32-32s-32 14.327-32 32v0c0 166.8-138.76 226.84-216.56 247.4-2.2-2.8-4.48-5.64-6.76-8.4-78.56-95.2-177-144.72-286.52-144.72-0.512-0.003-1.118-0.004-1.724-0.004-12.549 0-24.952 0.626-37.178 1.849l1.543-0.125c-16.33 1.681-28.96 15.366-28.96 32 0 17.761 14.398 32.16 32.16 32.16 1.127 0 2.24-0.058 3.337-0.171l-0.137 0.011c103.68-10.32 193.88 29.96 268 120 49.96 60.56 84 134.44 101 188-155.68 90.6-255.12 13.48-256.2 12.64-5.554-4.764-12.828-7.665-20.78-7.665-17.673 0-32 14.327-32 32 0 10.424 4.984 19.684 12.7 25.527l0.080 0.058c6 4.8 148.88 116 358.040-26.28 181.88-123.64 287.72-81.24 288.72-80.76 4.001 1.934 8.701 3.064 13.665 3.064 17.673 0 32-14.327 32-32 0-13.022-7.778-24.227-18.942-29.223l-0.203-0.081z"/></svg><b style="color:var(--muted);font-weight:400">Course</b></span>
+      <span style="color:var(--bike)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M832 512c-0.025 0-0.054 0-0.084 0-24.307 0-47.554-4.535-68.943-12.804l1.306 0.444-100.56 172.36h104.28c17.673 0 32-14.327 32-32v0c0-17.673 14.327-32 32-32s32 14.327 32 32v0c0 53.019-42.981 96-96 96v0h-160c-17.642-0.041-31.927-14.352-31.927-32 0-5.891 1.592-11.41 4.369-16.151l-0.082 0.151 46.6-80h-229.92l-65.4 112c-5.624 9.612-15.886 15.972-27.636 16h-112.004c-17.673 0-32-14.327-32-32s14.327-32 32-32v0h93.64l54.84-94.040-62.84-86.2c-25.099 12.834-54.75 20.355-86.158 20.355-106.326 0-192.52-86.194-192.52-192.52s86.194-192.52 192.52-192.52c106.326 0 192.52 86.194 192.52 192.52 0 52.309-20.862 99.746-54.72 134.444l0.038-0.039 46.36 63.6 124.68-213.6c5.362-10.598 16.17-17.737 28.646-17.737 17.673 0 32 14.327 32 32 0 6.61-2.004 12.752-5.438 17.852l0.072-0.114-121.28 208h229.92l44.76-76.68c-42.221-35.461-68.871-88.278-68.871-147.32 0-106.039 85.961-192 192-192s192 85.961 192 192c0 106.039-85.961 192-192 192-0.059 0-0.119 0-0.178 0h0.009zM320 320c0-0.011 0-0.023 0-0.036 0-70.692-57.308-128-128-128s-128 57.308-128 128c0 70.692 57.308 128 128 128 16.981 0 33.19-3.307 48.018-9.312l-0.858 0.307-73-100c-4.266-5.387-6.844-12.282-6.844-19.778 0-17.673 14.327-32 32-32 10.993 0 20.692 5.544 26.453 13.988l0.071 0.11 73 100c18.148-21.869 29.16-50.228 29.16-81.158 0-0.043 0-0.085 0-0.128v0.006zM832 192c-70.65 0.056-127.902 57.342-127.902 128 0 35.531 14.477 67.68 37.854 90.872l0.008 0.008 62.4-106.88c5.362-10.598 16.17-17.737 28.646-17.737 17.673 0 32 14.327 32 32 0 6.61-2.004 12.752-5.438 17.852l0.072-0.114-62.44 107.16c10.447 3.072 22.45 4.84 34.866 4.84 70.692 0 128-57.308 128-128s-57.308-128-128-128c-0.023 0-0.046 0-0.069 0h0.004z"/></svg><b style="color:var(--muted);font-weight:400">Vélo</b></span>
+      <span style="color:var(--walk)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M608 640c70.692 0 128 57.308 128 128s-57.308 128-128 128c-70.692 0-128-57.308-128-128v0c0-70.692 57.308-128 128-128v0zM608 832c35.346 0 64-28.654 64-64s-28.654-64-64-64c-35.346 0-64 28.654-64 64v0c0 35.346 28.654 64 64 64v0zM800 384v-352c0-17.673-14.327-32-32-32s-32 14.327-32 32v0 321.36c-103 9-137.4 62.080-168 109.44-11.4 17.56-22.24 34.28-36.52 48.76l-53.6-123.24 148.8-106.28c8.108-5.879 13.32-15.322 13.32-25.982 0-0.020 0-0.041 0-0.061v0.003-224c0-17.673-14.327-32-32-32s-32 14.327-32 32v0 207.52l-124.28 88.8-134.36-309.080c-5.056-11.418-16.287-19.24-29.346-19.24-0.005 0-0.010 0-0.015 0h0.001c-0.022 0-0.049 0-0.075 0-4.592 0-8.953 0.987-12.883 2.76l0.198-0.080c-11.401 5.063-19.209 16.286-19.209 29.332 0 4.61 0.975 8.992 2.73 12.952l-0.081-0.204 230.080 529.24c5.057 11.415 16.287 19.234 29.343 19.234 5.353 0 10.399-1.314 14.833-3.638l-0.176 0.084c12.168-6.416 22.666-13.684 32.185-22.039l-0.185 0.159c25.48-22.080 42.040-47.64 56.64-70.2 30.72-47.36 52.88-81.6 146.4-81.6 0.059 0 0.13 0.001 0.2 0.001 17.673 0 32-14.327 32-32 0 0 0 0 0-0.001v0zM288 352c13.114 0.006 24.382 7.9 29.32 19.194l0.080 0.206 96 224c1.632 3.713 2.582 8.042 2.582 12.593 0 13.113-7.887 24.384-19.176 29.327l-0.206 0.080-112 48c-3.713 1.632-8.042 2.582-12.593 2.582-13.113 0-24.384-7.887-29.327-19.176l-0.080-0.206-96-224c-1.632-3.713-2.582-8.042-2.582-12.593 0-13.113 7.887-24.384 19.176-29.327l0.206-0.080 112-48c3.714-1.639 8.045-2.595 12.598-2.6h0.002zM218.040 448.8l70.76 165.2 53.2-22.8-70.8-165.16z"/></svg><b style="color:var(--muted);font-weight:400">Rando</b></span>
+    </div>
+  </div>
+
+  <div class="card map">
+    <span class="tag">GPX</span>
+    <svg class="route" viewBox="0 0 200 180" aria-hidden="true">
+      <path d="M40 150 C28 128 40 104 62 96 S96 80 110 64 S150 52 164 76 S172 118 152 132 S122 136 116 150 S84 172 64 168 S46 160 40 150 Z"
+            fill="none" stroke="#E4572E" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="40" cy="150" r="7" fill="#2D7A4C" stroke="#fff" stroke-width="2.5"/>
+    </svg>
+  </div>
+
+  <div class="card tx">
+    <h3><span>Activités</span><span>6 / 6 classées</span></h3>
+    <div class="rows">
+      <div class="row"><span class="day">Ma</span><span class="d">23/09</span><span class="sp" style="color:var(--run)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M608 608c70.692 0 128 57.308 128 128s-57.308 128-128 128c-70.692 0-128-57.308-128-128v0c0-70.692 57.308-128 128-128v0zM608 800c35.346 0 64-28.654 64-64s-28.654-64-64-64c-35.346 0-64 28.654-64 64v0c0 35.346 28.654 64 64 64v0zM877.24 397.28c-2.44-1.12-29.96-13.12-78.68-13.12-55.4 0-138.2 15.52-242.76 80-17.673-49.617-38.47-92.312-63.306-132.234l1.666 2.874c47.838-14.969 89.442-36.518 126.343-64.027l-1.103 0.787c76.28-58.16 116.6-140.96 116.6-239.56 0-17.673-14.327-32-32-32s-32 14.327-32 32v0c0 166.8-138.76 226.84-216.56 247.4-2.2-2.8-4.48-5.64-6.76-8.4-78.56-95.2-177-144.72-286.52-144.72-0.512-0.003-1.118-0.004-1.724-0.004-12.549 0-24.952 0.626-37.178 1.849l1.543-0.125c-16.33 1.681-28.96 15.366-28.96 32 0 17.761 14.398 32.16 32.16 32.16 1.127 0 2.24-0.058 3.337-0.171l-0.137 0.011c103.68-10.32 193.88 29.96 268 120 49.96 60.56 84 134.44 101 188-155.68 90.6-255.12 13.48-256.2 12.64-5.554-4.764-12.828-7.665-20.78-7.665-17.673 0-32 14.327-32 32 0 10.424 4.984 19.684 12.7 25.527l0.080 0.058c6 4.8 148.88 116 358.040-26.28 181.88-123.64 287.72-81.24 288.72-80.76 4.001 1.934 8.701 3.064 13.665 3.064 17.673 0 32-14.327 32-32 0-13.022-7.778-24.227-18.942-29.223l-0.203-0.081z"/></svg></span><span class="m">Course du soir</span><span class="k">10,2 km</span><span class="p">5:08 /km</span></div>
+      <div class="row"><span class="day">Me</span><span class="d">24/09</span><span class="sp" style="color:var(--gym)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M992 480h-32v128c0 35.346-28.654 64-64 64v0h-64v32c0 35.346-28.654 64-64 64v0h-96c-35.346 0-64-28.654-64-64v0-224h-192v224c0 35.346-28.654 64-64 64v0h-96c-35.346 0-64-28.654-64-64v0-32h-64c-35.346 0-64-28.654-64-64v0-128h-32c-17.673 0-32-14.327-32-32s14.327-32 32-32v0h32v-128c0-35.346 28.654-64 64-64v0h64v-32c0-35.346 28.654-64 64-64v0h96c35.346 0 64 28.654 64 64v0 224h192v-224c0-35.346 28.654-64 64-64v0h96c35.346 0 64 28.654 64 64v0 32h64c35.346 0 64 28.654 64 64v0 128h32c17.673 0 32 14.327 32 32s-14.327 32-32 32v0zM128 288v320h64v-320zM352 192h-96v512h96v-512zM768 192h-96v512h96v-447.28c0-0.24 0-0.48 0-0.72s0-0.48 0-0.72v-63.28zM896 288h-64v320h64z"/></svg></span><span class="m">Renfo maison</span><span class="k">—</span><span class="p">45min</span></div>
+      <div class="row"><span class="day">Je</span><span class="d">25/09</span><span class="sp" style="color:var(--bike)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M832 512c-0.025 0-0.054 0-0.084 0-24.307 0-47.554-4.535-68.943-12.804l1.306 0.444-100.56 172.36h104.28c17.673 0 32-14.327 32-32v0c0-17.673 14.327-32 32-32s32 14.327 32 32v0c0 53.019-42.981 96-96 96v0h-160c-17.642-0.041-31.927-14.352-31.927-32 0-5.891 1.592-11.41 4.369-16.151l-0.082 0.151 46.6-80h-229.92l-65.4 112c-5.624 9.612-15.886 15.972-27.636 16h-112.004c-17.673 0-32-14.327-32-32s14.327-32 32-32v0h93.64l54.84-94.040-62.84-86.2c-25.099 12.834-54.75 20.355-86.158 20.355-106.326 0-192.52-86.194-192.52-192.52s86.194-192.52 192.52-192.52c106.326 0 192.52 86.194 192.52 192.52 0 52.309-20.862 99.746-54.72 134.444l0.038-0.039 46.36 63.6 124.68-213.6c5.362-10.598 16.17-17.737 28.646-17.737 17.673 0 32 14.327 32 32 0 6.61-2.004 12.752-5.438 17.852l0.072-0.114-121.28 208h229.92l44.76-76.68c-42.221-35.461-68.871-88.278-68.871-147.32 0-106.039 85.961-192 192-192s192 85.961 192 192c0 106.039-85.961 192-192 192-0.059 0-0.119 0-0.178 0h0.009zM320 320c0-0.011 0-0.023 0-0.036 0-70.692-57.308-128-128-128s-128 57.308-128 128c0 70.692 57.308 128 128 128 16.981 0 33.19-3.307 48.018-9.312l-0.858 0.307-73-100c-4.266-5.387-6.844-12.282-6.844-19.778 0-17.673 14.327-32 32-32 10.993 0 20.692 5.544 26.453 13.988l0.071 0.11 73 100c18.148-21.869 29.16-50.228 29.16-81.158 0-0.043 0-0.085 0-0.128v0.006zM832 192c-70.65 0.056-127.902 57.342-127.902 128 0 35.531 14.477 67.68 37.854 90.872l0.008 0.008 62.4-106.88c5.362-10.598 16.17-17.737 28.646-17.737 17.673 0 32 14.327 32 32 0 6.61-2.004 12.752-5.438 17.852l0.072-0.114-62.44 107.16c10.447 3.072 22.45 4.84 34.866 4.84 70.692 0 128-57.308 128-128s-57.308-128-128-128c-0.023 0-0.046 0-0.069 0h0.004z"/></svg></span><span class="m">Sortie vélo</span><span class="k">48,6 km</span><span class="p">26,4 km/h</span></div>
+      <div class="row hot"><span class="day we">Sa</span><span class="d">27/09</span><span class="sp" style="color:var(--trail)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M656 640c61.856 0 112 50.144 112 112s-50.144 112-112 112c-61.856 0-112-50.144-112-112v0c0-61.856 50.144-112 112-112v0zM656 800c26.51 0 48-21.49 48-48s-21.49-48-48-48c-26.51 0-48 21.49-48 48v0c0 26.51 21.49 48 48 48v0zM1019.52 176.32l-218.24 368.32c-11.229 18.895-31.536 31.361-54.755 31.361-0.114 0-0.229 0-0.343-0.001h0.018c-0.098 0.001-0.215 0.001-0.331 0.001-23.205 0-43.499-12.467-54.548-31.068l-0.161-0.292-104.64-176.64-179.36 304.4c-11.33 19.009-31.781 31.544-55.16 31.544s-43.83-12.535-54.998-31.251l-0.162-0.293-292.4-496.16c-2.782-4.647-4.427-10.251-4.427-16.24 0-17.669 14.32-31.993 31.986-32h960.001c17.671 0.003 31.994 14.329 31.994 32 0 6.021-1.663 11.654-4.555 16.465l0.081-0.145zM352 640l94.28-160h-188.56zM88 192l132 224h264l132-224zM690.28 192l-66.64 113.12 122.56 206.88 189.8-320z"/></svg></span><span class="m">Trail des crêtes</span><span class="k">16,4 km</span><span class="p">6:12 /km</span></div>
+      <div class="row"><span class="day we">Di</span><span class="d">28/09</span><span class="sp" style="color:var(--walk)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M608 640c70.692 0 128 57.308 128 128s-57.308 128-128 128c-70.692 0-128-57.308-128-128v0c0-70.692 57.308-128 128-128v0zM608 832c35.346 0 64-28.654 64-64s-28.654-64-64-64c-35.346 0-64 28.654-64 64v0c0 35.346 28.654 64 64 64v0zM800 384v-352c0-17.673-14.327-32-32-32s-32 14.327-32 32v0 321.36c-103 9-137.4 62.080-168 109.44-11.4 17.56-22.24 34.28-36.52 48.76l-53.6-123.24 148.8-106.28c8.108-5.879 13.32-15.322 13.32-25.982 0-0.020 0-0.041 0-0.061v0.003-224c0-17.673-14.327-32-32-32s-32 14.327-32 32v0 207.52l-124.28 88.8-134.36-309.080c-5.056-11.418-16.287-19.24-29.346-19.24-0.005 0-0.010 0-0.015 0h0.001c-0.022 0-0.049 0-0.075 0-4.592 0-8.953 0.987-12.883 2.76l0.198-0.080c-11.401 5.063-19.209 16.286-19.209 29.332 0 4.61 0.975 8.992 2.73 12.952l-0.081-0.204 230.080 529.24c5.057 11.415 16.287 19.234 29.343 19.234 5.353 0 10.399-1.314 14.833-3.638l-0.176 0.084c12.168-6.416 22.666-13.684 32.185-22.039l-0.185 0.159c25.48-22.080 42.040-47.64 56.64-70.2 30.72-47.36 52.88-81.6 146.4-81.6 0.059 0 0.13 0.001 0.2 0.001 17.673 0 32-14.327 32-32 0 0 0 0 0-0.001v0zM288 352c13.114 0.006 24.382 7.9 29.32 19.194l0.080 0.206 96 224c1.632 3.713 2.582 8.042 2.582 12.593 0 13.113-7.887 24.384-19.176 29.327l-0.206 0.080-112 48c-3.713 1.632-8.042 2.582-12.593 2.582-13.113 0-24.384-7.887-29.327-19.176l-0.080-0.206-96-224c-1.632-3.713-2.582-8.042-2.582-12.593 0-13.113 7.887-24.384 19.176-29.327l0.206-0.080 112-48c3.714-1.639 8.045-2.595 12.598-2.6h0.002zM218.040 448.8l70.76 165.2 53.2-22.8-70.8-165.16z"/></svg></span><span class="m">Balade en forêt</span><span class="k">7,9 km</span><span class="p">12:40 /km</span></div>
+      <div class="row"><span class="day">Lu</span><span class="d">29/09</span><span class="sp" style="color:var(--run)"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M608 608c70.692 0 128 57.308 128 128s-57.308 128-128 128c-70.692 0-128-57.308-128-128v0c0-70.692 57.308-128 128-128v0zM608 800c35.346 0 64-28.654 64-64s-28.654-64-64-64c-35.346 0-64 28.654-64 64v0c0 35.346 28.654 64 64 64v0zM877.24 397.28c-2.44-1.12-29.96-13.12-78.68-13.12-55.4 0-138.2 15.52-242.76 80-17.673-49.617-38.47-92.312-63.306-132.234l1.666 2.874c47.838-14.969 89.442-36.518 126.343-64.027l-1.103 0.787c76.28-58.16 116.6-140.96 116.6-239.56 0-17.673-14.327-32-32-32s-32 14.327-32 32v0c0 166.8-138.76 226.84-216.56 247.4-2.2-2.8-4.48-5.64-6.76-8.4-78.56-95.2-177-144.72-286.52-144.72-0.512-0.003-1.118-0.004-1.724-0.004-12.549 0-24.952 0.626-37.178 1.849l1.543-0.125c-16.33 1.681-28.96 15.366-28.96 32 0 17.761 14.398 32.16 32.16 32.16 1.127 0 2.24-0.058 3.337-0.171l-0.137 0.011c103.68-10.32 193.88 29.96 268 120 49.96 60.56 84 134.44 101 188-155.68 90.6-255.12 13.48-256.2 12.64-5.554-4.764-12.828-7.665-20.78-7.665-17.673 0-32 14.327-32 32 0 10.424 4.984 19.684 12.7 25.527l0.080 0.058c6 4.8 148.88 116 358.040-26.28 181.88-123.64 287.72-81.24 288.72-80.76 4.001 1.934 8.701 3.064 13.665 3.064 17.673 0 32-14.327 32-32 0-13.022-7.778-24.227-18.942-29.223l-0.203-0.081z"/></svg></span><span class="m">Footing récup</span><span class="k">6,1 km</span><span class="p">5:41 /km</span></div>
+    </div>
+    <div class="rule"><span class="ok"><svg class="ic" viewBox="0 -960 1024 1024" aria-hidden="true"><path transform="scale(1,-1)" d="M918.64 649.36l-512-512c-5.792-5.798-13.797-9.385-22.64-9.385s-16.848 3.587-22.64 9.385v0l-224 224c-5.794 5.794-9.378 13.799-9.378 22.64 0 17.683 14.335 32.018 32.018 32.018 8.841 0 16.846-3.584 22.64-9.378v0l201.36-201.4 489.36 489.4c5.794 5.794 13.799 9.378 22.64 9.378 17.683 0 32.018-14.335 32.018-32.018 0-8.841-3.584-16.846-9.378-22.64v0z"/></svg> règle apprise</span><code>nom contient « trail »</code><span>→ Course à pied › Trail</span></div>
+  </div>
+
+  <script>
+    // Volume de 12 semaines inventé : [course, vélo, rando] en heures.
+    const weeks = [[2.1,1.2,.6],[2.4,1.8,0],[1.6,2.6,.8],[2.8,1.4,.5],[2.2,3.1,0],[3.0,1.9,1.1],
+                   [2.5,2.4,.7],[3.3,1.6,.4],[2.9,3.4,.9],[3.6,2.2,.6],[3.1,3.0,1.2],[3.8,3.3,1.2]];
+    const colors = ["#E4572E", "#2E86DE", "#3F9A3A"], max = 8.4;
+    document.getElementById("cols").innerHTML = weeks.map(w =>
+      `<div class="col">${w.map((v, i) => v ? `<i style="height:${v / max * 168}px;background:${colors[i]}"></i>` : "").join("")}</div>`).join("");
+  </script>
+</body></html>
