@@ -3,6 +3,13 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.9.3 — 2026-10-01
+
+### Corrigé
+- Fiche d'une activité : après une action (ami, tag, sport, exclusion…), « Retour » renvoyait en boucle sur la
+  fiche. Il renvoie maintenant à la page d'où on l'a ouverte (liste filtrée, ami, vérifications…), sinon à la
+  dernière liste d'activités consultée, filtres compris.
+
 ## 0.9.2 — 2026-10-01
 
 ### Modifié

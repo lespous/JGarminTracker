@@ -16,7 +16,7 @@
   <div class="spacer"></div>
   {% if points %}<a class="btn" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Parcours à suivre dans une appli de navigation (latitude et longitude)">Télécharger le GPX</a>{% endif %}
   <a class="btn" href="{{ a.garmin_url }}" target="_blank" rel="noopener">Ouvrir dans Garmin Connect ↗</a>
-  <a class="btn" href="{{ request.referrer or url_for('activities') }}">Retour</a>
+  <a class="btn" href="{{ back_url }}">Retour</a>
 </div>
 
 {% if a.excluded %}

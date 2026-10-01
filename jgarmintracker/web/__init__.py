@@ -8,9 +8,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
-from flask import Flask, Response, abort, flash, g, redirect, render_template, request, url_for
+from flask import Flask, Response, abort, flash, g, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -284,6 +284,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         elif a.get("status") == "kept":
             stmt = stmt.where(Activity.excluded.is_(False))
         rows = s.scalars(stmt.order_by(Activity.start.desc())).unique().all()
+        session["activities_url"] = request.full_path.rstrip("?")  # pour « Retour » depuis une fiche
         if q := fold(a.get("q")):
             rows = [r for r in rows if q in fold(f"{r.name} {r.type_key}")]
         return render_template(
@@ -295,14 +296,30 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             total_dist=sum(r.distance_m or 0 for r in rows), total_dur=sum(r.duration_s or 0 for r in rows),
         )
 
+    def detail_back_url(act_id: int) -> str:
+        """Où renvoie « Retour » dans une fiche : la page d'où on l'a ouverte (retenue tant qu'on reste sur la fiche,
+        même après des actions qui rechargent la page), sinon la dernière liste d'activités consultée."""
+        ref = request.referrer or ""
+        parsed = urlparse(ref)
+        own_site = parsed.netloc == request.host
+        same_activity = parsed.path.rstrip("/") == request.path.rstrip("/")
+        if own_site and ref and not same_activity:
+            session["detail_back"] = [act_id, parsed.path + (f"?{parsed.query}" if parsed.query else "")]
+        saved = session.get("detail_back")
+        if saved and saved[0] == act_id:
+            return saved[1]
+        return session.get("activities_url") or url_for("activities")
+
     @app.get("/activities/<int:act_id>")
     def activity_detail(act_id: int):
         s = db()
         act = s.get(Activity, act_id) or abort(404)
+        back_url = detail_back_url(act_id)
         splits = [(label, meters, getattr(act, attr)) for label, meters, attr in SPLITS if getattr(act, attr)]
         points = tracks.loads(act.track.points_json) if act.track and act.track.n_points else []
         return render_template("activity.html", a=act, families=load_families(s), splits=splits, points=points,
                                all_friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
+                               back_url=back_url,
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
     # ---------------------------------------------------------------- carte de tous les parcours

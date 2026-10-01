@@ -87,6 +87,38 @@ def test_progress_periods(client):
     assert "Aucune activité" in client.get("/progress?period=last_year").get_data(as_text=True)
 
 
+def test_back_button_survives_actions(client):
+    """« Retour » renvoie à la page d'origine même après des actions qui rechargent la fiche."""
+    import re
+
+    def back(html):
+        return re.search(r'<a class="btn" href="([^"]+)">Retour</a>', html).group(1).replace("&amp;", "&")
+
+    with dbm.new_session() as s:
+        act = s.scalar(select(Activity.id).where(Activity.name == "Vélo dimanche"))
+        other = s.scalar(select(Activity.id).where(Activity.name == "Paddle lac"))
+    listing = "/activities?sport=&q=dimanche"
+    client.get(listing)
+    page = client.get(f"/activities/{act}", headers={"Referer": f"http://localhost{listing}"}).get_data(as_text=True)
+    assert back(page) == listing
+    # Actions sur la fiche : la page se recharge avec elle-même comme provenance.
+    client.post("/activities/bulk/tags", data={"act": [act], "tag": "Test", "action": "add"},
+                headers={"Referer": f"http://localhost/activities/{act}"})
+    client.post(f"/activities/{act}/friends", data={})
+    for _ in range(2):
+        page = client.get(f"/activities/{act}", headers={"Referer": f"http://localhost/activities/{act}"})
+        assert back(page.get_data(as_text=True)) == listing
+    # Ouverte depuis une autre page (ex. Vérifications) : retour vers celle-ci.
+    page = client.get(f"/activities/{other}", headers={"Referer": "http://localhost/checks"}).get_data(as_text=True)
+    assert back(page) == "/checks"
+    # Sans provenance (lien direct) : dernière liste consultée.
+    page = client.get(f"/activities/{act}").get_data(as_text=True)
+    assert back(page) == listing
+    # Un site extérieur n'est jamais une destination de retour.
+    page = client.get(f"/activities/{act}", headers={"Referer": "https://exemple.org/x"}).get_data(as_text=True)
+    assert back(page) == listing
+
+
 def test_dashboard_shows_week_and_charts(client):
     html = client.get("/").get_data(as_text=True)
     assert "Semaine du 16/06/2025" in html
