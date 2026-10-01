@@ -90,24 +90,29 @@
   <thead><tr>
     <th><input type="checkbox" id="check-all" aria-label="Tout cocher"></th>
     <th>Date</th><th>Sport</th><th>Parcours</th><th>Activité</th><th class="r">Distance</th><th class="r">Durée</th>
-    <th class="r">Allure / vitesse</th><th class="r">Max</th><th class="r">FC moy.</th><th class="r">D+</th><th>Classée par</th>
+    <th class="r">Allure / vitesse</th><th class="r">Max</th><th class="r">FC moy.</th><th class="r">D+</th>
   </tr></thead>
   <tbody>
+  {% set DAYS = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] %}
+  {% set DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] %}
   {% for a in rows %}
     <tr class="{{ 'locked' if a.sport_locked }} {{ 'excluded-row' if a.excluded }}">
       <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
-      <td class="num">{{ a.start.strftime('%d/%m/%y') }}<div class="type-key">{{ a.start.strftime('%H:%M') }}</div></td>
-      <td>
-        <span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name if a.sport else 'pulse' }} sicon" style="color: {{ a.sport.color if a.sport else '#888' }}" aria-hidden="true"></i>
-        <select class="sport" name="sport_id" aria-label="Sport" data-orig="{{ a.sport_id }}"
-                hx-get="{{ url_for('sport_form', act_id=a.id) }}" hx-trigger="change" hx-target="#pop-{{ a.id }}">
-          {{ sport_options(families, a.sport_id) }}
-        </select></span>
+      <td class="when"><span class="day-dot {{ 'we' if a.start.weekday() >= 5 }}" title="{{ DAY_NAMES[a.start.weekday()] }}">{{ DAYS[a.start.weekday()] }}</span>
+        <span class="num">{{ a.start.strftime('%d/%m/%y') }}<span class="hour">{{ a.start.strftime('%H:%M') }}</span></span></td>
+      <td class="sport-cell">
+        <button type="button" class="sport-btn" data-act="{{ a.id }}" data-sport="{{ a.sport_id }}"
+                title="{{ a.sport.label if a.sport else 'Sans sport' }}{{ ' · corrigé à la main' if a.sport_locked }} — cliquer pour changer"
+                aria-label="Sport : {{ a.sport.label if a.sport else 'aucun' }}. Changer le sport" aria-haspopup="menu">
+          <i class="ph ph-{{ a.sport.icon_name if a.sport else 'pulse' }}" style="color: {{ a.sport.color if a.sport else '#888' }}" aria-hidden="true"></i>
+          {% if a.sport_locked %}<i class="ph ph-lock-simple lock" aria-hidden="true"></i>{% endif %}
+        </button>
+        <span class="sport-name">{{ a.sport.name if a.sport else '—' }}</span>
       </td>
       <td class="preview">{% if a.track and a.track.preview_path %}<a href="{{ url_for('activity_detail', act_id=a.id) }}" aria-label="Voir le parcours"><svg viewBox="0 0 64 40" width="64" height="40"><path d="{{ a.track.preview_path }}" stroke="{{ a.sport.color if a.sport else '#888' }}"/></svg></a>{% endif %}</td>
       <td class="name">
         <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
-        <div class="labels"><span class="type-key">{{ a.type_key }}</span>
+        <div class="labels">
           {% for fr in a.friends %}<a class="friend-mini" href="{{ url_for('friend_detail', friend_id=fr.id) }}">{{ friend_avatar(fr, 20) }}</a>{% endfor %}
           {% if a.excluded %}<span class="excluded-chip" title="Hors statistiques">exclue · {{ a.exclude_reason or 'à la main' }}</span>{% endif %}
           {% if a.track and a.track.n_points > 1 %}<a class="gpx-link" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Télécharger le parcours en GPX">GPX</a>{% endif %}
@@ -124,28 +129,66 @@
       <td class="r num muted">{% if a.ignore_max_speed %}<span title="Pointe GPS ignorée : {{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}">—</span>{% else %}{{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}{% endif %}</td>
       <td class="r num">{{ a.avg_hr|round|int if a.avg_hr else '—' }}</td>
       <td class="r num">{{ a.elevation_gain_m|round|int if a.elevation_gain_m else '—' }}</td>
-      <td class="how">
-        {% if a.sport_locked %}
-          <form class="inline" method="post" action="{{ url_for('unlock', act_id=a.id) }}">
-            manuel <button class="linkish" title="Retirer la correction et reclasser par les règles">déverrouiller</button></form>
-        {% elif a.sport_source == 'rule' and a.rule_id %}<a href="{{ url_for('sports', edit=a.rule_id) }}#rule-form">règle #{{ a.rule_id }}</a>
-        {% else %}{{ SOURCES[a.sport_source] }}{% endif %}
-      </td>
     </tr>
-    <tr class="recat"><td colspan="12" id="pop-{{ a.id }}"></td></tr>
+    <tr class="recat"><td colspan="11" id="pop-{{ a.id }}"></td></tr>
   {% else %}
-    <tr><td colspan="12" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
+    <tr><td colspan="11" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
+
+{# Menu des sports : un seul, déplacé sous l'icône cliquée. #}
+<div id="sport-menu" class="sport-menu" role="menu" hidden>
+  {% for f in families %}
+  <div class="sm-family">
+    <span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
+    <div class="sm-sports">
+      {% for sp in f.sports %}
+      <button type="button" role="menuitem" data-sport="{{ sp.id }}" title="{{ sp.label }}">
+        <i class="ph ph-{{ sp.icon_name }}" style="color: {{ sp.color }}" aria-hidden="true"></i>{{ sp.name }}</button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
 <script>
-function cancelPop(id) {
-  const cell = document.getElementById("pop-" + id);
-  const select = cell.closest("tr").previousElementSibling.querySelector("select.sport");
-  select.value = select.dataset.orig;
-  cell.innerHTML = "";
+function cancelPop(id) { document.getElementById("pop-" + id).innerHTML = ""; }
+
+// Clic sur l'icône du sport : menu des familles et sports ; un clic sur un sport ouvre le choix « cette activité /
+// règle » sous la ligne (même panneau qu'avant), via HTMX.
+const menu = document.getElementById("sport-menu");
+const formUrl = "{{ url_for('sport_form', act_id=0) }}".replace("/0/", "/__ID__/");
+let current = null;
+
+function closeMenu() { menu.hidden = true; if (current) current.setAttribute("aria-expanded", "false"); current = null; }
+function openMenu(btn) {
+  current = btn;
+  btn.setAttribute("aria-expanded", "true");
+  menu.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.sport === btn.dataset.sport));
+  menu.hidden = false;
+  const r = btn.getBoundingClientRect();
+  const left = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - menu.offsetWidth - 12);
+  menu.style.left = Math.max(8, left) + "px";
+  menu.style.top = (window.scrollY + r.bottom + 6) + "px";
+  (menu.querySelector("button.on") || menu.querySelector("button")).focus();
 }
+document.querySelectorAll(".sport-btn").forEach(btn => btn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (current === btn && !menu.hidden) closeMenu(); else openMenu(btn);
+}));
+menu.addEventListener("click", (e) => {
+  const item = e.target.closest("button[data-sport]");
+  if (!item || !current) return;
+  const act = current.dataset.act;
+  closeMenu();
+  if (item.dataset.sport === document.querySelector(`.sport-btn[data-act="${act}"]`).dataset.sport) return;
+  htmx.ajax("GET", formUrl.replace("__ID__", act) + "?sport_id=" + item.dataset.sport, { target: "#pop-" + act });
+});
+document.addEventListener("click", (e) => { if (!menu.hidden && !menu.contains(e.target)) closeMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !menu.hidden) { const b = current; closeMenu(); b && b.focus(); } });
+window.addEventListener("resize", () => { if (!menu.hidden && current) openMenu(current); });  // se replace
 const checks = [...document.querySelectorAll(".act-check")];
 const countEl = document.getElementById("bulk-count");
 function updateCount() {

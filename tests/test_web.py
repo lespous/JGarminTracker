@@ -63,10 +63,15 @@ def test_sport_selects_are_filled(client):
     import re
 
     html = client.get("/activities").get_data(as_text=True)
-    selects = re.findall(r'<select class="sport".*?</select>', html, re.S)
-    assert selects and all("Home trainer" in s for s in selects)
+    # Un bouton-icône par ligne, et un seul menu des sports avec familles et icônes.
+    assert html.count('class="sport-btn"') == 32
+    menu = re.search(r'<div id="sport-menu".*?</div>\s*\n\s*<script>', html, re.S).group(0)
+    assert "Home trainer" in menu and "Musculation" in menu and 'class="sm-head"' in menu
     bulk = re.search(r'<select name="sport_id" aria-label="Sport pour les activités cochées">.*?</select>', html, re.S)
     assert "Musculation" in bulk.group(0)
+    # Plus de type Garmin ni de colonne « Classée par » ; pastille du jour.
+    assert "road_biking" not in html and "Classée par" not in html
+    assert 'class="day-dot we" title="dimanche">Di<' in html  # Vélo dimanche (15/06/2025)
 
 
 def test_progress_periods(client):

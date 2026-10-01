@@ -3,6 +3,17 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.9.2 — 2026-10-01
+
+### Modifié
+- Liste des activités :
+  - changement de sport par un clic sur l'icône du sport : petit menu avec les familles, leurs icônes et
+    leurs sports (le sport actuel en surbrillance), puis le choix habituel « cette activité / règle » ;
+    cadenas sur l'icône quand le sport a été corrigé à la main ;
+  - pastille du jour (Lu, Ma, Me…) devant la date, l'heure en dessous ;
+  - plus de type Garmin (cycling, running…) ni de colonne « Classée par » (déverrouillage dans la fiche).
+- Durées sans espaces partout : « 1h09min24s », « 3h56 », « 50min ».
+
 ## 0.9.1 — 2026-10-01
 
 ### Ajouté

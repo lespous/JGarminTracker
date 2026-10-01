@@ -24,7 +24,7 @@ def sport(s, family, name):
 def test_every_icon_has_a_css_rule():
     css = (STATIC / "icons.css").read_text(encoding="utf-8")
     declared = set(re.findall(r"\.ph-([a-z0-9-]+):before", css))
-    assert set(ICONS) == declared and (STATIC / "Phosphor.woff2").stat().st_size > 100_000
+    assert set(ICONS) <= declared and declared - set(ICONS) == {"lock-simple"} and (STATIC / "Phosphor.woff2").stat().st_size > 100_000
 
 
 def test_guess_icon():
@@ -93,4 +93,4 @@ def test_pick_icons_in_sports_page(client):
     with dbm.new_session() as s:
         assert sport(s, "Vélo", "VTT").icon is None  # valeur inconnue refusée
     listing = client.get("/activities").get_data(as_text=True)
-    assert 'class="ph ph-person-simple-bike sicon"' in listing and "icons.css" in listing
+    assert 'class="ph ph-person-simple-bike" style=' in listing and "icons.css" in listing
