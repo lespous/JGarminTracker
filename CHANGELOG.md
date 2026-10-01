@@ -3,6 +3,15 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.8.0 — 2026-10-01
+
+### Ajouté
+- **Icônes des familles et des sports** (police Phosphor de Labs, licence MIT, copiée en local) : sélecteur de
+  53 icônes de sport dans la page Sports ; un sport sans icône prend celle de sa famille. Icônes attribuées
+  d'office d'après les noms (course, trail, tapis, vélo, VTT, vélo électrique, natation, marche, rando,
+  muscu, yoga…), bases existantes comprises. L'icône, à la couleur du sport, remplace la pastille de
+  couleur partout : liste et fiche des activités, tableau de bord, carte, vérifications, règles.
+
 ## 0.7.2 — 2026-10-01
 
 ### Ajouté

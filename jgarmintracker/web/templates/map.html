@@ -41,7 +41,7 @@
 <section class="panel">
   {% if routes %}
   <div class="chips">
-    {% for name, (color, n) in legend.items() %}<span class="sport-chip"><i class="sdot" style="background: {{ color }}"></i>{{ name }} · {{ n }}</span>{% endfor %}
+    {% for name, (color, n, icon) in legend.items() %}<span class="sport-chip"><i class="ph ph-{{ icon }} sicon" style="color: {{ color }}" aria-hidden="true"></i>{{ name }} · {{ n }}</span>{% endfor %}
   </div>
   {% endif %}
   <div id="routes-map" class="map-box lg" role="img" aria-label="Carte de tous les parcours"></div>

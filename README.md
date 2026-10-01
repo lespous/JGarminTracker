@@ -74,7 +74,7 @@ seule fois). Il s'affiche dans la fiche de l'activité, en mini-carte dans la li
 qui superpose tous les parcours (filtres sport et période).
 
 Le fond de carte vient d'OpenStreetMap (tuiles chargées depuis internet : le serveur voit la zone affichée,
-jamais tes tracés). Leaflet 1.9.4 est copié dans `static/`. Les tracés restent dans `jgarmin.db`.
+jamais tes tracés). Leaflet 1.9.4 est copié dans `static/`, comme la police d'icônes Phosphor (licence MIT, reprise de Labs). Les tracés restent dans `jgarmin.db`.
 
 Bouton « Télécharger le GPX » (fiche et liste) : le parcours à suivre dans une appli de navigation, fabriqué
 depuis le tracé en base (latitude et longitude seulement).

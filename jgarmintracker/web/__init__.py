@@ -28,7 +28,7 @@ from ..classifier import (
     reclassify,
     validate_rule,
 )
-from .. import checks, settings, themes, tracks
+from .. import checks, icons, settings, themes, tracks
 from ..models import PACE_UNITS, Activity, ActivityTrack, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
 from ..stats import (
     PERIODS,
@@ -182,7 +182,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     app.jinja_env.globals.update(
         VERSION=__version__, FIELDS=FIELDS, MATCH_TYPES=MATCH_TYPES, PACE_UNITS=PACE_UNITS, SOURCES=SOURCES,
         ORIGINS=ORIGINS, units_bpm=units.bpm, units_h=lambda h: units.hmm(h * 3600), units_int=units.number,
-        units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0),
+        units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0), ICONS=icons.ICONS,
     )
 
     @app.teardown_appcontext
@@ -307,7 +307,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         legend = {}
         for a, _ in rows:
             if a.sport:
-                legend.setdefault(a.sport.label, [a.sport.color, 0])[1] += 1
+                legend.setdefault(a.sport.label, [a.sport.color, 0, a.sport.icon_name])[1] += 1
         places = Counter(r["place"] for r in routes).most_common()
         home, manual = settings.home(s)
         return render_template("map.html", routes=routes, legend=legend, families=load_families(s), sel=sel,
@@ -712,8 +712,12 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             flash(f"« {name} » existe déjà dans {family.name}.", "error")
             return redirect(url_for("sports"))
         unit = request.form.get("pace_unit", "none")
+        guessed = icons.guess_icon(name)
         s.add(Sport(family=family, name=name, color=request.form.get("color") or "#8A94A0",
-                    pace_unit=unit if unit in PACE_UNITS else "none", position=99))
+                    pace_unit=unit if unit in PACE_UNITS else "none", position=99,
+                    icon=guessed if guessed != family.icon else None))
+        if not family.icon:
+            family.icon = icons.guess_icon(family.name)
         s.commit()
         flash(f"Sport « {name} » ajouté dans {family.name}. Ajoute une règle pour y classer des activités.")
         return redirect(url_for("sports"))
@@ -734,6 +738,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             sport.color = color
         unit = request.form.get("pace_unit", sport.pace_unit)
         sport.pace_unit = unit if unit in PACE_UNITS else sport.pace_unit
+        if "icon" in request.form:
+            sport.icon = icons.valid(request.form["icon"])
         s.commit()
         flash(f"Sport « {sport.label} » mis à jour.")
         return redirect(url_for("sports") + f"#sport-{sport.id}")
@@ -832,13 +838,18 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s = db()
         family = s.get(SportFamily, family_id) or abort(404)
         name = request.form.get("name", "").strip()
+        icon_changed = "icon" in request.form and icons.valid(request.form["icon"]) != family.icon
+        if "icon" in request.form:
+            family.icon = icons.valid(request.form["icon"])
         if not name or s.scalar(select(SportFamily).where(SportFamily.name == name, SportFamily.id != family.id)):
             flash("Nom vide ou déjà utilisé par une autre famille.", "error")
-        else:
+        elif name != family.name:
             family.name = name
-            s.commit()
             flash(f"Famille renommée en « {name} ».")
-        return redirect(url_for("sports"))
+        elif icon_changed:
+            flash(f"Icône de « {name} » mise à jour (reprise par ses sports qui n'ont pas la leur).")
+        s.commit()
+        return redirect(url_for("sports") + f"#family-{family.id}")
 
     # ---------------------------------------------------------------- synchronisation
     @app.get("/sync")

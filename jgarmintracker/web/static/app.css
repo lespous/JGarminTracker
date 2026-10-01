@@ -199,8 +199,8 @@ tr.locked td.how { color: var(--warn); }
 /* Ligne d'un sport : passe à la ligne au lieu de déborder quand le panneau est étroit (colonne de navigation). */
 .sport-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .sport-row input[type=color] { width: 42px; height: 32px; padding: 2px; flex: none; }
-.sport-row input[name=name] { flex: 1 1 130px; min-width: 0; }
-.sport-row select { flex: 0 1 150px; min-width: 0; }
+.sport-row input[name=name] { flex: 1 1 90px; min-width: 70px; }
+.sport-row select { flex: 0 1 135px; min-width: 100px; }
 .sport-row .count { font: .8rem var(--mono); color: var(--muted); text-align: right; min-width: 3ch; }
 .sport-row .actions { margin-left: auto; min-width: 190px; align-items: center; }  /* même largeur, « par défaut » compris */
 .sport-row .actions > span { width: 88px; text-align: center; }
@@ -318,3 +318,20 @@ button.danger:hover { border-color: var(--out); }
 .limits-grid .hd { font: 600 .72rem var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 
 .check-actions button { white-space: nowrap; }
+
+/* Icônes des sports (0.8.0) */
+.sicon { font-size: 1.05rem; margin-right: 6px; vertical-align: -2px; flex: none; }
+.icon-pick { position: relative; flex: none; }
+.icon-pick > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: 38px; height: 32px;
+  border: 1px solid var(--line); border-radius: 5px; background: var(--bg); font-size: 1.2rem; }
+.icon-pick > summary::-webkit-details-marker { display: none; }
+.icon-pick > summary:hover, .icon-pick[open] > summary { border-color: var(--accent); }
+.icon-pick .grid { position: absolute; z-index: 20; top: 36px; left: 0; width: 320px; padding: 8px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.icon-pick .grid label { display: grid; place-items: center; height: 32px; border-radius: 5px; cursor: pointer; color: var(--ink);
+  font-size: 1.15rem; border: 1px solid transparent; }
+.icon-pick .grid label:hover { background: var(--soft); }
+.icon-pick .grid label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.icon-pick .grid input { position: absolute; opacity: 0; pointer-events: none; }
+.icon-pick .grid .inherit { grid-column: span 8; font-size: .78rem; height: auto; padding: 4px; justify-content: start; }

@@ -90,7 +90,7 @@
       <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
       <td class="num">{{ a.start.strftime('%d/%m/%y') }}<div class="type-key">{{ a.start.strftime('%H:%M') }}</div></td>
       <td>
-        <span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color if a.sport else '#888' }}"></i>
+        <span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name if a.sport else 'pulse' }} sicon" style="color: {{ a.sport.color if a.sport else '#888' }}" aria-hidden="true"></i>
         <select class="sport" name="sport_id" aria-label="Sport" data-orig="{{ a.sport_id }}"
                 hx-get="{{ url_for('sport_form', act_id=a.id) }}" hx-trigger="change" hx-target="#pop-{{ a.id }}">
           {{ sport_options(families, a.sport_id) }}

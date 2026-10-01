@@ -28,8 +28,28 @@ def upgrade_activity_extras(session: Session) -> None:
     session.flush()
 
 
+def assign_icons(session: Session) -> None:
+    """0.8.0 : icône devinée d'après le nom, pour chaque famille et sport qui n'en a pas.
+
+    Un sport dont l'icône devinée est celle de sa famille (ou introuvable) garde « comme la famille » (None).
+    """
+    from .icons import guess_icon
+    from .models import Sport, SportFamily
+
+    for fam in session.scalars(select(SportFamily)):
+        if not fam.icon:
+            fam.icon = guess_icon(fam.name)
+    session.flush()
+    for sport in session.scalars(select(Sport)):
+        if not sport.icon:
+            icon = guess_icon(sport.name)
+            sport.icon = icon if icon and icon != sport.family.icon else None
+    session.flush()
+
+
 UPGRADES: list = [
     ("2026-10-activity-extras", upgrade_activity_extras),
+    ("2026-10-icons", assign_icons),
 ]
 
 

@@ -56,6 +56,7 @@ class SportFamily(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80), unique=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
+    icon: Mapped[str | None] = mapped_column(String(40), nullable=True)  # nom Phosphor (voir icons.py)
 
     sports: Mapped[list[Sport]] = relationship(back_populates="family", order_by="(Sport.position, Sport.name)")
 
@@ -72,8 +73,14 @@ class Sport(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     # Sport attribué quand aucune règle ne s'applique (un seul : « Autre »).
     fallback: Mapped[bool] = mapped_column(Boolean, default=False)
+    icon: Mapped[str | None] = mapped_column(String(40), nullable=True)  # None = icône de la famille
 
     family: Mapped[SportFamily] = relationship(back_populates="sports")
+
+    @property
+    def icon_name(self) -> str:
+        """Icône affichée : celle du sport, sinon celle de sa famille, sinon une icône générique."""
+        return self.icon or self.family.icon or "pulse"
 
     @property
     def label(self) -> str:

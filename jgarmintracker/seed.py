@@ -96,4 +96,7 @@ def seed(session: Session) -> bool:
         session.add(SportRule(field=field, match_type=match_type, pattern=pattern, sport_id=sports[key].id,
                               priority=priority, origin="seed"))
     session.flush()
+    from .upgrades import assign_icons
+
+    assign_icons(session)
     return True

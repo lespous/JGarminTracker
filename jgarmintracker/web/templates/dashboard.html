@@ -53,7 +53,7 @@
       {% for a in recent %}
         <tr>
           <td class="num">{{ a.start|weekday_day }}</td>
-          <td><span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color }}"></i>{{ a.sport.label }}</span></td>
+          <td><span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name }} sicon" style="color: {{ a.sport.color }}" aria-hidden="true"></i>{{ a.sport.label }}</span></td>
           <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a></td>
           <td class="r num">{{ a.distance_m|km if a.distance_m else a.duration_s|hms }}</td>
         </tr>

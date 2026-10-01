@@ -1,0 +1,64 @@
+/* Icônes Phosphor (https://phosphoricons.com, licence MIT), police copiée de Labs.
+   Seules les icônes de sport proposées dans la page Sports sont déclarées ici (voir icons.py). */
+@font-face {
+  font-family: "Phosphor";
+  src: url("./Phosphor.woff2") format("woff2");
+  font-weight: normal; font-style: normal; font-display: block;
+}
+.ph { font-family: "Phosphor" !important; speak: never; font-style: normal; font-weight: normal; font-variant: normal;
+  text-transform: none; line-height: 1; letter-spacing: 0; -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga"; font-variant-ligatures: discretionary-ligatures;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.ph-person-simple-run:before { content: "\e730"; }
+.ph-sneaker-move:before { content: "\ed60"; }
+.ph-sneaker:before { content: "\e80c"; }
+.ph-mountains:before { content: "\e7ae"; }
+.ph-path:before { content: "\e39c"; }
+.ph-person-simple-bike:before { content: "\e734"; }
+.ph-bicycle:before { content: "\e0d6"; }
+.ph-scooter:before { content: "\e820"; }
+.ph-motorcycle:before { content: "\e80a"; }
+.ph-person-simple-swim:before { content: "\e736"; }
+.ph-swimming-pool:before { content: "\ecb6"; }
+.ph-waves:before { content: "\e6de"; }
+.ph-lifebuoy:before { content: "\e63a"; }
+.ph-sailboat:before { content: "\e78a"; }
+.ph-boat:before { content: "\e786"; }
+.ph-anchor:before { content: "\e514"; }
+.ph-person-simple-walk:before { content: "\e73a"; }
+.ph-person-simple-hike:before { content: "\ed54"; }
+.ph-boot:before { content: "\ecca"; }
+.ph-tree-evergreen:before { content: "\e6dc"; }
+.ph-compass:before { content: "\e1c8"; }
+.ph-stairs:before { content: "\e8ec"; }
+.ph-barbell:before { content: "\e0b6"; }
+.ph-person-simple-tai-chi:before { content: "\ed5c"; }
+.ph-hand-fist:before { content: "\e57a"; }
+.ph-person-arms-spread:before { content: "\ecfe"; }
+.ph-person-simple-ski:before { content: "\e71c"; }
+.ph-person-simple-snowboard:before { content: "\e71e"; }
+.ph-snowflake:before { content: "\e5aa"; }
+.ph-soccer-ball:before { content: "\e716"; }
+.ph-basketball:before { content: "\e724"; }
+.ph-tennis-ball:before { content: "\e720"; }
+.ph-racquet:before { content: "\ee02"; }
+.ph-ping-pong:before { content: "\ea42"; }
+.ph-volleyball:before { content: "\e726"; }
+.ph-football:before { content: "\e718"; }
+.ph-golf:before { content: "\ea3e"; }
+.ph-baseball:before { content: "\e71a"; }
+.ph-hockey:before { content: "\ec86"; }
+.ph-bowling-ball:before { content: "\ea34"; }
+.ph-horse:before { content: "\e2b0"; }
+.ph-person-simple-throw:before { content: "\e732"; }
+.ph-target:before { content: "\e47c"; }
+.ph-heartbeat:before { content: "\e2ac"; }
+.ph-pulse:before { content: "\e000"; }
+.ph-timer:before { content: "\e492"; }
+.ph-lightning:before { content: "\e2de"; }
+.ph-flame:before { content: "\e624"; }
+.ph-trophy:before { content: "\e67e"; }
+.ph-medal:before { content: "\e320"; }
+.ph-sun:before { content: "\e472"; }
+.ph-wind:before { content: "\e5d2"; }
+.ph-person:before { content: "\e3a8"; }

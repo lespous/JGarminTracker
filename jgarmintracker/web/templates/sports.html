@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Sports{% endblock %}
+{% macro icon_picker(current, shown, inherit_label=None) -%}
+  <details class="icon-pick">
+    <summary title="Choisir une icône" aria-label="Choisir une icône"><i class="ph ph-{{ shown }}"></i></summary>
+    <div class="grid" onchange="this.closest('form').requestSubmit()">
+      {% if inherit_label %}<label class="inherit"><input type="radio" name="icon" value="" {{ 'checked' if not current }}>{{ inherit_label }}</label>{% endif %}
+      {% for k, v in ICONS.items() %}<label title="{{ v }}"><input type="radio" name="icon" value="{{ k }}" {{ 'checked' if k == current }} aria-label="{{ v }}"><i class="ph ph-{{ k }}"></i></label>{% endfor %}
+    </div>
+  </details>
+{%- endmacro %}
 {% block content %}
 <div class="head">
   <h1>Sports et règles</h1>
@@ -25,6 +34,7 @@
           <button class="icon-btn sm" formaction="{{ url_for('family_move', family_id=fam.id, dir='up') }}" title="Monter la famille" aria-label="Monter la famille {{ fam.name }}" {{ 'disabled' if loop.first }}>▲</button>
           <button class="icon-btn sm" formaction="{{ url_for('family_move', family_id=fam.id, dir='down') }}" title="Descendre la famille" aria-label="Descendre la famille {{ fam.name }}" {{ 'disabled' if loop.last }}>▼</button>
         </span>
+        {{ icon_picker(fam.icon, fam.icon or 'pulse') }}
         <input name="name" value="{{ fam.name }}" aria-label="Nom de la famille" style="font-weight:600">
         <button>Renommer</button>
         <span class="muted small">{{ fam_total }} activité(s)</span>
@@ -45,6 +55,7 @@
           <button class="icon-btn sm" formaction="{{ url_for('sport_move', sport_id=sp.id, dir='up') }}" title="Monter" aria-label="Monter {{ sp.name }}" {{ 'disabled' if loop.first }}>▲</button>
           <button class="icon-btn sm" formaction="{{ url_for('sport_move', sport_id=sp.id, dir='down') }}" title="Descendre" aria-label="Descendre {{ sp.name }}" {{ 'disabled' if loop.last }}>▼</button>
         </span>
+        {{ icon_picker(sp.icon, sp.icon_name, 'Comme la famille (' ~ fam.name ~ ')') }}
         <input type="color" name="color" value="{{ sp.color }}" aria-label="Couleur de {{ sp.name }}">
         <input name="name" value="{{ sp.name }}" aria-label="Nom du sport">
         <select name="family_id" aria-label="Famille">{% for f in families %}<option value="{{ f.id }}" {{ 'selected' if f.id == sp.family_id }}>{{ f.name }}</option>{% endfor %}</select>
@@ -141,7 +152,7 @@
       <td class="num muted">{{ r.id }}</td>
       <td class="r num">{{ r.priority }}</td>
       <td>{{ FIELDS[r.field] }} {{ MATCH_TYPES[r.match_type] }} <span class="mono">« {{ r.pattern }} »</span></td>
-      <td><span class="sport-chip"><i class="sdot" style="background: {{ r.sport.color }}"></i>{{ r.sport.label }}</span></td>
+      <td><span class="sport-chip"><i class="ph ph-{{ r.sport.icon_name }} sicon" style="color: {{ r.sport.color }}" aria-hidden="true"></i>{{ r.sport.label }}</span></td>
       <td><span class="origin {{ r.origin }}">{{ ORIGINS[r.origin] }}</span></td>
       <td class="r num"><a href="{{ url_for('activities', rule=r.id) }}">{{ hits.get(r.id, 0) }}</a></td>
       <td class="actions">
