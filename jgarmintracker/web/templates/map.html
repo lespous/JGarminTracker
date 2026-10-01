@@ -28,6 +28,13 @@
           <option value="{{ m }}" {{ 'selected' if m == months }}>{{ l }}</option>{% endfor %}
       </select>
     </label>
+    <label>Lieu
+      <select id="place" aria-label="Centrer la carte sur un lieu">
+        {% if home %}<option value="__home" selected>Autour de chez moi</option>{% endif %}
+        <option value="">Toutes ces sorties</option>
+        {% for name, n in places %}<option value="{{ name }}">{{ name }} · {{ n }}</option>{% endfor %}
+      </select>
+    </label>
   </form>
 </div>
 
@@ -39,9 +46,11 @@
   {% endif %}
   <div id="routes-map" class="map-box lg" role="img" aria-label="Carte de tous les parcours"></div>
   <p class="note">{% if routes %}Survole un tracé pour voir la sortie, clique pour ouvrir sa fiche. Les zones les plus foncées sont celles où tu passes le plus souvent.{% else %}Aucun parcours avec tracé GPS pour ces filtres. Les tracés sont récupérés à la synchro (page Synchronisation).{% endif %}
+    Lieux : noms donnés par Garmin à chaque sortie.
+    {% if home %}Domicile {{ 'posé à la main' if home_manual else 'déduit de tes points de départ' }} (<a href="{{ url_for('settings_page') }}#home">modifier</a>).{% endif %}
     Fond de carte © contributeurs OpenStreetMap.</p>
 </section>
 <script>
-document.addEventListener("DOMContentLoaded", () => routesMap("routes-map", {{ routes|tojson }}));
+document.addEventListener("DOMContentLoaded", () => routesMap("routes-map", {{ routes|tojson }}, {{ home|tojson }}));
 </script>
 {% endblock %}

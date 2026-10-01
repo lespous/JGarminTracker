@@ -24,11 +24,20 @@ function trackMap(id, points, color) {
   return map;
 }
 
-function routesMap(id, routes) {
+function homeMarker(map, home) {
+  return L.circleMarker(home, { radius: 8, color: "#fff", weight: 3, fillColor: "#1F2A36", fillOpacity: 1 })
+    .bindTooltip("Domicile").addTo(map);
+}
+
+// Carte de tous les parcours. Vue de départ : autour du domicile (s'il est connu), sinon tous les parcours.
+// Le menu « Lieu » (select#place) recentre sur un lieu Garmin, sur le domicile ou sur l'ensemble.
+function routesMap(id, routes, home) {
   const map = baseMap(id);
-  if (!routes.length) { map.setView([50.5, 4.5], 7); return map; }
-  const all = [];
+  if (home) homeMarker(map, home);
+  if (!routes.length) { map.setView(home || [50.5, 4.5], home ? 12 : 7); return map; }
+  const all = [], byPlace = {};
   for (const r of routes) {
+    (byPlace[r.place] ||= []).push(...r.points);
     const line = L.polyline(r.points, { color: r.color, weight: 3, opacity: .55 }).addTo(map);
     const tip = `<b>${escapeHtml(r.name)}</b><br>${r.date} · ${escapeHtml(r.sport)}${r.km ? " · " + r.km : ""}`;
     line.bindTooltip(tip, { sticky: true });
@@ -37,7 +46,30 @@ function routesMap(id, routes) {
     line.on("click", () => { location.href = r.url; });
     all.push(...r.points);
   }
-  map.fitBounds(L.latLngBounds(all), { padding: [20, 20] });
+  const show = (value) => {
+    if (value === "__home" && home) map.setView(home, 12);
+    else if (value && byPlace[value]) map.fitBounds(L.latLngBounds(byPlace[value]), { padding: [20, 20] });
+    else map.fitBounds(L.latLngBounds(all), { padding: [20, 20] });
+  };
+  const select = document.getElementById("place");
+  if (select) select.addEventListener("change", () => show(select.value));
+  show(select ? select.value : (home ? "__home" : ""));
+  return map;
+}
+
+// Petite carte des Paramètres : cliquer pose le domicile dans les champs du formulaire.
+function homePicker(id, home, fallback) {
+  const map = baseMap(id);
+  map.setView(home || fallback || [50.5, 4.5], home || fallback ? 13 : 7);
+  let marker = home ? homeMarker(map, home) : null;
+  map.on("click", (e) => {
+    const lat = e.latlng.lat.toFixed(5), lon = e.latlng.lng.toFixed(5);
+    document.getElementById("home-lat").value = lat;
+    document.getElementById("home-lon").value = lon;
+    if (marker) marker.remove();
+    marker = homeMarker(map, [lat, lon]);
+    document.getElementById("home-save").disabled = false;
+  });
   return map;
 }
 

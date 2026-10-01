@@ -278,3 +278,14 @@ form.sync-chip { display: flex; gap: 6px; align-items: center; }
 .pal-preview .btnx { align-self: flex-start; padding: 3px 10px; border-radius: 5px; font-weight: 600; }
 textarea.json { width: 100%; min-height: 120px; font: .8rem/1.4 var(--mono); padding: 8px; border: 1px solid var(--line);
   border-radius: 6px; background: var(--bg); color: var(--ink); }
+
+/* Historique (0.5.0) */
+table.cov th, table.cov td { padding: 4px 3px; text-align: center; }
+table.cov th:first-child { text-align: left; padding-left: 10px; }
+table.cov .c { width: 6.5%; }
+.cell { width: 100%; min-width: 34px; height: 30px; padding: 0; border-radius: 4px; border: 1px solid var(--line);
+  font: 600 .75rem var(--mono); color: var(--ink); cursor: pointer;
+  background: linear-gradient(to top, color-mix(in oklab, var(--accent) 45%, transparent) var(--fill, 0%), var(--soft) var(--fill, 0%)); }
+.cell:hover { border-color: var(--accent); }
+.cell.picked { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cell.future { display: block; height: 30px; background: none; border: 1px dashed var(--line); cursor: default; }

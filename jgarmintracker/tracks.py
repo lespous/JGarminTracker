@@ -87,6 +87,20 @@ def gpx_filename(day, name: str) -> str:
     return f"{day:%Y-%m-%d} {clean}.gpx"
 
 
+def home_point(endpoints: list[Point], cell: float = 0.002) -> Point | None:
+    """Domicile probable : la zone (~200 m) où commencent et finissent le plus de sorties, moyenne de ses points.
+
+    Calculé sur le PC à partir des tracés ; rien n'est envoyé nulle part.
+    """
+    if not endpoints:
+        return None
+    cells: dict[tuple[int, int], list[Point]] = {}
+    for lat, lon in endpoints:
+        cells.setdefault((round(lat / cell), round(lon / cell)), []).append((lat, lon))
+    best = max(cells.values(), key=len)
+    return round(sum(p[0] for p in best) / len(best), 5), round(sum(p[1] for p in best) / len(best), 5)
+
+
 def dumps(points: list[Point]) -> str:
     return json.dumps([list(p) for p in points], separators=(",", ":"))
 

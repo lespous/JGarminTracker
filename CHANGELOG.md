@@ -3,6 +3,20 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.5.0 — 2026-10-01
+
+### Ajouté
+- **Historique** (nouvel onglet) : couverture mois par mois de ce qui est en base (activités, tracés, jours de
+  santé), choix d'une année ou de mois en un clic, estimation de durée, récupération en arrière-plan des
+  périodes plus anciennes. Les jours déjà en base sont sautés : après une erreur 429, relancer reprend où
+  ça s'est arrêté. En ligne de commande : `jgarmin history --from 2023-01 [--to 2024-12] [--no-health]`.
+- **Carte** : centrée sur ton domicile (déduit des points de départ et d'arrivée les plus fréquents, ou posé
+  à la main dans Paramètres) ; menu « Lieu » pour zoomer sur un lieu Garmin (avec le nombre de sorties).
+
+### Modifié
+- Durées écrites avec leurs unités : « 3 h 56 », « 50 min », « 1 h 38 min 11 s » dans les fiches. Le « : »
+  reste réservé aux allures (4:21 /km).
+
 ## 0.4.1 — 2026-10-01
 
 ### Modifié

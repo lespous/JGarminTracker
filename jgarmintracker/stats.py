@@ -239,6 +239,33 @@ def records(activities: list[Activity], unit: str, min_pace_distance_m: float = 
     return r
 
 
+# ---------------------------------------------------------------- couverture (page Historique)
+def coverage(session: Session) -> dict[tuple[int, int], dict]:
+    """Ce qui est en base, mois par mois : {(année, mois): {activities, tracks, days}}."""
+    from sqlalchemy import func
+
+    from .models import ActivityTrack
+
+    out: dict[tuple[int, int], dict] = defaultdict(lambda: {"activities": 0, "tracks": 0, "days": 0})
+    month = func.strftime("%Y-%m", Activity.start)
+    for ym, n, with_track in session.execute(
+        select(month, func.count(Activity.id), func.count(ActivityTrack.activity_id))
+        .outerjoin(ActivityTrack, (ActivityTrack.activity_id == Activity.id) & (ActivityTrack.n_points > 1))
+        .group_by(month)
+    ):
+        y, m = map(int, ym.split("-"))
+        out[(y, m)].update(activities=n, tracks=with_track)
+    hmonth = func.strftime("%Y-%m", DailyHealth.day)
+    for ym, n in session.execute(select(hmonth, func.count()).group_by(hmonth)):
+        y, m = map(int, ym.split("-"))
+        out[(y, m)]["days"] = n
+    return out
+
+
+def month_days(year: int, month: int) -> int:
+    return (add_months(date(year, month, 1), 1) - date(year, month, 1)).days
+
+
 # ---------------------------------------------------------------- santé
 def health_rows(session: Session, start: date, end: date) -> dict[date, DailyHealth]:
     rows = session.scalars(select(DailyHealth).where(DailyHealth.day >= start, DailyHealth.day <= end))

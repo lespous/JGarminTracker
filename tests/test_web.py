@@ -102,7 +102,8 @@ def test_maps(client):
     listing = client.get("/activities").get_data(as_text=True)
     assert listing.count('<td class="preview"><a') == 25
     html = client.get("/map?months=24").get_data(as_text=True)
-    routes = json.loads(re.search(r'routesMap\("routes-map", (.*?)\)\);', html).group(1))
+    start = html.index('routesMap("routes-map", ') + len('routesMap("routes-map", ')
+    routes, _ = json.JSONDecoder().raw_decode(html[start:])
     assert len(routes) == 25 and all(len(r["points"]) >= 2 and r["color"].startswith("#") for r in routes)
     with dbm.new_session() as s:
         course = f"f{s.scalar(select(SportFamily.id).where(SportFamily.name == 'Course'))}"

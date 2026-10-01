@@ -125,6 +125,54 @@ def sync(
 
 
 @app.command()
+def history(
+    from_month: Annotated[datetime, typer.Option("--from", formats=["%Y-%m"], help="Premier mois, AAAA-MM")],
+    to_month: Annotated[Optional[datetime], typer.Option("--to", formats=["%Y-%m"], help="Dernier mois (défaut : mois courant)")] = None,
+    health_data: Annotated[bool, typer.Option("--health/--no-health", help="Santé jour par jour")] = True,
+    activities_data: Annotated[bool, typer.Option("--activities/--no-activities", help="Activités et tracés")] = True,
+):
+    """Récupérer une période passée (plus ancienne que la première synchro). Les jours déjà en base sont sautés."""
+    from .garmin import GarminSource, SyncError
+    from .stats import add_months
+    from .sync import estimate_seconds, sync_history
+
+    start = from_month.date().replace(day=1)
+    end = min(add_months((to_month or datetime.now()).date().replace(day=1), 1) - timedelta(days=1), date.today())
+    if start > end:
+        console.print("[red]Le premier mois doit précéder le dernier.[/red]")
+        raise typer.Exit(1)
+    console.print(f"Période : {units.day(start)} → {units.day(end)} · durée estimée jusqu'à "
+                  f"{units.hmm(estimate_seconds((end - start).days + 1 if health_data else 0))} (moins si des jours sont déjà en base)")
+    try:
+        with console.status("Reprise de la session Garmin…"):
+            source = GarminSource.connect()
+    except SyncError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    columns = (TextColumn("{task.description}"), BarColumn(), MofNCompleteColumn(), TimeRemainingColumn())
+    with Progress(*columns, console=console) as bar, dbm.new_session() as s:
+        tasks: dict[str, int] = {}
+
+        def on_progress(p):
+            label = {"activities": "Activités", "health": "Santé (jour par jour)", "tracks": "Tracés GPS"}.get(p.step)
+            if not label:
+                return
+            if p.step not in tasks:
+                tasks[p.step] = bar.add_task(label, total=p.total or None)
+            bar.update(tasks[p.step], completed=p.done, total=p.total or None,
+                       description=f"{label} · {units.day(p.day)}" if p.day else label)
+
+        run = sync_history(s, source, start, end, activities=activities_data, health=health_data, progress=on_progress)
+    summary = (f"{run.activities_added} activité(s), {run.days_added} jour(s) de santé, "
+               f"{run.tracks_added} tracé(s) ajoutés.")
+    if run.status == "ok":
+        console.print(f"[green]Historique récupéré.[/green] {summary}")
+    else:
+        console.print(f"[red]{run.message}[/red]\nDéjà enregistré : {summary}")
+        raise typer.Exit(1)
+
+
+@app.command()
 def activities(
     sport: Annotated[Optional[str], typer.Option(help="Famille ou sport, ex. Course, Trail")] = None,
     since: Annotated[Optional[datetime], typer.Option(formats=["%Y-%m-%d"], help="Depuis AAAA-MM-JJ")] = None,

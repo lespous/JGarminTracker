@@ -308,5 +308,67 @@ def sync(session: Session, source, *, today: date | None = None, full: bool = Fa
     return run
 
 
+def sync_history(session: Session, source, start: date, end: date, *, activities: bool = True, health: bool = True,
+                 skip_existing: bool = True, progress: ProgressFn | None = None) -> SyncRun:
+    """Récupère une période passée (page Historique). Les jours déjà en base sont sautés : une récupération
+    interrompue (erreur 429) se relance telle quelle et reprend où elle s'était arrêtée."""
+    notify = progress or (lambda p: None)
+    what = " + ".join(w for w, on in (("activités et tracés", activities), ("santé", health)) if on)
+    run = SyncRun(mode="history", message=f"Historique du {start:%d/%m/%Y} au {end:%d/%m/%Y} : {what}.")
+    session.add(run)
+    session.commit()
+    pause = getattr(source, "pause", 0)
+    try:
+        if activities:
+            notify(Progress("activities"))
+            clf = Classifier(session)
+            raws = source.activities_between(start, end)
+            for i, raw in enumerate(raws, 1):
+                status = _upsert_activity(session, raw, clf)
+                run.activities_added += status == "added"
+                run.activities_updated += status == "updated"
+                notify(Progress("activities", i, len(raws)))
+            session.commit()
+
+        if health:
+            known = set(session.scalars(select(DailyHealth.day).where(DailyHealth.day >= start, DailyHealth.day <= end)))
+            span = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+            if skip_existing:
+                span = [d for d in span if d not in known]
+            vo2 = _vo2max_map(source, start, end) if span else {}
+            for i, d in enumerate(span, 1):
+                notify(Progress("health", i - 1, len(span), d))
+                status = _upsert_day(session, d, source.daily_summary(d), source.sleep(d), vo2.get(d))
+                run.days_added += status == "added"
+                run.days_updated += status == "updated"
+                session.commit()
+                if pause and i < len(span):
+                    time.sleep(pause)
+
+        if activities and hasattr(source, "track"):
+            lo, hi = datetime.combine(start, datetime.min.time()), datetime.combine(end + timedelta(days=1), datetime.min.time())
+            todo = [a for a in missing_tracks(session) if lo <= a.start < hi]
+            for i, act in enumerate(todo, 1):
+                notify(Progress("tracks", i - 1, len(todo), act.day))
+                run.tracks_added += save_track(session, act, source.track(act.garmin_id))
+                session.commit()
+                if pause and i < len(todo):
+                    time.sleep(pause)
+        run.status = "ok"
+        notify(Progress("done"))
+    except SyncError as e:
+        session.rollback()
+        run.status, run.message = "error", f"{run.message} {e}"
+    run.finished_at = datetime.now()
+    session.merge(run)
+    session.commit()
+    return run
+
+
+def estimate_seconds(days: int, activities: int = 0) -> int:
+    """Durée probable d'une récupération : ~0,9 s par jour de santé, ~0,7 s par tracé (mesuré sur un vrai compte)."""
+    return round(days * 0.9 + activities * 0.7 + 5)
+
+
 def last_run(session: Session) -> SyncRun | None:
     return session.scalar(select(SyncRun).order_by(SyncRun.id.desc()).limit(1))

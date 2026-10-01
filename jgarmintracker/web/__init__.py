@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -42,7 +43,15 @@ from ..stats import (
     week_compare,
     weekly_volume,
 )
-from ..sync import Progress, last_run, missing_tracks, plan as sync_plan, sync as run_sync
+from ..stats import coverage, month_days
+from ..sync import (
+    Progress,
+    last_run,
+    missing_tracks,
+    plan as sync_plan,
+    sync as run_sync,
+    sync_history,
+)
 
 SOURCES = {"rule": "règle", "manual": "manuel", "fallback": "par défaut"}
 ORIGINS = {"seed": "départ", "learned": "apprise", "manual": "manuelle"}
@@ -104,31 +113,35 @@ class SyncJob:
     def running(self) -> bool:
         return bool(self.thread and self.thread.is_alive())
 
-    def start(self, make_source, full: bool = False, inline: bool = False) -> bool:
+    def start(self, make_source, full: bool = False, inline: bool = False, history: dict | None = None) -> bool:
+        """history = {start, end, activities, health} : récupération d'une période passée (page Historique)."""
         with self.lock:
             if self.running:
                 return False
             self.progress, self.started = Progress("connect"), datetime.now()
-            self.thread = threading.Thread(target=self._run, args=(make_source, full), daemon=True)
+            self.thread = threading.Thread(target=self._run, args=(make_source, full, history), daemon=True)
             if inline:
-                self._run(make_source, full)
+                self._run(make_source, full, history)
                 self.thread = None
             else:
                 self.thread.start()
             return True
 
-    def _run(self, make_source, full: bool):
+    def _run(self, make_source, full: bool, history: dict | None = None):
         from ..garmin import SyncError
 
         with dbm.new_session() as s:
             try:
                 source = make_source()
             except SyncError as e:
-                s.add(SyncRun(mode="full" if full else "incremental", status="error", message=str(e),
-                              finished_at=datetime.now()))
+                mode = "history" if history else "full" if full else "incremental"
+                s.add(SyncRun(mode=mode, status="error", message=str(e), finished_at=datetime.now()))
                 s.commit()
                 return
-            run_sync(s, source, full=full, progress=self._on_progress, **sync_options(s))
+            if history:
+                sync_history(s, source, progress=self._on_progress, **history)
+            else:
+                run_sync(s, source, full=full, progress=self._on_progress, **sync_options(s))
 
     def _on_progress(self, p: Progress):
         self.progress = p
@@ -278,13 +291,16 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "id": a.id, "name": a.name, "date": units.day(a.start), "sport": a.sport.label if a.sport else "",
             "color": a.sport.color if a.sport else "#888888", "km": units.km(a.distance_m) if a.distance_m else "",
             "url": url_for("activity_detail", act_id=a.id), "points": tracks.thin(tracks.loads(pts), 300),
+            "place": json.loads(a.raw_json or "{}").get("locationName") or "Lieu inconnu",
         } for a, pts in rows]
         legend = {}
         for a, _ in rows:
             if a.sport:
                 legend.setdefault(a.sport.label, [a.sport.color, 0])[1] += 1
+        places = Counter(r["place"] for r in routes).most_common()
+        home, manual = settings.home(s)
         return render_template("map.html", routes=routes, legend=legend, families=load_families(s), sel=sel,
-                               label=label, months=months,
+                               label=label, months=months, places=places, home=home, home_manual=manual,
                                total_km=sum(a.distance_m or 0 for a, _ in rows))
 
     @app.get("/activities/<int:act_id>/sport")
@@ -675,6 +691,55 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def sync_status():
         return render_template("_sync_status.html", job=job, run=last_run(db()))
 
+    # ---------------------------------------------------------------- historique
+    @app.get("/history")
+    def history_page():
+        s = db()
+        cov = coverage(s)
+        t = today()
+        oldest = min((y for y, _ in cov), default=t.year)
+        first_year = request.args.get("from_year", type=int) or oldest - 2
+        first_year = max(2000, min(first_year, oldest))
+        years = []
+        for y in range(t.year, first_year - 1, -1):
+            months = []
+            for m in range(1, 13):
+                c = cov.get((y, m), {"activities": 0, "tracks": 0, "days": 0})
+                future = date(y, m, 1) > t
+                total = 0 if future else (t.day if (y, m) == (t.year, t.month) else month_days(y, m))
+                months.append({"m": m, "future": future, "total": total, **c,
+                               "ratio": round(c["days"] / total, 2) if total else 0})
+            years.append({"year": y, "months": months, "activities": sum(x["activities"] for x in months),
+                          "days": sum(x["days"] for x in months)})
+        js_cov = {f"{y}-{m:02d}": [c["days"], c["activities"], c["tracks"]] for (y, m), c in cov.items()}
+        return render_template("history.html", years=years, first_year=first_year, job=job, today=t, cov=js_cov,
+                               runs=s.scalars(select(SyncRun).where(SyncRun.mode == "history")
+                                              .order_by(SyncRun.id.desc()).limit(10)).all())
+
+    @app.post("/history")
+    def history_start():
+        f = request.form
+        try:
+            start = datetime.strptime(f.get("from", ""), "%Y-%m").date()
+            end = add_months(datetime.strptime(f.get("to", ""), "%Y-%m").date(), 1) - timedelta(days=1)
+        except ValueError:
+            flash("Choisis un mois de début et un mois de fin.", "error")
+            return redirect(url_for("history_page"))
+        if start > end:
+            start, end = end.replace(day=1), add_months(start, 1) - timedelta(days=1)
+        end = min(end, today())
+        acts, health_ = f.get("activities") == "on", f.get("health") == "on"
+        if not (acts or health_):
+            flash("Coche au moins « activités » ou « santé ».", "error")
+            return redirect(url_for("history_page"))
+        started = job.start(app.config["SYNC_SOURCE"], inline=app.config["SYNC_INLINE"], history={
+            "start": start, "end": end, "activities": acts, "health": health_, "skip_existing": True})
+        if started:
+            flash(f"Récupération lancée : du {units.day(start)} au {units.day(end)}. Tu peux quitter la page.")
+        else:
+            flash("Une synchro est déjà en cours : attends qu'elle se termine.", "error")
+        return redirect(url_for("history_page"))
+
     @app.get("/sync/chip")
     def sync_chip():
         return render_template("_sync_chip.html")
@@ -698,13 +763,30 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     @app.get("/settings")
     def settings_page():
         s = db()
+        home, manual = settings.home(s)
         return render_template(
             "settings.html", palettes=settings.all_palettes(s), current=settings.get(s, "palette"),
             layout=settings.get(s, "layout"), mode=settings.get(s, "mode"), LAYOUTS=settings.LAYOUTS,
             MODES=settings.MODES, history_months=settings.get(s, "history_months"),
             resync_days=settings.get(s, "resync_days"), auto_sync=settings.get(s, "auto_sync"),
-            confirm=request.args.get("confirm"),
+            confirm=request.args.get("confirm"), home=home, home_manual=manual,
         )
+
+    @app.post("/settings/home")
+    def settings_home():
+        s = db()
+        if request.form.get("reset"):
+            settings.put(s, "home", None)
+            flash("Domicile : retour au calcul automatique d'après tes départs.")
+        else:
+            lat, lon = parse_float(request.form.get("lat")), parse_float(request.form.get("lon"))
+            if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                flash("Clique sur la carte pour choisir le point.", "error")
+                return redirect(url_for("settings_page") + "#home")
+            settings.put(s, "home", [round(lat, 5), round(lon, 5)])
+            flash("Domicile enregistré.")
+        s.commit()
+        return redirect(url_for("settings_page") + "#home")
 
     @app.post("/settings/appearance")
     def settings_appearance():

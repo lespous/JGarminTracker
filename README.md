@@ -41,6 +41,7 @@ jamais de mot de passe.
 jgarmin --version
 jgarmin login | logout
 jgarmin sync [--days 3] [--full] [--months 12]   # incrémental par défaut
+jgarmin history --from 2023-01 [--to 2024-12] [--no-health] [--no-activities]   # périodes anciennes
 jgarmin activities [--sport Course] [--since 2026-01-01] [-q texte]
 jgarmin health [--days 14]
 jgarmin week [--sport Course]
@@ -90,7 +91,7 @@ le JSON dans « Importer des palettes de Labs ».
 
 ## Données
 
-Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, h:mm)
+Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)
 se fait à l'affichage. Le JSON brut de Garmin est gardé (activités, résumé du jour, sommeil, VO2max) pour
 recalculer sans tout re-télécharger. La nuit de sommeil est rattachée au jour du réveil.
 

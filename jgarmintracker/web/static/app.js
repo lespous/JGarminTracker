@@ -10,11 +10,11 @@ const fmt = {
     const t = Math.round(s);
     return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
   },
-  // Heures décimales -> « h:mm ».
+  // Heures décimales -> « 3 h 56 », ou « 50 min » sous l'heure (le « : » est réservé aux allures).
   hmm: (h) => {
     if (h == null) return "—";
     const m = Math.round(h * 60);
-    return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+    return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
   },
 };
 

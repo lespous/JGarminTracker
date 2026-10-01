@@ -22,7 +22,26 @@ DEFAULTS = {
     "history_months": 12,  # premier lancement et « relire tout »
     "resync_days": 3,  # jours de santé re-synchronisés à chaque fois
     "auto_sync": False,  # synchro en arrière-plan au lancement de l'interface
+    "home": None,  # [lat, lon] posé à la main ; None = déduit des départs (voir home())
 }
+
+
+def home(session: Session) -> tuple[list[float] | None, bool]:
+    """Domicile pour centrer les cartes : (point, posé à la main ?). None s'il n'y a encore aucun tracé."""
+    manual = get(session, "home")
+    if isinstance(manual, list) and len(manual) == 2:
+        return manual, True
+    from sqlalchemy import select
+
+    from . import tracks
+    from .models import ActivityTrack
+
+    ends = []
+    for text, in session.execute(select(ActivityTrack.points_json).where(ActivityTrack.n_points > 1)):
+        pts = tracks.loads(text)
+        ends += [pts[0], pts[-1]]
+    point = tracks.home_point(ends)
+    return (list(point) if point else None), False
 
 
 def get(session: Session, name: str):

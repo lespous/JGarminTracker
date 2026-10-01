@@ -30,8 +30,9 @@ def test_units_belgian_formats():
     assert units.pace(100 / 112, "min_100m") == "1:52 /100 m"
     assert units.pace(28.4 / 3.6, "kmh") == "28,4 km/h"
     assert units.pace(0, "min_km") == units.pace(None, "kmh") == "—"
-    assert units.hmm(3 * 3600 + 5 * 60 + 29) == "3:05"
-    assert units.hms(3725) == "1:02:05" and units.hms(312) == "5:12"
+    # Durées avec unités ; le « : » est réservé aux allures.
+    assert units.hmm(3 * 3600 + 5 * 60 + 29) == "3 h 05" and units.hmm(50 * 60 + 2) == "50 min"
+    assert units.hms(3725) == "1 h 02 min 05 s" and units.hms(3002) == "50 min 02 s" and units.hms(45) == "45 s"
     assert units.day(date(2025, 6, 1)) == "01/06/2025"
     assert units.bpm(51.6) == "52 bpm"
 

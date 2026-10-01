@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Historique{% endblock %}
+{% set MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% block content %}
+<div class="head">
+  <h1>Historique</h1>
+  <span class="muted">Ce qui est déjà en base, mois par mois, et récupération des périodes plus anciennes.</span>
+</div>
+
+<section class="panel">
+  <h2>Couverture <small>clique sur une année ou sur des mois pour choisir la période</small></h2>
+  <div class="tbl">
+  <table class="cov">
+    <thead><tr><th>Année</th>{% for m in MONTHS %}<th class="c">{{ m }}</th>{% endfor %}<th class="r">Activités</th><th class="r">Jours santé</th></tr></thead>
+    <tbody>
+    {% for y in years %}
+      <tr>
+        <th><button type="button" class="linkish year-pick" data-year="{{ y.year }}">{{ y.year }}</button></th>
+        {% for c in y.months %}
+          <td class="c">{% if c.future %}<span class="cell future"></span>{% else %}
+            <button type="button" class="cell" data-ym="{{ y.year }}-{{ '%02d'|format(c.m) }}"
+              style="--fill: {{ (c.ratio * 100)|round|int }}%"
+              title="{{ MONTHS[c.m - 1] }} {{ y.year }} : {{ c.activities }} activité(s), {{ c.tracks }} tracé(s), {{ c.days }}/{{ c.total }} jour(s) de santé">
+              {{ c.activities or '' }}</button>{% endif %}</td>
+        {% endfor %}
+        <td class="r num">{{ y.activities }}</td><td class="r num">{{ y.days }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Chiffre : nombre d'activités. Fond : part des jours avec des données santé (plein = mois complet).
+    <a href="{{ url_for('history_page', from_year=first_year - 3) }}">Afficher des années plus anciennes</a>.</p>
+</section>
+
+<section class="panel">
+  <h2>Récupérer une période</h2>
+  {% if job.running %}
+    <div id="sync-status" hx-get="{{ url_for('sync_status') }}" hx-trigger="load" hx-swap="innerHTML"></div>
+  {% endif %}
+  <form method="post" action="{{ url_for('history_start') }}" class="filters" id="hist-form">
+    <label>Du mois<input type="month" name="from" id="h-from" required max="{{ today.strftime('%Y-%m') }}"></label>
+    <label>Au mois<input type="month" name="to" id="h-to" required max="{{ today.strftime('%Y-%m') }}"></label>
+    <label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="activities" id="h-acts" checked> Activités et tracés GPS</label>
+    <label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="health" id="h-health" checked> Santé (jour par jour)</label>
+    <button class="primary" {{ 'disabled' if job.running }}>Récupérer</button>
+  </form>
+  <p class="small" id="h-estimate">Choisis une période.</p>
+  <p class="note">Les jours de santé déjà en base sont sautés : si Garmin bloque (erreur 429), relance la même période plus tard, elle reprend où elle s'est arrêtée.
+    Garmin ne garde des données que depuis la création de ton compte ou ta première montre : les mois plus anciens resteront vides.</p>
+</section>
+
+{% if runs %}
+<section class="panel">
+  <h2>Dernières récupérations</h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Début</th><th>Statut</th><th class="r">Activités +</th><th class="r">Jours +</th><th class="r">Tracés +</th><th>Détail</th></tr></thead>
+    <tbody>
+    {% for r in runs %}
+      <tr><td class="num">{{ r.started_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td class="status-{{ r.status }}">{{ {'ok': 'terminée', 'error': 'erreur', 'running': 'en cours'}[r.status] }}</td>
+        <td class="r num">{{ r.activities_added }}</td><td class="r num">{{ r.days_added }}</td><td class="r num">{{ r.tracks_added }}</td>
+        <td class="small">{{ r.message }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<script>
+// Choix de période : une année entière, ou des mois (premier clic = début, second = fin).
+const cov = {{ cov|tojson }};
+const today = "{{ today.strftime('%Y-%m') }}";
+const from = document.getElementById("h-from"), to = document.getElementById("h-to");
+const cells = [...document.querySelectorAll("button.cell")];
+let anchor = null;
+
+function setRange(a, b) {
+  if (a > b) [a, b] = [b, a];
+  from.value = a; to.value = b > today ? today : b;
+  refresh();
+}
+document.querySelectorAll(".year-pick").forEach(btn => btn.addEventListener("click", () => {
+  anchor = null; setRange(`${btn.dataset.year}-01`, `${btn.dataset.year}-12`);
+}));
+cells.forEach(cell => cell.addEventListener("click", () => {
+  const ym = cell.dataset.ym;
+  if (anchor) { setRange(anchor, ym); anchor = null; } else { anchor = ym; setRange(ym, ym); }
+}));
+[from, to].forEach(el => el.addEventListener("change", refresh));
+document.getElementById("h-acts").addEventListener("change", refresh);
+document.getElementById("h-health").addEventListener("change", refresh);
+
+function daysIn(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  if (ym === today) return new Date().getDate();
+  return new Date(y, m, 0).getDate();
+}
+function months(a, b) {
+  const out = []; let [y, m] = a.split("-").map(Number);
+  const [y2, m2] = b.split("-").map(Number);
+  while (y < y2 || (y === y2 && m <= m2)) { out.push(`${y}-${String(m).padStart(2, "0")}`); m++; if (m > 12) { m = 1; y++; } }
+  return out;
+}
+function refresh() {
+  cells.forEach(c => c.classList.toggle("picked", !!from.value && !!to.value && c.dataset.ym >= from.value && c.dataset.ym <= to.value));
+  const est = document.getElementById("h-estimate");
+  if (!from.value || !to.value) { est.textContent = "Choisis une période."; return; }
+  const [a, b] = from.value <= to.value ? [from.value, to.value] : [to.value, from.value];
+  const list = months(a, b);
+  let missing = 0, have = 0;
+  for (const ym of list) { const c = cov[ym] || [0, 0, 0]; missing += Math.max(0, daysIn(ym) - c[0]); have += c[1]; }
+  const health = document.getElementById("h-health").checked, acts = document.getElementById("h-acts").checked;
+  // ~0,9 s par jour de santé, ~0,7 s par tracé (mesuré) ; nombre d'activités inconnu à l'avance : ~8 par mois.
+  const secs = (health ? missing * 0.9 : 0) + (acts ? list.length * 8 * 0.7 : 0) + 5;
+  const dur = secs < 90 ? "moins de 2 minutes" : secs < 3600 ? `environ ${Math.round(secs / 60)} minutes` : `environ ${(secs / 3600).toFixed(1).replace(".", ",")} heures`;
+  est.textContent = `${list.length} mois (${a.split("-").reverse().join("/")} → ${b.split("-").reverse().join("/")}). `
+    + (health ? `${missing} jour(s) de santé manquant(s) à demander. ` : "")
+    + (have ? `${have} activité(s) déjà en base sur la période. ` : "")
+    + `Durée estimée : ${dur}.`;
+}
+</script>
+{% endblock %}

@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Paramètres{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
+<script src="{{ url_for('static', filename='leaflet.js') }}" defer></script>
+<script src="{{ url_for('static', filename='maps.js') }}" defer></script>
+{% endblock %}
 {% macro swatch(c) -%}
   <span class="swatch">{% for k in ('bg', 'tile', 'surface', 'fg') %}<i style="background: {{ c[k] }}"></i>{% endfor %}<i class="acc" style="background: {{ c.accent }}"></i></span>
 {%- endmacro %}
@@ -53,6 +58,24 @@
   </form>
   {% endfor %}
 </section>
+
+<section class="panel" id="home">
+  <h2>Domicile</h2>
+  <p class="small">Sert à centrer la carte de tes parcours.
+    {% if home_manual %}Posé à la main.{% elif home %}Déduit automatiquement : l'endroit d'où partent et où finissent le plus de sorties.{% else %}Pas encore connu : il sera déduit de tes tracés après une synchro.{% endif %}
+    Clique sur la carte pour le placer toi-même. Il reste dans la base locale.</p>
+  <div id="home-map" class="map-box" style="height:300px" role="img" aria-label="Carte pour placer le domicile"></div>
+  <div class="filters">
+    <form method="post" action="{{ url_for('settings_home') }}" class="filters">
+      <input type="hidden" name="lat" id="home-lat"><input type="hidden" name="lon" id="home-lon">
+      <button class="primary" id="home-save" disabled>Enregistrer ce point</button>
+    </form>
+    {% if home_manual %}<form method="post" action="{{ url_for('settings_home') }}"><input type="hidden" name="reset" value="1"><button>Revenir au calcul automatique</button></form>{% endif %}
+  </div>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", () => homePicker("home-map", {{ home|tojson }}, null));
+</script>
 
 <section class="panel" id="import">
   <h2>Importer des palettes de Labs</h2>

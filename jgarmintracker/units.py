@@ -37,21 +37,24 @@ def mmss(seconds: float | None) -> str:
 
 
 def hmm(seconds: float | None) -> str:
-    """Durée -> « h:mm » (totaux)."""
+    """Durée totale -> « 3 h 56 », ou « 50 min » sous l'heure. Le « : » est réservé aux allures (4:21 /km)."""
     if seconds is None:
         return DASH
     minutes = round(seconds / 60)
-    return f"{minutes // 60}:{minutes % 60:02d}"
+    h, m = divmod(minutes, 60)
+    return f"{h} h {m:02d}" if h else f"{m} min"
 
 
 def hms(seconds: float | None) -> str:
-    """Durée d'une activité -> « h:mm:ss », ou « mm:ss » sous l'heure."""
+    """Durée d'une activité -> « 1 h 38 min 11 s », « 50 min 02 s » ou « 45 s »."""
     if seconds is None:
         return DASH
     total = round(seconds)
     h, rest = divmod(total, 3600)
     m, s = divmod(rest, 60)
-    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+    if h:
+        return f"{h} h {m:02d} min {s:02d} s"
+    return f"{m} min {s:02d} s" if m else f"{s} s"
 
 
 def pace_seconds(speed_ms: float | None, per_m: float = 1000) -> float | None:
