@@ -164,6 +164,11 @@ class Activity(Base):
     water_ml: Mapped[float | None] = mapped_column(Float, nullable=True)
     vo2max: Mapped[float | None] = mapped_column(Float, nullable=True)
     is_pr: Mapped[bool] = mapped_column(Boolean, default=False)  # record personnel selon Garmin
+    # 0.7.0 : vérifications. Une activité exclue reste dans la liste mais sort de toutes les statistiques.
+    excluded: Mapped[bool] = mapped_column(Boolean, default=False)
+    exclude_reason: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    ignore_max_speed: Mapped[bool] = mapped_column(Boolean, default=False)  # pointe GPS aberrante
+    review_ok: Mapped[bool] = mapped_column(Boolean, default=False)  # « c'est bien moi » : plus d'alerte
     raw_json: Mapped[str] = mapped_column(Text, default="{}")
     synced_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 

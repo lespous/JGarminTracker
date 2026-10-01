@@ -31,9 +31,16 @@
     </select>
   </label>
   <label>Tag
-    <select name="tag" onchange="this.form.submit()">
+    <select name="tag" onchange="this.form.submit()" aria-label="Tag">
       <option value="">Tous</option>
       {% for tg in tags %}<option value="{{ tg.id }}" {{ 'selected' if filter_tag and filter_tag.id == tg.id }}>{{ tg.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Statistiques
+    <select name="status" onchange="this.form.submit()">
+      <option value="">Toutes</option>
+      <option value="kept" {{ 'selected' if request.args.get('status') == 'kept' }}>Comptées</option>
+      <option value="excluded" {{ 'selected' if request.args.get('status') == 'excluded' }}>Exclues</option>
     </select>
   </label>
   <label>Distance min (km)<input name="dmin" inputmode="decimal" class="amount" value="{{ request.args.get('dmin', '') }}" placeholder="0"></label>
@@ -63,6 +70,11 @@
     <button name="action" value="add">Ajouter le tag</button>
     <button name="action" value="remove">Retirer le tag</button>
   </div>
+  <div class="bulk-group">
+    <input name="reason" placeholder="Raison, ex. Montre prêtée" maxlength="120" aria-label="Raison de l'exclusion">
+    <button name="action" value="exclude" formaction="{{ url_for('bulk_exclude') }}" title="Retirer des statistiques, des records et de la carte ; l'activité reste dans cette liste">Exclure des stats</button>
+    <button name="action" value="include" formaction="{{ url_for('bulk_exclude') }}">Réintégrer</button>
+  </div>
 </form>
 
 <div class="tbl">
@@ -74,7 +86,7 @@
   </tr></thead>
   <tbody>
   {% for a in rows %}
-    <tr class="{{ 'locked' if a.sport_locked }}">
+    <tr class="{{ 'locked' if a.sport_locked }} {{ 'excluded-row' if a.excluded }}">
       <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
       <td class="num">{{ a.start.strftime('%d/%m/%y') }}<div class="type-key">{{ a.start.strftime('%H:%M') }}</div></td>
       <td>
@@ -88,6 +100,7 @@
       <td class="name">
         <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
         <div class="labels"><span class="type-key">{{ a.type_key }}</span>
+          {% if a.excluded %}<span class="excluded-chip" title="Hors statistiques">exclue · {{ a.exclude_reason or 'à la main' }}</span>{% endif %}
           {% if a.track and a.track.n_points > 1 %}<a class="gpx-link" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Télécharger le parcours en GPX">GPX</a>{% endif %}
           {% for tg in a.tags %}
             <span class="tag-chip"><a href="{{ url_with(tag=tg.id) }}"># {{ tg.name }}</a>
@@ -99,7 +112,7 @@
       <td class="r num">{{ a.distance_m|km if a.distance_m else '—' }}</td>
       <td class="r num">{{ a.duration_s|hms }}</td>
       <td class="r num">{{ a.avg_speed|pace(a.sport.pace_unit if a.sport else 'none') }}</td>
-      <td class="r num muted">{{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}</td>
+      <td class="r num muted">{% if a.ignore_max_speed %}<span title="Pointe GPS ignorée : {{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}">—</span>{% else %}{{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}{% endif %}</td>
       <td class="r num">{{ a.avg_hr|round|int if a.avg_hr else '—' }}</td>
       <td class="r num">{{ a.elevation_gain_m|round|int if a.elevation_gain_m else '—' }}</td>
       <td class="how">

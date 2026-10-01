@@ -18,6 +18,12 @@
   <a class="btn" href="{{ request.referrer or url_for('activities') }}">Retour</a>
 </div>
 
+{% if a.excluded %}
+<form class="flash excluded-banner" method="post" action="{{ url_for('bulk_exclude') }}">
+  <span><b>Exclue des statistiques</b>{% if a.exclude_reason %} · {{ a.exclude_reason }}{% endif %} : elle ne compte ni dans le tableau de bord, ni dans la progression, les records ou la carte.</span>
+  <input type="hidden" name="act" value="{{ a.id }}"><button name="action" value="include">Réintégrer</button>
+</form>
+{% endif %}
 <section class="panel">
   <div class="metrics">
     <div class="metric"><small>Distance</small><b>{{ a.distance_m|km if a.distance_m else '—' }}</b></div>
@@ -25,7 +31,7 @@
     <div class="metric"><small>Durée en mouvement</small><b>{{ a.moving_s|hms }}</b></div>
     {% if a.elapsed_s and a.duration_s and a.elapsed_s - a.duration_s > 30 %}<div class="metric"><small>Durée écoulée (pauses comprises)</small><b>{{ a.elapsed_s|hms }}</b></div>{% endif %}
     <div class="metric"><small>{{ 'Vitesse moyenne' if unit == 'kmh' else 'Allure moyenne' }}</small><b>{{ a.avg_speed|pace(unit) }}</b></div>
-    {% if a.max_speed and unit != 'none' %}<div class="metric"><small>{{ 'Vitesse max' if unit == 'kmh' else 'Allure max' }}</small><b>{{ a.max_speed|pace(unit) }}</b></div>{% endif %}
+    {% if a.max_speed and unit != 'none' %}<div class="metric"><small>{{ 'Vitesse max' if unit == 'kmh' else 'Allure max' }}{{ ' (pointe GPS ignorée)' if a.ignore_max_speed }}</small><b>{{ a.max_speed|pace(unit) }}</b></div>{% endif %}
     {% if unit != 'kmh' and a.avg_speed %}<div class="metric"><small>Vitesse moyenne</small><b>{{ a.avg_speed|pace('kmh') }}</b></div>{% endif %}
     {% if unit != 'kmh' and a.max_speed %}<div class="metric"><small>Vitesse max</small><b>{{ a.max_speed|pace('kmh') }}</b></div>{% endif %}
     <div class="metric"><small>Dénivelé +</small><b>{{ a.elevation_gain_m|meters }}</b></div>

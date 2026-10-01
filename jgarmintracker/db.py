@@ -25,6 +25,11 @@ NEW_COLUMNS: dict[str, dict[str, str]] = {
         "lap_count": "INTEGER",
         "steps": "INTEGER",
         "is_pr": "BOOLEAN NOT NULL DEFAULT 0",
+        # 0.7.0 : vérifications
+        "excluded": "BOOLEAN NOT NULL DEFAULT 0",
+        "exclude_reason": "VARCHAR(120)",
+        "ignore_max_speed": "BOOLEAN NOT NULL DEFAULT 0",
+        "review_ok": "BOOLEAN NOT NULL DEFAULT 0",
     },
     "sync_runs": {"tracks_added": "INTEGER NOT NULL DEFAULT 0"},  # 0.3.0
 }

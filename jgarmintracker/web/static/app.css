@@ -296,3 +296,14 @@ table.cov .c { width: 6.5%; }
 .cell:hover { border-color: var(--accent); }
 .cell.picked { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cell.future { display: block; height: 30px; background: none; border: 1px dashed var(--line); cursor: default; }
+
+/* Vérifications (0.7.0) */
+tr.excluded-row td { opacity: .55; }
+tr.excluded-row td:first-child { opacity: 1; }
+.excluded-chip { font-size: .72rem; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.check-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.check-actions form { display: flex; gap: 4px; align-items: center; }
+.check-actions select { max-width: 150px; }
+.excluded-banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.limits-grid { display: grid; grid-template-columns: minmax(140px, 1fr) repeat(2, minmax(110px, 160px)); gap: 6px 12px; align-items: center; max-width: 620px; }
+.limits-grid .hd { font: 600 .72rem var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }

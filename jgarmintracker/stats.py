@@ -64,12 +64,18 @@ def linear_trend(xs: list[float], ys: list[float]) -> tuple[float, float] | None
 
 
 # ---------------------------------------------------------------- activités
-def activities_between(session: Session, start: date, end: date, sport_ids: list[int] | None = None) -> list[Activity]:
-    """Activités dont le début (heure locale) tombe entre start et end inclus."""
+def activities_between(session: Session, start: date, end: date, sport_ids: list[int] | None = None,
+                       include_excluded: bool = False) -> list[Activity]:
+    """Activités dont le début (heure locale) tombe entre start et end inclus.
+
+    Les activités exclues (montre prêtée, page Vérifications) sont écartées : elles ne comptent dans aucune statistique.
+    """
     stmt = select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family)).where(
         Activity.start >= datetime.combine(start, datetime.min.time()),
         Activity.start < datetime.combine(end + timedelta(days=1), datetime.min.time()),
     )
+    if not include_excluded:
+        stmt = stmt.where(Activity.excluded.is_(False))
     if sport_ids is not None:
         stmt = stmt.where(Activity.sport_id.in_(sport_ids))
     return list(session.scalars(stmt.order_by(Activity.start)).unique())
@@ -288,7 +294,7 @@ def records(activities: list[Activity], unit: str, min_pace_distance_m: float = 
     with_elev = [a for a in activities if a.elevation_gain_m]
     if with_elev:
         r.most_elevation = max(with_elev, key=lambda a: a.elevation_gain_m)
-    with_vmax = [a for a in activities if a.max_speed]
+    with_vmax = [a for a in activities if a.max_speed and not a.ignore_max_speed]  # pointes GPS ignorées
     if with_vmax and unit != "none":
         r.max_speed = max(with_vmax, key=lambda a: a.max_speed)
     for label, meters, attr in SPLITS:

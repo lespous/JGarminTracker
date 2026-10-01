@@ -77,6 +77,24 @@
 document.addEventListener("DOMContentLoaded", () => homePicker("home-map", {{ home|tojson }}, null));
 </script>
 
+<section class="panel" id="checks">
+  <h2>Vérifications</h2>
+  <p class="small">Limites utilisées par la page <a href="{{ url_for('checks_page') }}">Vérifications</a>. Allure au format <span class="mono">2:30</span> (par km ou par 100 m selon la famille), vitesse en km/h. Laisse vide pour ne pas contrôler.</p>
+  <form method="post" action="{{ url_for('settings_checks') }}" class="fam-block">
+    <div class="limits-grid">
+      <span class="hd">Famille</span><span class="hd">Moyenne la plus rapide</span><span class="hd">Pointe la plus rapide</span>
+      {% for r in check_rows %}
+        <span>{{ r.family.name }} <span class="muted small">({{ {'min_km': 'min/km', 'min_100m': 'min/100 m', 'kmh': 'km/h'}[r.unit] }})</span></span>
+        <input name="avg_{{ r.family.id }}" value="{{ r.avg }}" aria-label="{{ r.family.name }} : moyenne la plus rapide" placeholder="aucune limite">
+        <input name="max_{{ r.family.id }}" value="{{ r.max }}" aria-label="{{ r.family.name }} : pointe la plus rapide" placeholder="aucune limite">
+      {% endfor %}
+    </div>
+    <label style="max-width:360px">« Allure inhabituelle » : plus rapide que ta médiane du sport de (%)<input type="number" name="unusual_pct" min="5" max="200" value="{{ unusual_pct }}" required></label>
+    <div><button class="primary">Enregistrer</button></div>
+  </form>
+  <p class="note">La médiane se calcule sur au moins 5 sorties d'1 km ou plus du même sport.</p>
+</section>
+
 <section class="panel" id="import">
   <h2>Importer des palettes de Labs</h2>
   <p class="small">Tes palettes personnalisées de Labs sont dans la base MySQL du site (réglage <span class="mono">palettes</span>). Dans phpMyAdmin, lance

@@ -23,6 +23,8 @@ DEFAULTS = {
     "resync_days": 3,  # jours de santé re-synchronisés à chaque fois
     "auto_sync": False,  # synchro en arrière-plan au lancement de l'interface
     "home": None,  # [lat, lon] posé à la main ; None = déduit des départs (voir home())
+    "check_limits": {},  # {family_id: {avg, max}} en m/s ; vide = défauts de checks.py
+    "unusual_pct": 25,  # « allure inhabituelle » : % plus rapide que ta médiane
 }
 
 

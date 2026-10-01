@@ -28,7 +28,7 @@ from ..classifier import (
     reclassify,
     validate_rule,
 )
-from .. import settings, themes, tracks
+from .. import checks, settings, themes, tracks
 from ..models import PACE_UNITS, Activity, ActivityTrack, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
 from ..stats import (
     PERIODS,
@@ -203,6 +203,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         return {
             "url_with": url_with, "sync_running": job.running, "last_sync": last_run(s),
             "ui_layout": settings.get(s, "layout"), "ui_mode": mode if mode in settings.MODES else "system",
+            "checks_count": checks.count_issues(s) if request.endpoint not in ("sync_chip", "static") else 0,
             "theme_css": themes.theme_css(settings.active_palette(s), mode),
         }
 
@@ -223,7 +224,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "dashboard.html", wc=week_compare(s, t), volume=weekly_volume(s, t, 12, metric), metric=metric,
             health=health_series(s, t, 30), hs=health_summary(s, t, 7), today=t,
             recent=s.scalars(select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
-                             .order_by(Activity.start.desc()).limit(6)).all(),
+                             .where(Activity.excluded.is_(False)).order_by(Activity.start.desc()).limit(6)).all(),
         )
 
     # ---------------------------------------------------------------- activités
@@ -257,6 +258,10 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             stmt = stmt.where(Activity.rule_id == rid)
         if a.get("type"):
             stmt = stmt.where(Activity.type_key == a.get("type"))
+        if a.get("status") == "excluded":
+            stmt = stmt.where(Activity.excluded.is_(True))
+        elif a.get("status") == "kept":
+            stmt = stmt.where(Activity.excluded.is_(False))
         rows = s.scalars(stmt.order_by(Activity.start.desc())).unique().all()
         if q := fold(a.get("q")):
             rows = [r for r in rows if q in fold(f"{r.name} {r.type_key}")]
@@ -286,7 +291,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         stmt = (select(Activity, ActivityTrack.points_json)
                 .join(ActivityTrack, ActivityTrack.activity_id == Activity.id)
                 .options(joinedload(Activity.sport).joinedload(Sport.family))
-                .where(ActivityTrack.n_points > 1).order_by(Activity.start))
+                .where(ActivityTrack.n_points > 1, Activity.excluded.is_(False)).order_by(Activity.start))
         if months:
             start = add_months(today().replace(day=1), -(months - 1))
             stmt = stmt.where(Activity.start >= datetime.combine(start, datetime.min.time()))
@@ -361,6 +366,103 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s.commit()
         flash(message)
         return back()
+
+    # ---------------------------------------------------------------- vérifications et exclusions
+    @app.post("/activities/bulk/exclude")
+    def bulk_exclude():
+        """Exclure (ou réintégrer) des activités des statistiques : montre prêtée, sport faux…"""
+        s = db()
+        ids = [int(i) for i in request.form.getlist("act") if i.isdigit()]
+        if not ids:
+            flash("Coche au moins une activité.", "error")
+            return back()
+        action = request.form.get("action", "exclude")
+        reason = (request.form.get("reason") or "").strip()[:120] or None
+        acts = s.scalars(select(Activity).where(Activity.id.in_(ids))).all()
+        for act in acts:
+            if action == "include":
+                act.excluded, act.exclude_reason = False, None
+            else:
+                act.excluded, act.exclude_reason = True, reason or "Exclue à la main"
+        s.commit()
+        if action == "include":
+            flash(f"{len(acts)} activité(s) réintégrée(s) dans les statistiques.")
+        else:
+            flash(f"{len(acts)} activité(s) exclue(s) des statistiques{f' ({reason})' if reason else ''}. "
+                  "Elles restent dans la liste des activités.")
+        return back()
+
+    @app.post("/activities/<int:act_id>/review")
+    def activity_review(act_id: int):
+        """« C'est bien moi » : l'activité n'apparaît plus dans les vérifications."""
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        act.review_ok = request.form.get("ok", "1") == "1"
+        s.commit()
+        flash(f"« {act.name} » du {units.day(act.start)} : "
+              + ("vérifiée, plus d'alerte." if act.review_ok else "de nouveau vérifiée automatiquement."))
+        return back("checks_page")
+
+    @app.post("/activities/<int:act_id>/ignore-max")
+    def activity_ignore_max(act_id: int):
+        """Pointe de vitesse aberrante (saut de GPS) : ignorée dans les records et la colonne « Max »."""
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        act.ignore_max_speed = request.form.get("ignore", "1") == "1"
+        s.commit()
+        flash(f"« {act.name} » du {units.day(act.start)} : pointe de vitesse "
+              + ("ignorée." if act.ignore_max_speed else "de nouveau prise en compte."))
+        return back("checks_page")
+
+    @app.post("/activities/bulk/ignore-max")
+    def bulk_ignore_max():
+        s = db()
+        ids = [int(i) for i in request.form.getlist("act") if i.isdigit()]
+        acts = s.scalars(select(Activity).where(Activity.id.in_(ids))).all() if ids else []
+        for act in acts:
+            act.ignore_max_speed = True
+        s.commit()
+        if acts:
+            flash(f"Pointe de vitesse ignorée pour {len(acts)} activité(s). Elles comptent toujours dans les statistiques.")
+        else:
+            flash("Coche au moins une activité.", "error")
+        return back("checks_page")
+
+    @app.get("/checks")
+    def checks_page():
+        s = db()
+        found = checks.find_issues(s)
+        excluded = s.scalars(select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
+                             .where(Activity.excluded.is_(True)).order_by(Activity.start.desc())).unique().all()
+        ignored = s.scalars(select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
+                            .where(Activity.ignore_max_speed.is_(True)).order_by(Activity.start.desc())).unique().all()
+        reviewed = s.scalar(select(func.count(Activity.id)).where(Activity.review_ok.is_(True)))
+        return render_template("checks.html", found=found, excluded=excluded, ignored=ignored, reviewed=reviewed,
+                               families=load_families(s), pct=settings.get(s, "unusual_pct"))
+
+    @app.post("/settings/checks")
+    def settings_checks():
+        s = db()
+        out, errors = {}, []
+        for fam in load_families(s):
+            unit = checks.family_unit(fam)
+            if unit == "none":
+                continue
+            try:
+                out[str(fam.id)] = {k: checks.from_display(request.form.get(f"{k}_{fam.id}"), unit) for k in ("avg", "max")}
+            except ValueError:
+                errors.append(fam.name)
+        pct = request.form.get("unusual_pct", type=int)
+        if errors or not pct or not 5 <= pct <= 200:
+            flash("Valeurs illisibles"
+                  + (f" pour : {', '.join(errors)}" if errors else "")
+                  + ". Allure au format 2:30, vitesse en km/h, écart entre 5 et 200 %.", "error")
+            return redirect(url_for("settings_page") + "#checks")
+        settings.put(s, "check_limits", out)
+        settings.put(s, "unusual_pct", pct)
+        s.commit()
+        flash("Limites des vérifications enregistrées.")
+        return redirect(url_for("settings_page") + "#checks")
 
     @app.post("/activities/<int:act_id>/unlock")
     def unlock(act_id: int):
@@ -779,12 +881,21 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def settings_page():
         s = db()
         home, manual = settings.home(s)
+        lim = checks.limits(s)
+        check_rows = []
+        for fam in load_families(s):
+            unit = checks.family_unit(fam)
+            if unit != "none":
+                check_rows.append(SimpleNamespace(
+                    family=fam, unit=unit, avg=checks.to_display(lim[fam.id]["avg"], unit),
+                    max=checks.to_display(lim[fam.id]["max"], unit)))
         return render_template(
             "settings.html", palettes=settings.all_palettes(s), current=settings.get(s, "palette"),
             layout=settings.get(s, "layout"), mode=settings.get(s, "mode"), LAYOUTS=settings.LAYOUTS,
             MODES=settings.MODES, history_months=settings.get(s, "history_months"),
             resync_days=settings.get(s, "resync_days"), auto_sync=settings.get(s, "auto_sync"),
             confirm=request.args.get("confirm"), home=home, home_manual=manual,
+            check_rows=check_rows, unusual_pct=settings.get(s, "unusual_pct"),
         )
 
     @app.post("/settings/home")

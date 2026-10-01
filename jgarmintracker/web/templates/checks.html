@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Vérifications{% endblock %}
+{% set SECTIONS = [
+  ('impossible', 'Allure impossible pour le sport', "Plus rapide que la limite de la famille (réglable dans Paramètres) : souvent un trajet à vélo ou en voiture enregistré dans le mauvais sport."),
+  ('unusual', 'Allure inhabituelle pour toi', "Nettement plus rapide que tes sorties habituelles du même sport (" ~ pct ~ " % ou plus) : montre prêtée, ou vraie bonne journée."),
+  ('spike', 'Pointe de vitesse aberrante', "Vitesse max impossible pour le sport (limite réglable) : saut de GPS. La sortie est sans doute valable ; seule la pointe fausse « Max » et les records. Coche-les puis « Ignorer les pointes cochées »."),
+] %}
+{% macro sport_select(a) -%}
+  <select name="sport_id" aria-label="Nouveau sport">
+    {% for f in families %}<optgroup label="{{ f.name }}">
+      {% for sp in f.sports %}<option value="{{ sp.id }}" {{ 'selected' if sp.id == a.sport_id }}>{{ sp.label }}</option>{% endfor %}
+    </optgroup>{% endfor %}
+  </select>
+{%- endmacro %}
+{% block content %}
+<div class="head">
+  <h1>Vérifications</h1>
+  <span class="muted">{{ (found.impossible + found.unusual + found.spike)|length }} alerte(s) · {{ excluded|length }} activité(s) exclue(s){% if reviewed %} · {{ reviewed }} marquée(s) « c'est bien moi »{% endif %}</span>
+</div>
+
+<form id="bulk" class="bulk" method="post" action="{{ url_for('bulk_exclude') }}">
+  <span id="bulk-count" class="muted">Coche des activités pour les exclure des statistiques</span>
+  <div class="bulk-group">
+    <input name="reason" value="Montre prêtée" maxlength="120" aria-label="Raison de l'exclusion" style="min-width:200px">
+    <button class="primary" name="action" value="exclude">Exclure des statistiques</button>
+  </div>
+  <div class="bulk-group">
+    <button formaction="{{ url_for('bulk_ignore_max') }}" title="Pour les sauts de GPS : la sortie compte, sa pointe de vitesse est ignorée">Ignorer les pointes cochées</button>
+  </div>
+</form>
+<p class="note" style="margin:0">Une activité exclue reste dans la liste des activités (grisée, avec sa raison) mais ne compte plus nulle part : tableau de bord, progression, records, carte. Réversible ci-dessous.</p>
+
+{% for key, title, help in SECTIONS %}
+<section class="panel">
+  <h2>{{ title }} <small>{{ found[key]|length }}</small></h2>
+  <p class="note">{{ help }}</p>
+  {% if found[key] %}
+  <div class="tbl">
+  <table>
+    <thead><tr><th></th><th>Date</th><th>Sport</th><th>Activité</th><th class="r">Distance</th><th>Pourquoi</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for f in found[key] %}{% set a = f.activity %}
+      <tr>
+        <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
+        <td class="num">{{ a.start.strftime('%d/%m/%y') }}</td>
+        <td><span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color }}"></i>{{ a.sport.label }}</span></td>
+        <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a><div class="type-key">{{ a.type_key }}</div></td>
+        <td class="r num">{{ a.distance_m|km if a.distance_m else '—' }}</td>
+        <td class="small">{{ f.detail }}</td>
+        <td>
+          <div class="check-actions">
+            <form method="post" action="{{ url_for('bulk_exclude') }}"><input type="hidden" name="act" value="{{ a.id }}">
+              <input type="hidden" name="reason" value="{{ 'Pointe GPS' if key == 'spike' else 'Montre prêtée' if key == 'unusual' else 'Sport incorrect' }}">
+              <button name="action" value="exclude">Exclure</button></form>
+            {% if key == 'spike' %}
+            <form method="post" action="{{ url_for('activity_ignore_max', act_id=a.id) }}"><button class="primary">Ignorer la pointe</button></form>
+            {% else %}
+            <form method="post" action="{{ url_for('bulk_sport') }}" class="inline-sport"><input type="hidden" name="act" value="{{ a.id }}">
+              {{ sport_select(a) }}<button>Changer de sport</button></form>
+            {% endif %}
+            <form method="post" action="{{ url_for('activity_review', act_id=a.id) }}"><button class="linkish" title="L'alerte disparaît pour cette activité">C'est bien moi</button></form>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted small">Rien à signaler.</p>{% endif %}
+</section>
+{% endfor %}
+
+<section class="panel" id="excluded">
+  <h2>Activités exclues <small>{{ excluded|length }}</small></h2>
+  {% if excluded %}
+  <form method="post" action="{{ url_for('bulk_exclude') }}" id="include-form">
+    <div class="tbl">
+    <table>
+      <thead><tr><th><input type="checkbox" id="check-all-ex" aria-label="Tout cocher"></th><th>Date</th><th>Sport</th><th>Activité</th><th class="r">Distance</th><th class="r">Allure / vitesse</th><th>Raison</th></tr></thead>
+      <tbody>
+      {% for a in excluded %}
+        <tr class="excluded-row">
+          <td><input type="checkbox" name="act" value="{{ a.id }}" class="ex-check" aria-label="Sélectionner"></td>
+          <td class="num">{{ a.start.strftime('%d/%m/%y') }}</td>
+          <td>{{ a.sport.label if a.sport else '—' }}</td>
+          <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a></td>
+          <td class="r num">{{ a.distance_m|km if a.distance_m else '—' }}</td>
+          <td class="r num">{{ a.avg_speed|pace(a.sport.pace_unit if a.sport else 'none') }}</td>
+          <td class="small">{{ a.exclude_reason or '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div><button name="action" value="include">Réintégrer les activités cochées</button></div>
+  </form>
+  {% else %}<p class="muted small">Aucune. Coche des activités ci-dessus, ou dans la liste des activités, pour les exclure.</p>{% endif %}
+</section>
+
+{% if ignored %}
+<section class="panel">
+  <h2>Pointes de vitesse ignorées <small>{{ ignored|length }}</small></h2>
+  <div class="tbl">
+  <table>
+    <tbody>
+    {% for a in ignored %}
+      <tr><td class="num">{{ a.start.strftime('%d/%m/%y') }}</td>
+        <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a></td>
+        <td class="small">pointe ignorée : {{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'kmh') }}</td>
+        <td class="actions"><form method="post" action="{{ url_for('activity_ignore_max', act_id=a.id) }}"><input type="hidden" name="ignore" value="0"><button>La reprendre en compte</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<script>
+const checks = [...document.querySelectorAll(".act-check")];
+const countEl = document.getElementById("bulk-count");
+checks.forEach(c => c.addEventListener("change", () => {
+  const n = checks.filter(x => x.checked).length;
+  countEl.textContent = n ? `${n} activité${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""}` : "Coche des activités pour les exclure des statistiques";
+}));
+const all = document.getElementById("check-all-ex");
+if (all) all.addEventListener("change", () => document.querySelectorAll(".ex-check").forEach(c => { c.checked = all.checked; }));
+</script>
+{% endblock %}

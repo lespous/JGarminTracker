@@ -3,6 +3,20 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.7.0 — 2026-10-01
+
+### Ajouté
+- **Vérifications** (nouvel onglet, avec le nombre d'alertes dans la navigation) : repère les allures
+  impossibles pour le sport, les allures inhabituelles pour toi (nettement plus rapides que ta médiane du même
+  sport : montre prêtée…) et les pointes de vitesse aberrantes (sauts de GPS). Pour chaque alerte : exclure,
+  changer de sport, ignorer la pointe, ou « c'est bien moi ».
+- **Exclure des statistiques** (page Vérifications et en lot dans Activités, avec une raison) : l'activité
+  reste dans la liste, grisée avec un badge, mais sort du tableau de bord, de la progression, des records et
+  de la carte. Réversible (« Réintégrer »). Filtre « Statistiques : comptées / exclues » dans Activités.
+- **Pointe GPS ignorée** : la sortie compte, mais sa vitesse / allure max ne sert plus dans les records ni la
+  colonne « Max ». En lot : « Ignorer les pointes cochées ».
+- Paramètres : limites par famille (moyenne et pointe les plus rapides) et écart « inhabituel » (25 %).
+
 ## 0.6.1 — 2026-10-01
 
 ### Corrigé
