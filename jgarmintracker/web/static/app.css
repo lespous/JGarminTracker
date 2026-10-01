@@ -196,10 +196,17 @@ tr.locked td.how { color: var(--warn); }
 .record a { color: var(--muted); font-size: .82rem; }
 
 .fam-block { display: flex; flex-direction: column; gap: 6px; }
-.sport-row { display: grid; grid-template-columns: 42px minmax(120px, 1fr) 150px 150px 60px auto; gap: 8px; align-items: center; }
-.sport-row input[type=color] { width: 42px; height: 32px; padding: 2px; }
-.sport-row .count { font: .8rem var(--mono); color: var(--muted); text-align: right; }
-@media (max-width: 760px) { .sport-row { grid-template-columns: 42px 1fr; } }
+/* Ligne d'un sport : passe à la ligne au lieu de déborder quand le panneau est étroit (colonne de navigation). */
+.sport-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sport-row input[type=color] { width: 42px; height: 32px; padding: 2px; flex: none; }
+.sport-row input[name=name] { flex: 1 1 130px; min-width: 0; }
+.sport-row select { flex: 0 1 150px; min-width: 0; }
+.sport-row .count { font: .8rem var(--mono); color: var(--muted); text-align: right; min-width: 3ch; }
+.sport-row .actions { margin-left: auto; min-width: 190px; align-items: center; }  /* même largeur, « par défaut » compris */
+.sport-row .actions > span { width: 88px; text-align: center; }
+.add-sport .actions { justify-content: flex-start; align-self: end; }
+.sports-layout { grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); }
+@media (max-width: 1300px) { .sports-layout { grid-template-columns: minmax(0, 1fr); } }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
 .progress-bar { height: 10px; background: var(--soft); border-radius: 5px; overflow: hidden; }

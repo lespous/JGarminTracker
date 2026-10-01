@@ -3,6 +3,14 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.6.1 — 2026-10-01
+
+### Corrigé
+- Page Sports : les boutons « Enregistrer » / « Supprimer » débordaient du panneau en disposition colonne.
+  Les lignes passent à la ligne quand la place manque ; les types Garmin passent sous la liste sur écran moyen.
+- Graphiques : lissage des courbes sans dépassement ; durée mensuelle de Progression en segments droits.
+- CSS et JavaScript revalidés à chaque chargement : une mise à jour de l'appli s'applique sans vider le cache.
+
 ## 0.6.0 — 2026-10-01
 
 ### Ajouté

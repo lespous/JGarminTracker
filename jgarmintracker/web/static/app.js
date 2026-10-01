@@ -28,6 +28,8 @@ function baseOptions(extra = {}) {
       y: { ticks: { color: muted }, grid: { color: grid } },
     },
     plugins: { legend: { labels: { color: ink, boxWidth: 12 } } },
+    // Lissage qui ne dépasse jamais les valeurs réelles (pas de courbe sous zéro entre deux points).
+    elements: { line: { cubicInterpolationMode: "monotone" } },
     ...extra,
   };
 }

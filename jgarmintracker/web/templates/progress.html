@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     data: { labels: m.labels, datasets: [
       { label: "Distance", data: m.distance, backgroundColor: cssVar("--accent"), yAxisID: "y", order: 2 },
       { type: "line", label: "Durée", data: m.duration, borderColor: cssVar("--warn"), backgroundColor: cssVar("--warn"),
-        yAxisID: "y2", tension: .3, pointRadius: 3, order: 1 },
+        yAxisID: "y2", tension: 0, pointRadius: 3, order: 1 },
     ] },
   }, {
     scales: {

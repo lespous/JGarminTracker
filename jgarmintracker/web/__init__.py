@@ -167,6 +167,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     app.secret_key = os.environ.get("JGARMIN_SECRET") or os.urandom(16)
     app.config.setdefault("SYNC_SOURCE", garmin_source)
     app.config.setdefault("SYNC_INLINE", False)
+    # CSS / JS revalidés à chaque chargement : une mise à jour de l'appli s'applique sans vider le cache.
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     if init:
         dbm.init_db(db_path)
     job = SyncJob()

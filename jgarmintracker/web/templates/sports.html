@@ -7,7 +7,7 @@
   <form method="post" action="{{ url_for('rules_reapply') }}"><button>Réappliquer toutes les règles</button></form>
 </div>
 
-<div class="grid2">
+<div class="grid2 sports-layout">
   <section class="panel">
     <h2>Familles et sports</h2>
     <p class="muted small">La couleur sert dans tous les graphiques. L'unité décide de l'affichage de l'allure (min/km, km/h, min/100 m).</p>
@@ -40,7 +40,7 @@
     </div>
     {% endfor %}
     <h2>Ajouter un sport</h2>
-    <form class="rule-form" method="post" action="{{ url_for('sport_add') }}">
+    <form class="rule-form add-sport" method="post" action="{{ url_for('sport_add') }}">
       <label>Nom<input name="name" required placeholder="ex. Ski de fond"></label>
       <label>Famille
         <select name="family_id">{% for f in families %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select></label>
