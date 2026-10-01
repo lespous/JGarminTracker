@@ -57,6 +57,13 @@ def test_parse_labs_import():
             themes.parse_import(bad)
 
 
+def test_old_right_column_setting_becomes_left(session):
+    settings.put(session, "layout", "col_right")
+    assert settings.get(session, "layout") == "col_left"
+    settings.put(session, "layout", "n'importe quoi")
+    assert settings.get(session, "layout") == "header"
+
+
 def test_custom_palettes_crud(session):
     done, skipped = settings.import_palettes(session, LABS_JSON)
     assert done == ["Océan", "Ancienne"] and not skipped
@@ -122,14 +129,14 @@ def test_gpx_download(client):
 def test_appearance_applies_to_every_page(client):
     html = client.get("/").get_data(as_text=True)
     assert 'data-mode="system"' in html and "layout-header" in html and "#2a6b62" in html
-    client.post("/settings/appearance", data={"layout": "col_right", "mode": "dark", "palette": "Forêt"})
+    client.post("/settings/appearance", data={"layout": "col_left", "mode": "dark", "palette": "Forêt"})
     html = client.get("/activities").get_data(as_text=True)
-    assert 'data-mode="dark"' in html and "layout-col_right" in html and "#5cc98f" in html
+    assert 'data-mode="dark"' in html and "layout-col_left" in html and "#5cc98f" in html
     client.post("/settings/mode/toggle", data={"shown": "dark"})
     assert 'data-mode="light"' in client.get("/").get_data(as_text=True)
     client.post("/settings/appearance", data={"layout": "pirate", "palette": "Inconnue"})  # valeurs ignorées
     html = client.get("/").get_data(as_text=True)
-    assert "layout-col_right" in html and "#1f7a4d" in html
+    assert "layout-col_left" in html and "#1f7a4d" in html
 
 
 def test_palette_editor_and_import(client):

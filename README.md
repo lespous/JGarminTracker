@@ -80,7 +80,7 @@ depuis le tracé en base (latitude et longitude seulement).
 
 ## Paramètres
 
-Onglet **Paramètres** : disposition (en-tête ou colonne à droite), palette (Sarcelle et les 8 palettes de
+Onglet **Paramètres** : disposition (en-tête ou colonne à gauche), palette (Sarcelle et les 8 palettes de
 Labs), mode clair / sombre / selon Windows, palettes personnalisées et réglages de synchro, enregistrés dans
 `jgarmin.db`.
 

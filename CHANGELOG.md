@@ -3,13 +3,19 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.4.1 — 2026-10-01
+
+### Modifié
+- Disposition en colonne : la navigation est maintenant fixée **à gauche** (comme « Colonne » de Labs) au lieu
+  de la droite. Un réglage « colonne à droite » déjà enregistré passe automatiquement à gauche.
+
 ## 0.4.0 — 2026-10-01
 
 ### Ajouté
 - **GPX** : bouton « Télécharger le GPX » dans la fiche et lien « GPX » sur chaque ligne de la liste. Parcours à
   suivre (latitude, longitude), fabriqué depuis le tracé en base : instantané, sans appel à Garmin.
 - **Paramètres** (nouvel onglet) :
-  - disposition « En-tête » ou « Colonne à droite » (navigation fixe à droite, en-tête sur écran étroit) ;
+  - disposition « En-tête » ou en colonne (voir 0.4.1) ;
   - palette : Sarcelle (celle de JBudget) et les 8 palettes de Labs, 8 couleurs en clair et 8 en sombre ;
   - mode clair, sombre ou selon Windows, plus un bouton soleil / lune dans la navigation ;
   - palettes personnalisées : éditeur des 16 couleurs avec aperçu et vérification des contrastes, import du

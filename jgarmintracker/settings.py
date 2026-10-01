@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from . import themes
 from .models import Setting
 
-LAYOUTS = {"header": "En-tête", "col_right": "Colonne à droite"}
+LAYOUTS = {"header": "En-tête", "col_left": "Colonne à gauche"}
 MODES = {"system": "Selon Windows", "light": "Clair", "dark": "Sombre"}
 
 DEFAULTS = {
@@ -30,9 +30,13 @@ def get(session: Session, name: str):
     if row is None:
         return DEFAULTS[name]
     try:
-        return json.loads(row.value)
+        value = json.loads(row.value)
     except ValueError:
         return DEFAULTS[name]
+    if name == "layout":
+        value = {"col_right": "col_left"}.get(value, value)  # 0.4.0 proposait la colonne à droite
+        return value if value in LAYOUTS else DEFAULTS[name]
+    return value
 
 
 def put(session: Session, name: str, value) -> None:
