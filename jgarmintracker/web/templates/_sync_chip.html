@@ -1,0 +1,12 @@
+{% if sync_running %}
+  <span class="sync-chip" hx-get="{{ url_for('sync_chip') }}" hx-trigger="every 3s" hx-target="#sync-chip" hx-swap="innerHTML">
+    <span class="dot running"></span> <a href="{{ url_for('sync_page') }}">Synchro en cours…</a></span>
+{% else %}
+  <form class="sync-chip" method="post" action="{{ url_for('sync_start') }}">
+    <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') if request.endpoint != 'sync_chip' else url_for('dashboard') }}">
+    {% if last_sync %}<span class="dot {{ 'error' if last_sync.status == 'error' }}"></span>
+      <a href="{{ url_for('sync_page') }}" title="Voir le journal des synchros">{{ last_sync.started_at.strftime('%d/%m %H:%M') }}{{ ' · erreur' if last_sync.status == 'error' }}</a>
+    {% else %}<span class="dot error"></span> <a href="{{ url_for('sync_page') }}">Jamais synchronisé</a>{% endif %}
+    <button class="linkish" type="submit" title="Récupérer ce qui est nouveau chez Garmin depuis la dernière synchro">Synchroniser</button>
+  </form>
+{% endif %}

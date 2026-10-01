@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% macro swatch(c) -%}
+  <span class="swatch">{% for k in ('bg', 'tile', 'surface', 'fg') %}<i style="background: {{ c[k] }}"></i>{% endfor %}<i class="acc" style="background: {{ c.accent }}"></i></span>
+{%- endmacro %}
+{% block content %}
+<div class="head"><h1>Paramètres</h1></div>
+
+<section class="panel" id="appearance">
+  <h2>Apparence</h2>
+  <form method="post" action="{{ url_for('settings_appearance') }}" class="fam-block" style="gap:18px">
+    <div class="fam-block">
+      <h3 class="small muted">DISPOSITION</h3>
+      <div class="seg">
+        {% for k, v in LAYOUTS.items() %}<label><input type="radio" name="layout" value="{{ k }}" {{ 'checked' if layout == k }}> {{ v }}</label>{% endfor %}
+      </div>
+      <p class="note">« Colonne à droite » : navigation et état de la synchro fixés à droite (comme « Colonne » de Labs, côté opposé). Sur un écran étroit, elle redevient un en-tête.</p>
+    </div>
+    <div class="fam-block">
+      <h3 class="small muted">MODE</h3>
+      <div class="seg">
+        {% for k, v in MODES.items() %}<label><input type="radio" name="mode" value="{{ k }}" {{ 'checked' if mode == k }}> {{ v }}</label>{% endfor %}
+      </div>
+      <p class="note">Le bouton soleil / lune de la barre de navigation bascule aussi entre clair et sombre.</p>
+    </div>
+    <div class="fam-block" id="palettes">
+      <h3 class="small muted">PALETTE</h3>
+      <div class="pal-grid">
+        {% for name, p in palettes.items() %}
+        <label class="pal-card">
+          <span class="top"><input type="radio" name="palette" value="{{ name }}" {{ 'checked' if name == current }}><b>{{ name }}</b>
+            <span class="tag">{{ 'perso' if p.id else ('JBudget' if name == 'Sarcelle' else 'Labs') }}</span></span>
+          {{ swatch(p.light) }}{{ swatch(p.dark) }}
+          <span class="acts">
+            {% if p.id %}<a href="{{ url_for('palette_form', pal_id=p.id) }}">Modifier</a>
+              <a class="danger" href="{{ url_for('settings_page', confirm=p.id) }}#palettes">Supprimer</a>
+            {% else %}<a href="{{ url_for('palette_form') }}?base={{ name|urlencode }}">Partir de celle-ci</a>{% endif %}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="note">Première rangée de chaque palette : mode clair ; seconde : mode sombre (fond, cartes, zones en retrait, texte, accent). Les couleurs des sports dans les graphiques ne changent pas.</p>
+    </div>
+    <div class="actions" style="justify-content:flex-start">
+      <button class="primary">Appliquer</button>
+      <a class="btn" href="{{ url_for('palette_form') }}">Nouvelle palette</a>
+    </div>
+  </form>
+  {% for name, p in palettes.items() if p.id and confirm == p.id %}
+  <form class="confirm" method="post" action="{{ url_for('palette_delete', pal_id=p.id) }}">
+    <span>Supprimer la palette « {{ name }} » ?{% if name == current %} Elle est utilisée : l'appli repassera sur « Sarcelle ».{% endif %}</span>
+    <div class="actions"><a class="btn" href="{{ url_for('settings_page') }}#palettes">Annuler</a><button class="primary">Supprimer</button></div>
+  </form>
+  {% endfor %}
+</section>
+
+<section class="panel" id="import">
+  <h2>Importer des palettes de Labs</h2>
+  <p class="small">Tes palettes personnalisées de Labs sont dans la base MySQL du site (réglage <span class="mono">palettes</span>). Dans phpMyAdmin, lance
+    <span class="mono">SELECT value FROM settings WHERE name = 'palettes';</span>
+    (ajoute le préfixe des tables s'il y en a un, par ex. <span class="mono">sp_settings</span>), copie la valeur et colle-la ci-dessous.</p>
+  <p class="note">Accepte la liste telle que stockée par Labs (<span class="mono">[{"id", "name", "light": {…}, "dark": {…}}]</span>) ou une seule palette. Une palette déjà importée du même nom est mise à jour.</p>
+  <form method="post" action="{{ url_for('palette_import') }}" class="fam-block">
+    <textarea class="json" name="json" required placeholder='[{"id": "ma-palette-1a2b", "name": "Ma palette", "light": {"bg": "#…", …}, "dark": {…}}]' aria-label="JSON des palettes"></textarea>
+    <div><button class="primary">Importer</button></div>
+  </form>
+</section>
+
+<section class="panel" id="sync">
+  <h2>Synchronisation</h2>
+  <form method="post" action="{{ url_for('settings_sync') }}" class="rule-form">
+    <label>Historique au premier lancement (mois)<input type="number" name="history_months" min="1" max="120" value="{{ history_months }}" required></label>
+    <label>Jours de santé re-synchronisés à chaque fois<input type="number" name="resync_days" min="1" max="60" value="{{ resync_days }}" required></label>
+    <label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="auto_sync" {{ 'checked' if auto_sync }}> Synchroniser au lancement de jgarmin.bat</label>
+    <div class="actions" style="justify-content:flex-start"><button class="primary">Enregistrer</button></div>
+  </form>
+  <p class="note">L'historique sert aussi à « Relire les N derniers mois ». Garmin complète les nuits et les résumés après coup : 3 jours suffisent en général. La synchro au lancement tourne en arrière-plan ; l'interface est utilisable tout de suite.</p>
+</section>
+{% endblock %}

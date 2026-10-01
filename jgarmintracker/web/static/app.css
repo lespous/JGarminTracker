@@ -1,3 +1,5 @@
+/* Couleurs : valeurs de secours (palette Sarcelle, clair). Le thème choisi dans Paramètres les remplace
+   par le <style id="theme"> de base.html (voir themes.py), clair, sombre ou selon Windows. */
 :root {
   --bg: #F3F5F6; --surface: #FFFFFF; --ink: #18212B; --muted: #5A6572; --line: #D9DFE4; --soft: #EBEFF1;
   --accent: #2A6B62; --accent-ink: #FFFFFF; --accent-soft: #DCEBE7;
@@ -5,14 +7,6 @@
   --body: "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #12181D; --surface: #1A2229; --ink: #E4EAEE; --muted: #98A5B0; --line: #2C3740; --soft: #222C34;
-    --accent: #6FC0B2; --accent-ink: #0F1A18; --accent-soft: #1E3A36;
-    --out: #E08A82; --in: #7CC99A; --warn: #E0B060; --warn-soft: #3A3020; --err-soft: #3E2422;
-    color-scheme: dark;
-  }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
@@ -232,3 +226,55 @@ td.preview svg { display: block; background: var(--soft); border-radius: 4px; }
 td.preview path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .topbar { z-index: 1000; }  /* au-dessus des calques Leaflet */
+
+/* ---------------------------------------------------------------- 0.4.0 : synchro, thème, disposition */
+.bar-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.sync-chip { margin-left: 0; }
+form.sync-chip { display: flex; gap: 6px; align-items: center; }
+.sync-chip a { color: var(--muted); text-decoration: none; }
+.sync-chip a:hover { color: var(--ink); text-decoration: underline; }
+.icon-btn { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border-radius: 50%; }
+.icon-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.icon-btn .moon { display: none; }
+.is-dark .icon-btn .sun { display: none; }
+.is-dark .icon-btn .moon { display: block; }
+.gpx-link { font: 600 .7rem var(--mono); padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); text-decoration: none; }
+.gpx-link:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Colonne à droite : navigation fixe à droite, contenu à gauche ; redevient un en-tête sous 1024 px. */
+@media (min-width: 1024px) {
+  body.layout-col_right { display: grid; grid-template-columns: minmax(0, 1fr) 250px; min-height: 100vh; }
+  body.layout-col_right .topbar { grid-column: 2; grid-row: 1; position: sticky; top: 0; height: 100vh;
+    flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 22px; padding: 28px 20px;
+    border-bottom: 0; border-left: 1px solid var(--line); overflow-y: auto; }
+  body.layout-col_right .topbar nav { flex-direction: column; gap: 2px; }
+  body.layout-col_right .bar-tools { margin: auto 0 0; flex-direction: column; align-items: flex-start; gap: 12px; }
+  body.layout-col_right form.sync-chip { flex-wrap: wrap; }
+  body.layout-col_right main { grid-column: 1; grid-row: 1; width: 100%; }
+  body.layout-col_right .brand { font-size: 1.25rem; }
+}
+
+/* Paramètres */
+.pal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.pal-card { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--surface); cursor: pointer; color: var(--ink); font-size: .9rem; }
+.pal-card:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pal-card .top { display: flex; gap: 8px; align-items: center; }
+.pal-card .top input { accent-color: var(--accent); }
+.pal-card .top .tag { margin-left: auto; font: .68rem var(--mono); color: var(--muted); }
+.swatch { display: flex; height: 18px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.swatch i { flex: 1; } .swatch i.acc { flex: 1.6; }
+.pal-card .acts { display: flex; gap: 10px; font-size: .8rem; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg label { flex-direction: row; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line);
+  border-radius: 999px; color: var(--ink); font-size: .9rem; cursor: pointer; }
+.seg label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.color-grid { display: grid; grid-template-columns: minmax(150px, 1fr) repeat(2, 110px); gap: 6px 12px; align-items: center; }
+.color-grid .hd { font: 600 .72rem var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.color-grid input[type=color] { width: 100%; height: 32px; padding: 2px; }
+.pal-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pal-preview > div { border-radius: 8px; padding: 12px; border: 1px solid; display: flex; flex-direction: column; gap: 6px; font-size: .85rem; }
+.pal-preview .card { border-radius: 6px; padding: 8px 10px; border: 1px solid; }
+.pal-preview .btnx { align-self: flex-start; padding: 3px 10px; border-radius: 5px; font-weight: 600; }
+textarea.json { width: 100%; min-height: 120px; font: .8rem/1.4 var(--mono); padding: 8px; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--bg); color: var(--ink); }

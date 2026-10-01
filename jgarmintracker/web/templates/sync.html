@@ -13,12 +13,22 @@
       <div class="flash error">Pas de session Garmin sur ce PC. Ouvre PowerShell dans le dossier de JGarminTracker et lance
         <code>.venv\Scripts\jgarmin login</code> : l'e-mail, le mot de passe et le code MFA éventuel se tapent là, jamais dans le navigateur.</div>
     {% endif %}
-    <p class="muted small">Récupère les nouvelles activités et les données santé des 3 derniers jours (Garmin complète les nuits après coup).
-      Le premier lancement récupère 12 mois : compte quelques minutes, la page suit l'avancement.</p>
+    {% if last_ok %}
+    <p class="small">Ce qui sera récupéré :</p>
+    <ul class="small">
+      <li>les activités depuis le <b>{{ plan.activities|day }}</b> (veille de la dernière activité connue) ;</li>
+      <li>la santé jour par jour depuis le <b>{{ plan.health|day }}</b> : les jours manquants depuis la dernière synchro, plus les {{ plan.days }} derniers jours que Garmin complète après coup ;</li>
+      <li>{% if plan.tracks %}les tracés GPS de <b>{{ plan.tracks }}</b> sortie(s) qui n'en ont pas encore{% else %}les tracés GPS des nouvelles sorties{% endif %}.</li>
+    </ul>
+    {% else %}
+    <p class="muted small">Premier lancement : récupère {{ plan.months }} mois d'activités, de santé et de tracés. Compte quelques minutes, la page suit l'avancement.</p>
+    {% endif %}
     <form method="post" action="{{ url_for('sync_start') }}" class="filters">
-      <button class="primary" {{ 'disabled' if job.running }}>Synchroniser maintenant</button>
-      <label class="check" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="full"> Relire les 12 derniers mois</label>
+      <button class="primary" {{ 'disabled' if job.running }}>{% if last_ok %}Synchroniser depuis le {{ last_ok.started_at.strftime('%d/%m à %H:%M') }}{% else %}Synchroniser maintenant{% endif %}</button>
+      <label class="check" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="full"> Relire les {{ plan.months }} derniers mois</label>
     </form>
+    <p class="note">Le lien « Synchroniser » de la barre de navigation fait la même chose depuis n'importe quelle page.
+      Historique et nombre de jours : page <a href="{{ url_for('settings_page') }}#sync">Paramètres</a>.</p>
     <div id="sync-status" hx-get="{{ url_for('sync_status') }}" hx-trigger="load" hx-swap="innerHTML"></div>
   </section>
   <section class="panel">

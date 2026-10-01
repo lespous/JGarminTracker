@@ -13,7 +13,7 @@ from rich.table import Table
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
-from . import __version__, units
+from . import __version__, settings, units
 from . import db as dbm
 from .classifier import reclassify as reclassify_all
 from .models import Activity, DailyHealth, Sport, SportFamily
@@ -84,9 +84,9 @@ def logout():
 
 @app.command()
 def sync(
-    days: Annotated[int, typer.Option(help="Re-synchroniser au moins les N derniers jours")] = 3,
+    days: Annotated[Optional[int], typer.Option(help="Re-synchroniser au moins les N derniers jours (défaut : Paramètres, 3)")] = None,
     full: Annotated[bool, typer.Option("--full", help="Relire tout l'historique (--months)")] = False,
-    months: Annotated[int, typer.Option(help="Historique du premier lancement ou de --full, en mois")] = 12,
+    months: Annotated[Optional[int], typer.Option(help="Historique du premier lancement ou de --full, en mois (défaut : Paramètres, 12)")] = None,
 ):
     """Récupérer les nouvelles activités et les données santé. Incrémental par défaut."""
     from .garmin import GarminSource, SyncError
@@ -112,6 +112,8 @@ def sync(
             desc = f"{label} · {units.day(p.day)}" if p.day else label
             bar.update(tasks[p.step], completed=p.done, total=p.total or None, description=desc)
 
+        days = days or settings.get(s, "resync_days")
+        months = months or settings.get(s, "history_months")
         run = run_sync(s, source, full=full, days=days, history_days=round(months * 30.44), progress=on_progress)
     summary = (f"{run.activities_added} activité(s) ajoutée(s), {run.activities_updated} mise(s) à jour ; "
                f"{run.days_added} jour(s) ajouté(s), {run.days_updated} mis à jour ; {run.tracks_added} tracé(s) GPS.")
@@ -229,4 +231,16 @@ def serve(
                       f"Choisis-en un autre : jgarmin serve --port {port + 1}")
         raise typer.Exit(1)
     console.print(f"JGarminTracker {__version__} : http://{host}:{port}")
-    create_app(init=False).run(host=host, port=port, debug=debug)
+    web = create_app(init=False)
+    with dbm.new_session() as s:
+        auto = settings.get(s, "auto_sync")
+    if auto:
+        from .garmin import has_tokens
+        from .web import garmin_source
+
+        if has_tokens():
+            web.extensions["sync_job"].start(garmin_source)
+            console.print("Synchro au lancement : en cours en arrière-plan (voir la page Synchronisation).")
+        else:
+            console.print("[yellow]Synchro au lancement ignorée : pas de session Garmin (lance `jgarmin login`).[/yellow]")
+    web.run(host=host, port=port, debug=debug)

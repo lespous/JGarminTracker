@@ -75,6 +75,19 @@ qui superpose tous les parcours (filtres sport et période).
 Le fond de carte vient d'OpenStreetMap (tuiles chargées depuis internet : le serveur voit la zone affichée,
 jamais tes tracés). Leaflet 1.9.4 est copié dans `static/`. Les tracés restent dans `jgarmin.db`.
 
+Bouton « Télécharger le GPX » (fiche et liste) : le parcours à suivre dans une appli de navigation, fabriqué
+depuis le tracé en base (latitude et longitude seulement).
+
+## Paramètres
+
+Onglet **Paramètres** : disposition (en-tête ou colonne à droite), palette (Sarcelle et les 8 palettes de
+Labs), mode clair / sombre / selon Windows, palettes personnalisées et réglages de synchro, enregistrés dans
+`jgarmin.db`.
+
+Importer les palettes personnalisées de Labs : dans phpMyAdmin,
+`SELECT value FROM settings WHERE name = 'palettes';` (avec le préfixe des tables s'il y en a un), puis coller
+le JSON dans « Importer des palettes de Labs ».
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, h:mm)

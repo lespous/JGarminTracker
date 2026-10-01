@@ -88,6 +88,7 @@
       <td class="name">
         <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
         <div class="labels"><span class="type-key">{{ a.type_key }}</span>
+          {% if a.track and a.track.n_points > 1 %}<a class="gpx-link" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Télécharger le parcours en GPX">GPX</a>{% endif %}
           {% for tg in a.tags %}
             <span class="tag-chip"><a href="{{ url_with(tag=tg.id) }}"># {{ tg.name }}</a>
               <form class="inline" method="post" action="{{ url_for('tag_remove', act_id=a.id, tag_id=tg.id) }}">

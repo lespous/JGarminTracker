@@ -3,6 +3,22 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.4.0 — 2026-10-01
+
+### Ajouté
+- **GPX** : bouton « Télécharger le GPX » dans la fiche et lien « GPX » sur chaque ligne de la liste. Parcours à
+  suivre (latitude, longitude), fabriqué depuis le tracé en base : instantané, sans appel à Garmin.
+- **Paramètres** (nouvel onglet) :
+  - disposition « En-tête » ou « Colonne à droite » (navigation fixe à droite, en-tête sur écran étroit) ;
+  - palette : Sarcelle (celle de JBudget) et les 8 palettes de Labs, 8 couleurs en clair et 8 en sombre ;
+  - mode clair, sombre ou selon Windows, plus un bouton soleil / lune dans la navigation ;
+  - palettes personnalisées : éditeur des 16 couleurs avec aperçu et vérification des contrastes, import du
+    JSON des palettes de Labs (copié depuis phpMyAdmin) ;
+  - synchro : historique du premier lancement, jours re-synchronisés, synchro au lancement de `jgarmin.bat`.
+- **Synchro** : le bouton dit depuis quand il synchronise et ce qu'il va chercher (activités, jours de santé,
+  tracés manquants) ; l'indicateur de la barre de navigation lance une synchro depuis n'importe quelle page.
+- `jgarmin sync` prend ses valeurs par défaut dans les Paramètres.
+
 ## 0.3.0 — 2026-10-01
 
 ### Ajouté

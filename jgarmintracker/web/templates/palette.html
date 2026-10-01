@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Palette : ' ~ pal.name if pal.id else 'Nouvelle palette' }}{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>{{ 'Palette « ' ~ pal.name ~ ' »' if pal.id else 'Nouvelle palette' }}</h1>
+  {% if not pal.id and pal.base %}<span class="muted">à partir de « {{ pal.base }} »</span>{% endif %}
+  <div class="spacer"></div>
+  <a class="btn" href="{{ url_for('settings_page') }}#palettes">Retour aux paramètres</a>
+</div>
+
+<form method="post" action="{{ url_for('palette_save') }}" id="pal-form">
+  {% if pal.id %}<input type="hidden" name="id" value="{{ pal.id }}">{% endif %}
+  <div class="grid2">
+    <section class="panel">
+      <label>Nom<input name="name" value="{{ pal.name }}" required maxlength="60" placeholder="ex. Course du matin"></label>
+      <div class="color-grid">
+        <span></span><span class="hd">Clair</span><span class="hd">Sombre</span>
+        {% for k, label in KEYS.items() %}
+          <span>{{ label }}</span>
+          <input type="color" name="light_{{ k }}" value="{{ pal.light[k] }}" aria-label="{{ label }}, mode clair">
+          <input type="color" name="dark_{{ k }}" value="{{ pal.dark[k] }}" aria-label="{{ label }}, mode sombre">
+        {% endfor %}
+      </div>
+      <label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="activate" {{ 'checked' if not pal.id }}> Utiliser cette palette</label>
+      <div class="actions" style="justify-content:flex-start"><button class="primary">Enregistrer</button></div>
+    </section>
+    <section class="panel">
+      <h2>Aperçu</h2>
+      <div class="pal-preview" id="preview">
+        {% for m in ('light', 'dark') %}
+        <div data-mode="{{ m }}">
+          <b>{{ 'Clair' if m == 'light' else 'Sombre' }}</b>
+          <div class="card"><span data-role="fg">Distance · semaine</span><br><span data-role="muted">sem. préc. 71,5 km</span></div>
+          <span class="btnx">Synchroniser</span>
+          <span data-role="soft" style="padding:4px 8px;border-radius:5px">Zone en retrait</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% if warnings %}
+        {% for w in warnings %}<div class="flash error small">{{ w }}</div>{% endfor %}
+      {% else %}<p class="note">Contrastes vérifiés (texte, texte secondaire, texte sur l'accent) : lisibles dans les deux modes.</p>{% endif %}
+      <p class="note">La vérification des contrastes est refaite à l'enregistrement.</p>
+    </section>
+  </div>
+</form>
+<script>
+// Aperçu en direct des 16 couleurs, sans enregistrer.
+const form = document.getElementById("pal-form");
+function paint() {
+  for (const box of document.querySelectorAll("#preview > div")) {
+    const m = box.dataset.mode, v = (k) => form.elements[`${m}_${k}`].value;
+    Object.assign(box.style, { background: v("bg"), color: v("fg"), borderColor: v("line") });
+    const card = box.querySelector(".card");
+    Object.assign(card.style, { background: v("tile"), borderColor: v("line") });
+    box.querySelector('[data-role="muted"]').style.color = v("muted");
+    Object.assign(box.querySelector(".btnx").style, { background: v("accent"), color: v("accent_fg") });
+    Object.assign(box.querySelector('[data-role="soft"]').style, { background: v("surface") });
+  }
+}
+form.addEventListener("input", paint);
+paint();
+</script>
+{% endblock %}

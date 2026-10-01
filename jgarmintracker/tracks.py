@@ -61,6 +61,32 @@ def preview_path(points: list[Point], w: int = PREVIEW_W, h: int = PREVIEW_H, pa
     return "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in coords)
 
 
+def to_gpx(points: list[Point], name: str, kind: str = "") -> str:
+    """GPX 1.1 d'un parcours à suivre : un tracé (trk) avec latitude et longitude seulement.
+
+    Pas d'heure ni de FC : le fichier sert à refaire le parcours dans une appli de suivi de traces.
+    """
+    from xml.sax.saxutils import escape
+
+    pts = "\n".join(f'      <trkpt lat="{lat:.5f}" lon="{lon:.5f}"/>' for lat, lon in points)
+    type_line = f"\n    <type>{escape(kind)}</type>" if kind else ""
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<gpx version="1.1" creator="JGarminTracker" xmlns="http://www.topografix.com/GPX/1/1">\n'
+        f"  <metadata><name>{escape(name)}</name></metadata>\n"
+        f"  <trk>\n    <name>{escape(name)}</name>{type_line}\n    <trkseg>\n{pts}\n    </trkseg>\n  </trk>\n</gpx>\n"
+    )
+
+
+def gpx_filename(day, name: str) -> str:
+    """« 2026-09-29 Mons Cyclisme.gpx » sans caractères interdits par Windows."""
+    import re
+
+    clean = re.sub(r'[\\/:*?"<>|\r\n\t]+', " ", name or "parcours")
+    clean = " ".join(clean.split())[:80] or "parcours"
+    return f"{day:%Y-%m-%d} {clean}.gpx"
+
+
 def dumps(points: list[Point]) -> str:
     return json.dumps([list(p) for p in points], separators=(",", ":"))
 

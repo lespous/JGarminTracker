@@ -7,7 +7,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
-from flask import Flask, abort, flash, g, redirect, render_template, request, url_for
+from urllib.parse import quote
+
+from flask import Flask, Response, abort, flash, g, redirect, render_template, request, url_for
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -25,7 +27,7 @@ from ..classifier import (
     reclassify,
     validate_rule,
 )
-from .. import tracks
+from .. import settings, themes, tracks
 from ..models import PACE_UNITS, Activity, ActivityTrack, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
 from ..stats import (
     SPLITS,
@@ -40,7 +42,7 @@ from ..stats import (
     week_compare,
     weekly_volume,
 )
-from ..sync import Progress, last_run, sync as run_sync
+from ..sync import Progress, last_run, missing_tracks, plan as sync_plan, sync as run_sync
 
 SOURCES = {"rule": "règle", "manual": "manuel", "fallback": "par défaut"}
 ORIGINS = {"seed": "départ", "learned": "apprise", "manual": "manuelle"}
@@ -126,10 +128,16 @@ class SyncJob:
                               finished_at=datetime.now()))
                 s.commit()
                 return
-            run_sync(s, source, full=full, progress=self._on_progress)
+            run_sync(s, source, full=full, progress=self._on_progress, **sync_options(s))
 
     def _on_progress(self, p: Progress):
         self.progress = p
+
+
+def sync_options(s) -> dict:
+    """Jours re-synchronisés et historique, d'après la page Paramètres."""
+    return {"days": settings.get(s, "resync_days"),
+            "history_days": round(settings.get(s, "history_months") * 30.44)}
 
 
 def garmin_source():
@@ -171,7 +179,13 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             return url_for(request.endpoint, **(request.view_args or {}),
                            **{k: v for k, v in args.items() if v not in (None, "")})
 
-        return {"url_with": url_with, "sync_running": job.running, "last_sync": last_run(db())}
+        s = db()
+        mode = settings.get(s, "mode")
+        return {
+            "url_with": url_with, "sync_running": job.running, "last_sync": last_run(s),
+            "ui_layout": settings.get(s, "layout"), "ui_mode": mode if mode in settings.MODES else "system",
+            "theme_css": themes.theme_css(settings.active_palette(s), mode),
+        }
 
     def today() -> date:
         return date.today()
@@ -633,9 +647,16 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
 
         s = db()
         runs = s.scalars(select(SyncRun).order_by(SyncRun.id.desc()).limit(20)).all()
-        return render_template("sync.html", runs=runs, has_tokens=has_tokens(), tokens_dir=tokens_dir(), job=job,
-                               n_acts=s.scalar(select(func.count(Activity.id))),
-                               n_days=s.scalar(select(func.count()).select_from(DailyHealth)))
+        opts = sync_options(s)
+        act_start, health_start = sync_plan(s, today(), False, **opts)
+        return render_template(
+            "sync.html", runs=runs, has_tokens=has_tokens(), tokens_dir=tokens_dir(), job=job,
+            n_acts=s.scalar(select(func.count(Activity.id))),
+            n_days=s.scalar(select(func.count()).select_from(DailyHealth)),
+            last_ok=s.scalar(select(SyncRun).where(SyncRun.status == "ok").order_by(SyncRun.id.desc()).limit(1)),
+            plan=SimpleNamespace(activities=act_start, health=health_start, tracks=len(missing_tracks(s)),
+                                 days=opts["days"], months=settings.get(s, "history_months")),
+        )
 
     @app.post("/sync")
     def sync_start():
@@ -643,10 +664,144 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                             inline=app.config["SYNC_INLINE"])
         if not started:
             flash("Une synchro est déjà en cours.", "error")
+        nxt = request.form.get("next", "")
+        if nxt.startswith("/") and not nxt.startswith("//"):  # depuis la barre de navigation : on reste sur la page
+            if started:
+                flash("Synchro lancée. L'indicateur de la barre de navigation montre son avancement.")
+            return redirect(nxt)
         return redirect(url_for("sync_page"))
 
     @app.get("/sync/status")
     def sync_status():
         return render_template("_sync_status.html", job=job, run=last_run(db()))
+
+    @app.get("/sync/chip")
+    def sync_chip():
+        return render_template("_sync_chip.html")
+
+    # ---------------------------------------------------------------- GPX
+    @app.get("/activities/<int:act_id>.gpx")
+    def activity_gpx(act_id: int):
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        if not act.track or act.track.n_points < 2:
+            abort(404)
+        body = tracks.to_gpx(tracks.loads(act.track.points_json), act.name or "Parcours",
+                             act.sport.label if act.sport else "")
+        filename = tracks.gpx_filename(act.start, act.name)
+        return Response(body, mimetype="application/gpx+xml", headers={
+            "Content-Disposition": f"attachment; filename=\"{filename.encode('ascii', 'replace').decode()}\"; "
+                                   f"filename*=UTF-8''{quote(filename)}",
+        })
+
+    # ---------------------------------------------------------------- paramètres
+    @app.get("/settings")
+    def settings_page():
+        s = db()
+        return render_template(
+            "settings.html", palettes=settings.all_palettes(s), current=settings.get(s, "palette"),
+            layout=settings.get(s, "layout"), mode=settings.get(s, "mode"), LAYOUTS=settings.LAYOUTS,
+            MODES=settings.MODES, history_months=settings.get(s, "history_months"),
+            resync_days=settings.get(s, "resync_days"), auto_sync=settings.get(s, "auto_sync"),
+            confirm=request.args.get("confirm"),
+        )
+
+    @app.post("/settings/appearance")
+    def settings_appearance():
+        s = db()
+        f = request.form
+        if f.get("layout") in settings.LAYOUTS:
+            settings.put(s, "layout", f["layout"])
+        if f.get("mode") in settings.MODES:
+            settings.put(s, "mode", f["mode"])
+        if f.get("palette") in settings.all_palettes(s):
+            settings.put(s, "palette", f["palette"])
+        s.commit()
+        flash("Apparence enregistrée.")
+        return back("settings_page")
+
+    @app.post("/settings/mode/toggle")
+    def settings_mode_toggle():
+        """Bouton soleil / lune : bascule entre clair et sombre (en partant du mode affiché)."""
+        s = db()
+        shown = request.form.get("shown")
+        settings.put(s, "mode", "light" if shown == "dark" else "dark")
+        s.commit()
+        return back("dashboard")
+
+    @app.post("/settings/sync")
+    def settings_sync():
+        s = db()
+        f = request.form
+        months, days = f.get("history_months", type=int), f.get("resync_days", type=int)
+        if not months or not 1 <= months <= 120 or not days or not 1 <= days <= 60:
+            flash("Historique entre 1 et 120 mois, re-synchronisation entre 1 et 60 jours.", "error")
+            return redirect(url_for("settings_page") + "#sync")
+        settings.put(s, "history_months", months)
+        settings.put(s, "resync_days", days)
+        settings.put(s, "auto_sync", f.get("auto_sync") == "on")
+        s.commit()
+        flash("Réglages de synchro enregistrés.")
+        return redirect(url_for("settings_page") + "#sync")
+
+    @app.get("/settings/palettes/new")
+    @app.get("/settings/palettes/<pal_id>")
+    def palette_form(pal_id: str | None = None):
+        s = db()
+        pals = settings.all_palettes(s)
+        if pal_id:
+            pal = next((dict(p, name=n) for n, p in pals.items() if p["id"] == pal_id), None) or abort(404)
+        else:
+            base = request.args.get("base") if request.args.get("base") in pals else settings.get(s, "palette")
+            pal = dict(pals.get(base) or pals[themes.DEFAULT_PALETTE], name="", id=None, base=base)
+        return render_template("palette.html", pal=pal, KEYS=themes.KEYS,
+                               warnings=themes.contrast_warnings(themes.normalize(pal)))
+
+    @app.post("/settings/palettes/save")
+    def palette_save():
+        s = db()
+        f = request.form
+        colors = {m: {k: f.get(f"{m}_{k}", "") for k in themes.KEYS} for m in ("light", "dark")}
+        pal_id = f.get("id") or None
+        try:
+            pal_id = settings.save_palette(s, f.get("name", ""), colors, pal_id)
+        except themes.PaletteError as e:
+            flash(str(e), "error")
+            return redirect(request.referrer or url_for("settings_page"))
+        if f.get("activate") == "on":
+            settings.put(s, "palette", f.get("name", "").strip()[:60])
+        s.commit()
+        pal = themes.normalize(colors)
+        for w in themes.contrast_warnings(pal):
+            flash(w, "error")
+        flash(f"Palette « {f.get('name', '').strip()} » enregistrée.")
+        return redirect(url_for("palette_form", pal_id=pal_id))
+
+    @app.post("/settings/palettes/<pal_id>/delete")
+    def palette_delete(pal_id: str):
+        s = db()
+        name = settings.delete_palette(s, pal_id)
+        s.commit()
+        if name:
+            flash(f"Palette « {name} » supprimée.")
+        else:
+            flash("Palette introuvable.", "error")
+        return redirect(url_for("settings_page") + "#palettes")
+
+    @app.post("/settings/palettes/import")
+    def palette_import():
+        s = db()
+        try:
+            done, skipped = settings.import_palettes(s, request.form.get("json", ""))
+        except themes.PaletteError as e:
+            s.rollback()
+            flash(f"Import impossible : {e}", "error")
+            return redirect(url_for("settings_page") + "#import")
+        s.commit()
+        msg = f"{len(done)} palette(s) importée(s) : {', '.join(done)}." if done else "Aucune palette importée."
+        if skipped:
+            msg += f" Ignorée(s), car déjà fournie(s) : {', '.join(skipped)}."
+        flash(msg)
+        return redirect(url_for("settings_page") + "#palettes")
 
     return app

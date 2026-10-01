@@ -1,0 +1,122 @@
+"""Réglages enregistrés dans la base (table settings), avec leurs valeurs par défaut."""
+
+from __future__ import annotations
+
+import json
+import re
+import unicodedata
+
+from sqlalchemy.orm import Session
+
+from . import themes
+from .models import Setting
+
+LAYOUTS = {"header": "En-tête", "col_right": "Colonne à droite"}
+MODES = {"system": "Selon Windows", "light": "Clair", "dark": "Sombre"}
+
+DEFAULTS = {
+    "layout": "header",
+    "palette": themes.DEFAULT_PALETTE,
+    "mode": "system",
+    "palettes": [],  # palettes personnalisées : [{id, name, light, dark}], même format que Labs
+    "history_months": 12,  # premier lancement et « relire tout »
+    "resync_days": 3,  # jours de santé re-synchronisés à chaque fois
+    "auto_sync": False,  # synchro en arrière-plan au lancement de l'interface
+}
+
+
+def get(session: Session, name: str):
+    row = session.get(Setting, name)
+    if row is None:
+        return DEFAULTS[name]
+    try:
+        return json.loads(row.value)
+    except ValueError:
+        return DEFAULTS[name]
+
+
+def put(session: Session, name: str, value) -> None:
+    if name not in DEFAULTS:
+        raise KeyError(name)
+    row = session.get(Setting, name)
+    text = json.dumps(value, ensure_ascii=False)
+    if row is None:
+        session.add(Setting(name=name, value=text))
+    else:
+        row.value = text
+
+
+def all_palettes(session: Session) -> dict[str, dict]:
+    """Palettes fournies puis personnalisées : {nom: {light, dark, id (None si fournie)}}."""
+    out = {name: {**p, "id": None} for name, p in themes.PALETTES.items()}
+    for p in get(session, "palettes"):
+        out[p["name"]] = {**themes.normalize(p), "id": p["id"]}
+    return out
+
+
+def active_palette(session: Session) -> dict:
+    pals = all_palettes(session)
+    return pals.get(get(session, "palette")) or pals[themes.DEFAULT_PALETTE]
+
+
+def _slug(name: str) -> str:
+    text = unicodedata.normalize("NFD", name).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", text).strip("-") or "palette"
+
+
+def save_palette(session: Session, name: str, colors: dict, pal_id: str | None = None) -> str:
+    """Crée ou met à jour une palette personnalisée. Renvoie son id. Lève PaletteError si invalide."""
+    name = name.strip()[:60]
+    if not name:
+        raise themes.PaletteError("Donne un nom à la palette.")
+    if name in themes.PALETTES:
+        raise themes.PaletteError(f"« {name} » est le nom d'une palette fournie. Choisis-en un autre.")
+    customs = list(get(session, "palettes"))
+    if any(p["name"].casefold() == name.casefold() and p["id"] != pal_id for p in customs):
+        raise themes.PaletteError(f"Une palette s'appelle déjà « {name} ».")
+    colors = themes.normalize(colors, strict=True)
+    old = next((p for p in customs if p["id"] == pal_id), None)
+    entry = {"id": pal_id or _new_id(name, customs), "name": name, **colors}
+    if old:
+        customs[customs.index(old)] = entry
+        if get(session, "palette") == old["name"]:  # palette active renommée : on suit
+            put(session, "palette", name)
+    else:
+        customs.append(entry)
+    put(session, "palettes", customs)
+    return entry["id"]
+
+
+def _new_id(name: str, customs: list[dict]) -> str:
+    base, n = _slug(name), 1
+    ids = {p["id"] for p in customs}
+    while f"{base}-{n}" in ids:
+        n += 1
+    return f"{base}-{n}"
+
+
+def delete_palette(session: Session, pal_id: str) -> str | None:
+    customs = list(get(session, "palettes"))
+    victim = next((p for p in customs if p["id"] == pal_id), None)
+    if victim is None:
+        return None
+    customs.remove(victim)
+    put(session, "palettes", customs)
+    if get(session, "palette") == victim["name"]:
+        put(session, "palette", themes.DEFAULT_PALETTE)
+    return victim["name"]
+
+
+def import_palettes(session: Session, text: str) -> tuple[list[str], list[str]]:
+    """Importe le JSON de Labs. Renvoie (ajoutées ou mises à jour, ignorées car homonymes d'une palette fournie)."""
+    done, skipped = [], []
+    customs = {p["name"].casefold(): p for p in get(session, "palettes")}
+    for p in themes.parse_import(text):
+        if p["name"] in themes.PALETTES:
+            skipped.append(p["name"])
+            continue
+        existing = customs.get(p["name"].casefold())
+        save_palette(session, p["name"], p, existing["id"] if existing else None)
+        customs = {q["name"].casefold(): q for q in get(session, "palettes")}
+        done.append(p["name"])
+    return done, skipped

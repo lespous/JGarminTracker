@@ -1,28 +1,33 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-mode="{{ ui_mode }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}JGarminTracker{% endblock %} · JGarminTracker</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <style id="theme">{{ theme_css|safe }}</style>
   <script src="{{ url_for('static', filename='htmx.min.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="layout-{{ ui_layout }}">
 <header class="topbar">
   <a class="brand" href="{{ url_for('dashboard') }}">JGarminTracker <span class="version">v{{ VERSION }}</span></a>
   <nav>
-    {% set sections = {'activity_detail': 'activities'} %}
-    {% for ep, label in [('dashboard','Tableau de bord'), ('activities','Activités'), ('progress','Progression'), ('map_page','Carte'), ('health','Santé'), ('sports','Sports'), ('tags_page','Tags'), ('sync_page','Synchronisation')] %}
+    {% set sections = {'activity_detail': 'activities', 'palette_form': 'settings_page'} %}
+    {% for ep, label in [('dashboard','Tableau de bord'), ('activities','Activités'), ('progress','Progression'), ('map_page','Carte'), ('health','Santé'), ('sports','Sports'), ('tags_page','Tags'), ('sync_page','Synchronisation'), ('settings_page','Paramètres')] %}
       <a href="{{ url_for(ep) }}" class="{{ 'on' if request.endpoint == ep or sections.get(request.endpoint) == ep }}">{{ label }}</a>
     {% endfor %}
   </nav>
-  <a class="sync-chip" href="{{ url_for('sync_page') }}">
-    {% if sync_running %}<span class="dot running"></span> Synchro en cours…
-    {% elif last_sync %}<span class="dot {{ 'error' if last_sync.status == 'error' }}"></span>
-      Synchro {{ last_sync.started_at.strftime('%d/%m %H:%M') }}{{ ' · erreur' if last_sync.status == 'error' }}
-    {% else %}<span class="dot error"></span> Jamais synchronisé{% endif %}
-  </a>
+  <div class="bar-tools">
+    <div id="sync-chip">{% include "_sync_chip.html" %}</div>
+    <form method="post" action="{{ url_for('settings_mode_toggle') }}" id="mode-toggle">
+      <input type="hidden" name="shown" value="">
+      <button class="icon-btn" type="submit" title="Basculer clair / sombre" aria-label="Basculer entre mode clair et mode sombre">
+        <svg class="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+      </button>
+    </form>
+  </div>
 </header>
 <main>
   {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -30,5 +35,14 @@
   {% endwith %}
   {% block content %}{% endblock %}
 </main>
+<script>
+// Mode réellement affiché (en mode « Selon Windows », dépend du système) : sert au bouton soleil / lune.
+(() => {
+  const root = document.documentElement;
+  const dark = root.dataset.mode === "dark" || (root.dataset.mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  root.classList.toggle("is-dark", dark);
+  document.querySelector('#mode-toggle input[name="shown"]').value = dark ? "dark" : "light";
+})();
+</script>
 </body>
 </html>

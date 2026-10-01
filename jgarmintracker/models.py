@@ -40,6 +40,16 @@ class AppliedUpgrade(Base):
     applied_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
+class Setting(Base):
+    """Réglages de l'interface et de la synchro (0.4.0) : une valeur JSON par nom. Voir settings.py."""
+
+    __tablename__ = "settings"
+
+    name: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, default="null")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
 class SportFamily(Base):
     __tablename__ = "sport_families"
 
