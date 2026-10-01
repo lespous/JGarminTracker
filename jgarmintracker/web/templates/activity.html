@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import friend_avatar %}
 {% block title %}{{ a.name }}{% endblock %}
 {% block head %}{% if points %}
 <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
@@ -143,6 +144,20 @@ document.addEventListener("DOMContentLoaded", () => trackMap("track-map", {{ poi
     </form>
   </section>
 </div>
+
+<section class="panel" id="friends">
+  <h2>Avec qui</h2>
+  {% if all_friends %}
+  <form method="post" action="{{ url_for('activity_friends_save', act_id=a.id) }}" class="fam-block">
+    <div class="friend-picks">
+      {% for fr in all_friends %}
+      <label class="friend-pick"><input type="checkbox" name="friend" value="{{ fr.id }}" {{ 'checked' if fr in a.friends }}>{{ friend_avatar(fr, 32) }}<span>{{ fr.name }}</span></label>
+      {% endfor %}
+    </div>
+    <div><button class="primary">Enregistrer</button> <a class="btn" href="{{ url_for('friends_page') }}">Ajouter un ami</a></div>
+  </form>
+  {% else %}<p class="muted small">Aucun ami enregistré. <a href="{{ url_for('friends_page') }}">Ajoute les personnes avec qui tu cours</a>, puis coche-les ici.</p>{% endif %}
+</section>
 
 <details class="panel">
   <summary>Données brutes reçues de Garmin (JSON)</summary>

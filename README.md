@@ -89,6 +89,12 @@ Importer les palettes personnalisées de Labs : dans phpMyAdmin,
 `SELECT value FROM settings WHERE name = 'palettes';` (avec le préfixe des tables s'il y en a un), puis coller
 le JSON dans « Importer des palettes de Labs ».
 
+## Amis et profil
+
+Onglet **Amis** : les personnes avec qui tu fais certaines sorties (photo facultative), à cocher dans la fiche
+d'une activité (« Avec qui »). Page **Profil** (lien en haut de la navigation) : identité, mesures, zones cardio et
+bilan de carrière. Les photos sont réduites à 256 px et gardées dans `jgarmin.db` : jamais dans Git.
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)

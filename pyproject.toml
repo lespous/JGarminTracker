@@ -13,6 +13,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "flask>=3.0",
     "garminconnect==0.3.17",
+    "pillow>=12",
 ]
 
 [project.optional-dependencies]

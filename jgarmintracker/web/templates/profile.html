@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar %}
+{% block title %}Profil{% endblock %}
+{% block content %}
+<div class="head person-head">
+  {{ avatar(prof, url_for('profile_photo'), 88, prof.display_name) }}
+  <div>
+    <h1>{{ (prof.first_name ~ ' ' ~ prof.last_name).strip() or 'Mon profil' }}</h1>
+    <span class="muted">{% if age %}{{ age }} ans{% endif %}{% if prof.city %} · {{ prof.city }}{% endif %}{% if prof.club %} · {{ prof.club }}{% endif %}</span>
+  </div>
+</div>
+
+<section class="panel">
+  <h2>Bilan depuis {{ car.first.start|day if car.first else 'le début' }}</h2>
+  <div class="kpis">
+    <div class="kpi"><small>Sorties</small><b>{{ car.totals.count|number }}</b></div>
+    <div class="kpi"><small>Distance</small><b>{{ car.totals.distance_m|km(0) }}</b></div>
+    <div class="kpi"><small>Temps</small><b>{{ car.totals.duration_s|hmm }}</b></div>
+    <div class="kpi"><small>Dénivelé +</small><b>{{ car.totals.elevation_m|meters }}</b></div>
+    <div class="kpi"><small>Semaines actives</small><b>{{ car.active_weeks }}</b><span class="sub">plus longue série : {{ car.best_streak }} semaines d'affilée</span></div>
+    <div class="kpi"><small>Série en cours</small><b>{{ car.current_streak }}</b><span class="sub">semaine(s) d'affilée avec au moins une sortie</span></div>
+  </div>
+  {% if car.families %}
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Famille</th><th class="r">Sorties</th><th class="r">Distance</th><th class="r">Temps</th><th>Plus longue sortie</th><th>Meilleure allure / vitesse moyenne</th></tr></thead>
+    <tbody>
+    {% for row in car.families %}
+      <tr>
+        <td><span class="sport-chip"><i class="ph ph-{{ row.family.icon or 'pulse' }} sicon" aria-hidden="true"></i>{{ row.family.name }}</span></td>
+        <td class="r num">{{ row.totals.count|number }}</td>
+        <td class="r num">{{ row.totals.distance_m|km(0) if row.totals.distance_m else '—' }}</td>
+        <td class="r num">{{ row.totals.duration_s|hmm }}</td>
+        <td>{% if row.records.longest %}<a href="{{ url_for('activity_detail', act_id=row.records.longest.id) }}">{{ row.records.longest.distance_m|km }}</a> <span class="muted small">{{ row.records.longest.start|day }}</span>{% else %}—{% endif %}</td>
+        <td>{% if row.records.best_pace %}<a href="{{ url_for('activity_detail', act_id=row.records.best_pace.id) }}">{{ row.records.best_pace.avg_speed|pace(row.unit) }}</a> <span class="muted small">{{ row.records.best_pace.start|day }}</span>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Activités exclues des statistiques non comptées. Records : sortie de plus de 5 km pour l'allure (1 km en natation).</p>
+  {% endif %}
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Identité et mesures</h2>
+    <form class="rule-form" method="post" action="{{ url_for('profile_save') }}" enctype="multipart/form-data">
+      <label>Prénom<input name="first_name" value="{{ prof.first_name }}" maxlength="80"></label>
+      <label>Nom<input name="last_name" value="{{ prof.last_name }}" maxlength="80"></label>
+      <label>Surnom (navigation)<input name="nickname" value="{{ prof.nickname }}" maxlength="40"></label>
+      <label>Date de naissance<input type="date" name="birth_date" value="{{ prof.birth_date.isoformat() if prof.birth_date else '' }}" max="{{ today.isoformat() }}"></label>
+      <label>Sexe<select name="sex"><option value="">—</option><option value="F" {{ 'selected' if prof.sex == 'F' }}>Femme</option><option value="H" {{ 'selected' if prof.sex == 'H' }}>Homme</option></select></label>
+      <label>Ville<input name="city" value="{{ prof.city }}" maxlength="80"></label>
+      <label class="wide">Club<input name="club" value="{{ prof.club }}" maxlength="120"></label>
+      <label>Taille (cm)<input name="height_cm" inputmode="decimal" value="{{ prof.height_cm|number if prof.height_cm else '' }}"></label>
+      <label>Poids (kg)<input name="weight_kg" inputmode="decimal" value="{{ prof.weight_kg|number(1) if prof.weight_kg else '' }}"></label>
+      <label>FC max (bpm)<input name="max_hr" inputmode="numeric" value="{{ prof.max_hr or '' }}"></label>
+      <label>FC de repos (bpm)<input name="rest_hr" inputmode="numeric" value="{{ prof.rest_hr or '' }}"></label>
+      <label class="wide">{{ 'Remplacer la photo' if prof.has_photo else 'Photo' }}<input type="file" name="photo" accept="image/*"></label>
+      {% if prof.has_photo %}<label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="remove_photo"> Retirer la photo</label>{% endif %}
+      <div class="actions" style="justify-content:flex-start;align-self:end"><button class="primary">Enregistrer</button></div>
+    </form>
+    <p class="note">Tout reste dans ta base locale. La photo est recadrée en carré et réduite (256 px).</p>
+  </section>
+
+  <section class="panel">
+    <h2>Repères</h2>
+    <div class="metrics">
+      <div class="metric"><small>Âge</small><b>{{ age ~ ' ans' if age else '—' }}</b></div>
+      <div class="metric"><small>IMC</small><b>{{ bmi|number(1) if bmi else '—' }}</b></div>
+      <div class="metric"><small>FC max</small><b>{{ prof.max_hr|bpm if prof.max_hr else ((zones[-1][2]|bpm) ~ ' (estimée)' if zones else '—') }}</b></div>
+      <div class="metric"><small>Réserve cardiaque</small><b>{{ ((prof.max_hr or (zones[-1][2] if zones else 0)) - prof.rest_hr)|bpm if prof.rest_hr and (prof.max_hr or zones) else '—' }}</b></div>
+    </div>
+    {% if zones %}
+    <h2>Zones cardio <small>{{ 'FC max estimée : 220 − âge' if zones_estimated else 'd\'après ta FC max' }}</small></h2>
+    <div class="zones-bar" aria-hidden="true">{% for z in zones %}<i class="z{{ loop.index }}" style="width:20%"></i>{% endfor %}</div>
+    <table class="zones">
+      <tbody>
+      {% for label, lo, hi in zones %}
+        <tr><td><i class="sdot z{{ loop.index }}"></i>Zone {{ loop.index }} · {{ label }}</td><td class="r num">{{ lo }} – {{ hi }} bpm</td>
+          <td class="r num muted">{{ 50 + 10 * loop.index0 }}–{{ 60 + 10 * loop.index0 }} %</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="note">Découpage en % de la FC max, comme Garmin par défaut. Les zones mesurées dans tes sorties restent celles de ta montre.</p>
+    {% else %}<p class="muted small">Indique ta FC max ou ta date de naissance pour afficher tes zones cardio.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

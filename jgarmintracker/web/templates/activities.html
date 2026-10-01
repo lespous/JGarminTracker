@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import friend_avatar %}
 {% block title %}Activités{% endblock %}
 {% macro sport_options(families, selected=None) -%}
   {% for f in families %}<optgroup label="{{ f.name }}">
@@ -10,6 +11,7 @@
   <h1>Activités</h1>
   {% if sel %}<span class="chip on">{{ sel_label }} <a href="{{ url_with(sport='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if filter_tag %}<span class="chip on"># {{ filter_tag.name }} <a href="{{ url_with(tag='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
+  {% if filter_friend %}<span class="chip on">Avec {{ filter_friend.name }} <a href="{{ url_with(friend='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if filter_rule %}<span class="chip on">Règle #{{ filter_rule.id }} <a href="{{ url_with(rule='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if request.args.get('type') %}<span class="chip on">Type {{ request.args.get('type') }} <a href="{{ url_with(type='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   <div class="spacer"></div>
@@ -36,6 +38,12 @@
       {% for tg in tags %}<option value="{{ tg.id }}" {{ 'selected' if filter_tag and filter_tag.id == tg.id }}>{{ tg.name }}</option>{% endfor %}
     </select>
   </label>
+  {% if friends %}<label>Avec
+    <select name="friend" onchange="this.form.submit()">
+      <option value="">Tout le monde</option>
+      {% for fr in friends %}<option value="{{ fr.id }}" {{ 'selected' if filter_friend and filter_friend.id == fr.id }}>{{ fr.name }}</option>{% endfor %}
+    </select>
+  </label>{% endif %}
   <label>Statistiques
     <select name="status" onchange="this.form.submit()">
       <option value="">Toutes</option>
@@ -100,6 +108,7 @@
       <td class="name">
         <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
         <div class="labels"><span class="type-key">{{ a.type_key }}</span>
+          {% for fr in a.friends %}<a class="friend-mini" href="{{ url_for('friend_detail', friend_id=fr.id) }}">{{ friend_avatar(fr, 20) }}</a>{% endfor %}
           {% if a.excluded %}<span class="excluded-chip" title="Hors statistiques">exclue · {{ a.exclude_reason or 'à la main' }}</span>{% endif %}
           {% if a.track and a.track.n_points > 1 %}<a class="gpx-link" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Télécharger le parcours en GPX">GPX</a>{% endif %}
           {% for tg in a.tags %}

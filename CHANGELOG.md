@@ -3,6 +3,19 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.9.0 — 2026-10-01
+
+### Ajouté
+- **Amis** (nouvel onglet) : prénom, nom, note et photo ; fiche par ami avec sorties ensemble, distance et
+  temps partagés, sports pratiqués ensemble. Dans la fiche d'une activité, section « Avec qui » pour cocher
+  une ou plusieurs personnes. Dans Activités : petites photos des amis sur chaque ligne et filtre « Avec ».
+- **Profil** (lien avec ta photo et ton surnom dans la navigation) : identité, date de naissance, ville, club,
+  taille, poids, FC max et de repos ; âge, IMC, réserve cardiaque et zones cardio (FC max estimée si absente) ;
+  bilan depuis la première activité (totaux, semaines actives, plus longue série et série en cours, plus
+  longue sortie et meilleure allure par famille).
+- Photos recadrées en carré et réduites à 256 px (bibliothèque Pillow), gardées dans `jgarmin.db` :
+  jamais dans Git. Sans photo : initiales sur une couleur propre à chaque personne.
+
 ## 0.8.0 — 2026-10-01
 
 ### Ajouté

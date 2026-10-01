@@ -28,10 +28,26 @@ from ..classifier import (
     reclassify,
     validate_rule,
 )
-from .. import checks, icons, settings, themes, tracks
-from ..models import PACE_UNITS, Activity, ActivityTrack, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
+from .. import checks, icons, photos, settings, themes, tracks
+from ..models import (
+    PACE_UNITS,
+    Activity,
+    ActivityTrack,
+    DailyHealth,
+    Friend,
+    Profile,
+    Sport,
+    SportFamily,
+    SportRule,
+    SyncRun,
+    Tag,
+)
 from ..stats import (
     PERIODS,
+    age_on,
+    career,
+    friend_stats,
+    hr_zones,
     SPLITS,
     activities_between,
     add_months,
@@ -183,6 +199,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         VERSION=__version__, FIELDS=FIELDS, MATCH_TYPES=MATCH_TYPES, PACE_UNITS=PACE_UNITS, SOURCES=SOURCES,
         ORIGINS=ORIGINS, units_bpm=units.bpm, units_h=lambda h: units.hmm(h * 3600), units_int=units.number,
         units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0), ICONS=icons.ICONS,
+        initials=photos.initials, hue=photos.hue,
     )
 
     @app.teardown_appcontext
@@ -204,6 +221,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "url_with": url_with, "sync_running": job.running, "last_sync": last_run(s),
             "ui_layout": settings.get(s, "layout"), "ui_mode": mode if mode in settings.MODES else "system",
             "checks_count": checks.count_issues(s) if request.endpoint not in ("sync_chip", "static") else 0,
+            "me": s.get(Profile, 1),
             "theme_css": themes.theme_css(settings.active_palette(s), mode),
         }
 
@@ -237,6 +255,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         stmt = select(Activity).options(
             joinedload(Activity.sport).joinedload(Sport.family), selectinload(Activity.tags),
             selectinload(Activity.track).defer(ActivityTrack.points_json),  # la mini-carte suffit ici
+            selectinload(Activity.friends).defer(Friend.photo),
         )
         if date_from:
             stmt = stmt.where(Activity.start >= datetime.combine(date_from, datetime.min.time()))
@@ -258,6 +277,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             stmt = stmt.where(Activity.rule_id == rid)
         if a.get("type"):
             stmt = stmt.where(Activity.type_key == a.get("type"))
+        if friend_id := a.get("friend", type=int):
+            stmt = stmt.where(Activity.friends.any(Friend.id == friend_id))
         if a.get("status") == "excluded":
             stmt = stmt.where(Activity.excluded.is_(True))
         elif a.get("status") == "kept":
@@ -269,6 +290,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "activities.html", rows=rows, families=load_families(s), sel=sel, sel_label=label,
             tags=s.scalars(select(Tag).order_by(Tag.name)).all(), filter_tag=s.get(Tag, tag_id) if tag_id else None,
             filter_rule=s.get(SportRule, rid) if rid else None, date_from=date_from, date_to=date_to,
+            friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
+            filter_friend=s.get(Friend, friend_id) if friend_id else None,
             total_dist=sum(r.distance_m or 0 for r in rows), total_dur=sum(r.duration_s or 0 for r in rows),
         )
 
@@ -279,6 +302,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         splits = [(label, meters, getattr(act, attr)) for label, meters, attr in SPLITS if getattr(act, attr)]
         points = tracks.loads(act.track.points_json) if act.track and act.track.n_points else []
         return render_template("activity.html", a=act, families=load_families(s), splits=splits, points=points,
+                               all_friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
     # ---------------------------------------------------------------- carte de tous les parcours
@@ -366,6 +390,170 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s.commit()
         flash(message)
         return back()
+
+    # ---------------------------------------------------------------- amis et profil
+    def photo_response(data: bytes | None):
+        if not data:
+            abort(404)
+        tag = photos.etag(data)
+        if request.if_none_match.contains(tag):
+            return Response(status=304)
+        resp = Response(data, mimetype="image/jpeg")
+        resp.set_etag(tag)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+    def read_photo(field: str = "photo") -> bytes | None:
+        """Photo envoyée par le formulaire, recadrée et réduite ; None si aucun fichier. PhotoError si illisible."""
+        up = request.files.get(field)
+        if not up or not up.filename:
+            return None
+        return photos.process(up.read())
+
+    def get_profile(s) -> Profile:
+        prof = s.get(Profile, 1)
+        if prof is None:
+            prof = Profile(id=1)
+            s.add(prof)
+            s.flush()
+        return prof
+
+    @app.get("/friends")
+    def friends_page():
+        s = db()
+        rows = []
+        for fr in s.scalars(select(Friend).options(selectinload(Friend.activities)).order_by(Friend.first_name,
+                                                                                               Friend.last_name)):
+            rows.append((fr, friend_stats(fr)))
+        rows.sort(key=lambda r: (-r[1].totals.count, r[0].first_name.lower()))
+        return render_template("friends.html", rows=rows)
+
+    @app.post("/friends/add")
+    def friend_add():
+        s = db()
+        first = request.form.get("first_name", "").strip()[:80]
+        if not first:
+            flash("Indique au moins un prénom.", "error")
+            return redirect(url_for("friends_page"))
+        fr = Friend(first_name=first, last_name=request.form.get("last_name", "").strip()[:80],
+                    note=request.form.get("note", "").strip())
+        try:
+            data = read_photo()
+        except photos.PhotoError as e:
+            flash(str(e), "error")
+            data = None
+        if data:
+            fr.photo, fr.has_photo = data, True
+        s.add(fr)
+        s.commit()
+        flash(f"{fr.name} ajouté(e) à tes amis. Associe-lui des sorties depuis leur fiche.")
+        return redirect(url_for("friend_detail", friend_id=fr.id))
+
+    @app.get("/friends/<int:friend_id>")
+    def friend_detail(friend_id: int):
+        s = db()
+        fr = s.get(Friend, friend_id) or abort(404)
+        return render_template("friend.html", fr=fr, st=friend_stats(fr), confirm=request.args.get("confirm"))
+
+    @app.post("/friends/<int:friend_id>/update")
+    def friend_update(friend_id: int):
+        s = db()
+        fr = s.get(Friend, friend_id) or abort(404)
+        first = request.form.get("first_name", "").strip()[:80]
+        if first:
+            fr.first_name = first
+        fr.last_name = request.form.get("last_name", "").strip()[:80]
+        fr.note = request.form.get("note", "").strip()
+        if request.form.get("remove_photo") == "on":
+            fr.photo, fr.has_photo = None, False
+        try:
+            data = read_photo()
+        except photos.PhotoError as e:
+            flash(str(e), "error")
+            data = None
+        if data:
+            fr.photo, fr.has_photo = data, True
+        s.commit()
+        flash(f"Fiche de {fr.name} enregistrée.")
+        return redirect(url_for("friend_detail", friend_id=fr.id))
+
+    @app.post("/friends/<int:friend_id>/delete")
+    def friend_delete(friend_id: int):
+        s = db()
+        fr = s.get(Friend, friend_id) or abort(404)
+        name, n = fr.name, len(fr.activities)
+        fr.activities.clear()
+        s.delete(fr)
+        s.commit()
+        flash(f"{name} retiré(e) de tes amis ({n} sortie(s) détachée(s) ; les activités restent).")
+        return redirect(url_for("friends_page"))
+
+    @app.get("/friends/<int:friend_id>/photo.jpg")
+    def friend_photo(friend_id: int):
+        fr = db().get(Friend, friend_id) or abort(404)
+        return photo_response(fr.photo)
+
+    @app.post("/activities/<int:act_id>/friends")
+    def activity_friends_save(act_id: int):
+        """Avec qui : remplace la liste des amis de l'activité par ceux cochés."""
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        ids = [int(i) for i in request.form.getlist("friend") if i.isdigit()]
+        act.friends = s.scalars(select(Friend).where(Friend.id.in_(ids))).all() if ids else []
+        s.commit()
+        names = ", ".join(f.name for f in act.friends)
+        flash(f"Sortie faite avec {names}." if names else "Sortie faite seul(e).")
+        return redirect(url_for("activity_detail", act_id=act.id) + "#friends")
+
+    @app.get("/profile")
+    def profile_page():
+        s = db()
+        prof = get_profile(s)
+        s.commit()
+        t = today()
+        age = age_on(prof.birth_date, t)
+        zones, estimated = hr_zones(prof.max_hr, age)
+        bmi = round(prof.weight_kg / (prof.height_cm / 100) ** 2, 1) if prof.weight_kg and prof.height_cm else None
+        return render_template("profile.html", prof=prof, age=age, zones=zones, zones_estimated=estimated, bmi=bmi,
+                               car=career(s, t), today=t)
+
+    @app.post("/profile")
+    def profile_save():
+        s = db()
+        prof = get_profile(s)
+        f = request.form
+        for key, size in (("first_name", 80), ("last_name", 80), ("nickname", 40), ("city", 80), ("club", 120)):
+            setattr(prof, key, f.get(key, "").strip()[:size])
+        prof.sex = f.get("sex") if f.get("sex") in ("F", "H") else ""
+        prof.birth_date = parse_date(f.get("birth_date"))
+        errors = []
+        for key, lo, hi in (("height_cm", 100, 250), ("weight_kg", 25, 250), ("max_hr", 120, 230), ("rest_hr", 25, 120)):
+            value = parse_float(f.get(key))
+            if value is not None and not lo <= value <= hi:
+                errors.append(key)
+                continue
+            setattr(prof, key, round(value) if value is not None and key.endswith("hr") else value)
+        if f.get("remove_photo") == "on":
+            prof.photo, prof.has_photo = None, False
+        try:
+            data = read_photo()
+        except photos.PhotoError as e:
+            flash(str(e), "error")
+            data = None
+        if data:
+            prof.photo, prof.has_photo = data, True
+        s.commit()
+        if errors:
+            labels = {"height_cm": "taille (100 à 250 cm)", "weight_kg": "poids (25 à 250 kg)",
+                      "max_hr": "FC max (120 à 230)", "rest_hr": "FC de repos (25 à 120)"}
+            flash("Valeur ignorée : " + ", ".join(labels[e] for e in errors) + ".", "error")
+        flash("Profil enregistré.")
+        return redirect(url_for("profile_page"))
+
+    @app.get("/profile/photo.jpg")
+    def profile_photo():
+        prof = db().get(Profile, 1)
+        return photo_response(prof.photo if prof else None)
 
     # ---------------------------------------------------------------- vérifications et exclusions
     @app.post("/activities/bulk/exclude")

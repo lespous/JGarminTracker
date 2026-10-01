@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import friend_avatar %}
+{% block title %}Amis{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Amis</h1>
+  <span class="muted">Les personnes avec qui tu fais certaines sorties. Indique-les dans la fiche de chaque activité.</span>
+</div>
+
+{% if rows %}
+<div class="friend-grid">
+  {% for fr, st in rows %}
+  <a class="friend-card" href="{{ url_for('friend_detail', friend_id=fr.id) }}">
+    {{ friend_avatar(fr, 64) }}
+    <span class="who"><b>{{ fr.name }}</b>
+      {% if st.totals.count %}<span class="muted small">{{ st.totals.count }} sortie(s) ensemble · {{ st.totals.distance_m|km(0) }} · {{ st.totals.duration_s|hmm }}</span>
+      <span class="muted small">Dernière : {{ st.last.start|day }}</span>
+      {% else %}<span class="muted small">Aucune sortie associée pour l'instant.</span>{% endif %}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<section class="panel"><p class="muted">Aucun ami pour l'instant. Ajoute la première personne ci-dessous.</p></section>
+{% endif %}
+
+<section class="panel">
+  <h2>Ajouter un ami</h2>
+  <form class="rule-form" method="post" action="{{ url_for('friend_add') }}" enctype="multipart/form-data">
+    <label>Prénom<input name="first_name" required maxlength="80"></label>
+    <label>Nom<input name="last_name" maxlength="80"></label>
+    <label class="wide">Note<input name="note" placeholder="ex. club du mardi, beau-frère…"></label>
+    <label class="wide">Photo<input type="file" name="photo" accept="image/*"></label>
+    <div class="actions" style="justify-content:flex-start;align-self:end"><button class="primary">Ajouter</button></div>
+  </form>
+  <p class="note">La photo est recadrée en carré et réduite (256 px), puis gardée dans ta base locale : elle ne quitte pas ce PC et n'entre jamais dans Git.</p>
+</section>
+{% endblock %}

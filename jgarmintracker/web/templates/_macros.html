@@ -1,0 +1,13 @@
+{# Avatar rond : photo si elle existe, sinon initiales sur une couleur stable dérivée du nom. #}
+{% macro avatar(person, photo_url, size=32, title=None) -%}
+  {%- set label = title or person.name or person.display_name -%}
+  {%- if person and person.has_photo -%}
+    <img class="avatar" src="{{ photo_url }}" width="{{ size }}" height="{{ size }}" style="--size: {{ size }}px" alt="{{ label }}" title="{{ label }}" loading="lazy">
+  {%- else -%}
+    <span class="avatar initials" style="--size: {{ size }}px; --hue: {{ hue(label) }}" title="{{ label }}" aria-label="{{ label }}">{{ initials(person.first_name, person.last_name) if person else '?' }}</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro friend_avatar(fr, size=32) -%}
+  {{ avatar(fr, url_for('friend_photo', friend_id=fr.id), size) }}
+{%- endmacro %}

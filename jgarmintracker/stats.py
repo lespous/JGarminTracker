@@ -305,6 +305,116 @@ def records(activities: list[Activity], unit: str, min_pace_distance_m: float = 
     return r
 
 
+# ---------------------------------------------------------------- profil et amis
+def week_streaks(days: list[date], today: date) -> tuple[int, int]:
+    """(plus longue série, série en cours) de semaines ISO consécutives avec au moins une activité.
+
+    La série en cours compte jusqu'à la semaine dernière si la semaine courante n'a encore rien.
+    """
+    weeks = sorted({week_start(d) for d in days})
+    if not weeks:
+        return 0, 0
+    best = run = 1
+    for prev, cur in zip(weeks, weeks[1:]):
+        run = run + 1 if (cur - prev).days == 7 else 1
+        best = max(best, run)
+    current, expected = 0, week_start(today)
+    if weeks[-1] != expected:
+        expected -= timedelta(weeks=1)
+    for w in reversed(weeks):
+        if w != expected:
+            break
+        current += 1
+        expected -= timedelta(weeks=1)
+    return best, current
+
+
+@dataclass
+class FamilyCareer:
+    family: SportFamily
+    totals: Totals
+    records: Records
+    unit: str
+
+
+@dataclass
+class Career:
+    totals: Totals
+    first: Activity | None
+    best_streak: int
+    current_streak: int
+    active_weeks: int
+    families: list[FamilyCareer]
+
+
+def career(session: Session, today: date) -> Career:
+    """Bilan depuis la première activité (activités exclues écartées)."""
+    acts = list(session.scalars(
+        select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
+        .where(Activity.excluded.is_(False)).order_by(Activity.start)).unique())
+    by_family: dict[int, list[Activity]] = defaultdict(list)
+    families: dict[int, SportFamily] = {}
+    for a in acts:
+        if a.sport:
+            families[a.sport.family_id] = a.sport.family
+            by_family[a.sport.family_id].append(a)
+    rows = []
+    for fid, items in by_family.items():
+        fam = families[fid]
+        units_ = [a.sport.pace_unit for a in items if a.sport.pace_unit != "none"]
+        unit = max(set(units_), key=units_.count) if units_ else "none"
+        rows.append(FamilyCareer(fam, totals(items), records(items, unit), unit))
+    rows.sort(key=lambda r: -r.totals.duration_s)
+    best, current = week_streaks([a.day for a in acts], today)
+    return Career(totals(acts), acts[0] if acts else None, best, current,
+                  len({week_start(a.day) for a in acts}), rows)
+
+
+@dataclass
+class FriendStats:
+    totals: Totals
+    first: Activity | None
+    last: Activity | None
+    by_sport: list[tuple[Sport, int, float]]  # (sport, sorties, mètres)
+    activities: list[Activity]
+
+
+def friend_stats(friend) -> FriendStats:
+    acts = sorted((a for a in friend.activities if not a.excluded), key=lambda a: a.start)
+    sports: dict[int, list] = {}
+    for a in acts:
+        if a.sport:
+            entry = sports.setdefault(a.sport_id, [a.sport, 0, 0.0])
+            entry[1] += 1
+            entry[2] += a.distance_m or 0
+    by_sport = sorted((tuple(v) for v in sports.values()), key=lambda v: -v[1])
+    return FriendStats(totals(acts), acts[0] if acts else None, acts[-1] if acts else None, by_sport,
+                       list(reversed(acts)))
+
+
+HR_ZONES = [("Échauffement", 0.50, 0.60), ("Endurance", 0.60, 0.70), ("Aérobie", 0.70, 0.80),
+            ("Seuil", 0.80, 0.90), ("Maximum", 0.90, 1.00)]
+
+
+def hr_zones(max_hr: int | None, age: int | None) -> tuple[list[tuple[str, int, int]], bool]:
+    """Zones cardio en % de la FC max (même découpage que Garmin par défaut). FC max estimée (220 − âge) si absente.
+
+    Renvoie ([(libellé, bpm bas, bpm haut)], estimée ?).
+    """
+    estimated = not max_hr
+    hr = max_hr or (220 - age if age else None)
+    if not hr:
+        return [], estimated
+    half_up = lambda x: int(x + 0.5)  # noqa: E731  (166,5 -> 167, comme une montre ; round() irait au pair)
+    return [(label, half_up(hr * lo), half_up(hr * hi)) for label, lo, hi in HR_ZONES], estimated
+
+
+def age_on(birth: date | None, today: date) -> int | None:
+    if not birth:
+        return None
+    return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+
 # ---------------------------------------------------------------- couverture (page Historique)
 def coverage(session: Session) -> dict[tuple[int, int], dict]:
     """Ce qui est en base, mois par mois : {(année, mois): {activities, tracks, days}}."""

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import friend_avatar %}
+{% block title %}{{ fr.name }}{% endblock %}
+{% block content %}
+<div class="head person-head">
+  {{ friend_avatar(fr, 88) }}
+  <div>
+    <h1>{{ fr.name }}</h1>
+    {% if fr.note %}<span class="muted">{{ fr.note }}</span>{% endif %}
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="{{ url_for('activities', friend=fr.id) }}">Voir ses sorties dans Activités</a>
+  <a class="btn" href="{{ url_for('friends_page') }}">Tous les amis</a>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Sorties ensemble</small><b>{{ st.totals.count }}</b></div>
+  <div class="kpi"><small>Distance partagée</small><b>{{ st.totals.distance_m|km(0) }}</b></div>
+  <div class="kpi"><small>Temps partagé</small><b>{{ st.totals.duration_s|hmm }}</b></div>
+  <div class="kpi"><small>Dénivelé +</small><b>{{ st.totals.elevation_m|meters }}</b></div>
+  <div class="kpi"><small>Première · dernière</small><b class="small">{{ st.first.start|day if st.first else '—' }}</b><span class="sub">{{ st.last.start|day if st.last else '' }}</span></div>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Sorties ensemble <small>{{ st.activities|length }}</small></h2>
+    {% if st.activities %}
+    <div class="tbl">
+    <table>
+      <tbody>
+      {% for a in st.activities[:50] %}
+        <tr><td class="num">{{ a.start|day }}</td>
+          <td><span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name }} sicon" style="color: {{ a.sport.color }}" aria-hidden="true"></i>{{ a.sport.label }}</span></td>
+          <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a></td>
+          <td class="r num">{{ a.distance_m|km if a.distance_m else a.duration_s|hms }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if st.activities|length > 50 %}<a href="{{ url_for('activities', friend=fr.id) }}" class="small">… et {{ st.activities|length - 50 }} autres</a>{% endif %}
+    {% else %}<p class="muted small">Aucune sortie pour l'instant : ouvre une activité et coche {{ fr.first_name }} dans « Avec qui ».</p>{% endif %}
+    {% if st.by_sport %}
+    <h2>Par sport</h2>
+    <div class="chips">{% for sp, n, m in st.by_sport %}<span class="sport-chip"><i class="ph ph-{{ sp.icon_name }} sicon" style="color: {{ sp.color }}" aria-hidden="true"></i>{{ sp.label }} · {{ n }} · {{ m|km(0) }}</span>{% endfor %}</div>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Modifier</h2>
+    <form class="fam-block" method="post" action="{{ url_for('friend_update', friend_id=fr.id) }}" enctype="multipart/form-data">
+      <label>Prénom<input name="first_name" value="{{ fr.first_name }}" required maxlength="80"></label>
+      <label>Nom<input name="last_name" value="{{ fr.last_name }}" maxlength="80"></label>
+      <label>Note<input name="note" value="{{ fr.note }}"></label>
+      <label>{{ 'Remplacer la photo' if fr.has_photo else 'Photo' }}<input type="file" name="photo" accept="image/*"></label>
+      {% if fr.has_photo %}<label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="remove_photo"> Retirer la photo</label>{% endif %}
+      <div class="actions" style="justify-content:flex-start">
+        <button class="primary">Enregistrer</button>
+        <a class="btn danger" href="{{ url_for('friend_detail', friend_id=fr.id, confirm=1) }}#delete">Supprimer</a>
+      </div>
+    </form>
+    {% if confirm %}
+    <form class="confirm" id="delete" method="post" action="{{ url_for('friend_delete', friend_id=fr.id) }}">
+      <span>Retirer {{ fr.name }} de tes amis ? Ses {{ st.totals.count }} sortie(s) restent, seul le lien est supprimé.</span>
+      <div class="actions"><a class="btn" href="{{ url_for('friend_detail', friend_id=fr.id) }}">Annuler</a><button class="primary">Supprimer</button></div>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

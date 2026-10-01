@@ -10,6 +10,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,  # photos (profil, amis)
     String,
     Table,
     Text,
@@ -122,6 +123,60 @@ class Tag(Base):
     activities: Mapped[list[Activity]] = relationship(secondary=activity_tags, back_populates="tags")
 
 
+activity_friends = Table(
+    "activity_friends",
+    Base.metadata,
+    Column("activity_id", ForeignKey("activities.id"), primary_key=True),
+    Column("friend_id", ForeignKey("friends.id"), primary_key=True),
+)
+
+
+class Friend(Base):
+    """Personne avec qui on fait certaines sorties (0.9.0). Photo en JPEG 256 px dans la base (photos.py)."""
+
+    __tablename__ = "friends"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    first_name: Mapped[str] = mapped_column(String(80))
+    last_name: Mapped[str] = mapped_column(String(80), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    photo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
+    has_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    activities: Mapped[list[Activity]] = relationship(secondary=activity_friends, back_populates="friends")
+
+    @property
+    def name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
+
+
+class Profile(Base):
+    """Ton profil (une seule ligne, id = 1). Mesures en unités usuelles : cm, kg, bpm."""
+
+    __tablename__ = "profile"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    first_name: Mapped[str] = mapped_column(String(80), default="")
+    last_name: Mapped[str] = mapped_column(String(80), default="")
+    nickname: Mapped[str] = mapped_column(String(40), default="")  # affiché dans la navigation
+    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    sex: Mapped[str] = mapped_column(String(1), default="")  # F | H | ""
+    city: Mapped[str] = mapped_column(String(80), default="")
+    club: Mapped[str] = mapped_column(String(120), default="")
+    height_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rest_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    photo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
+    has_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    @property
+    def display_name(self) -> str:
+        return self.nickname or self.first_name or "Mon profil"
+
+
 class Activity(Base):
     """Une activité Garmin. Unités SI : secondes, mètres, m/s."""
 
@@ -182,6 +237,8 @@ class Activity(Base):
     sport: Mapped[Sport | None] = relationship()
     rule: Mapped[SportRule | None] = relationship()
     tags: Mapped[list[Tag]] = relationship(secondary=activity_tags, back_populates="activities", order_by="Tag.name")
+    friends: Mapped[list[Friend]] = relationship(secondary=activity_friends, back_populates="activities",
+                                                 order_by="Friend.first_name")
     track: Mapped[ActivityTrack | None] = relationship(back_populates="activity", cascade="all, delete-orphan",
                                                        lazy="select")
 

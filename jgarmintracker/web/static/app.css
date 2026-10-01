@@ -335,3 +335,26 @@ button.danger:hover { border-color: var(--out); }
 .icon-pick .grid label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .icon-pick .grid input { position: absolute; opacity: 0; pointer-events: none; }
 .icon-pick .grid .inherit { grid-column: span 8; font-size: .78rem; height: auto; padding: 4px; justify-content: start; }
+
+/* Amis et profil (0.9.0) */
+.avatar { width: var(--size, 32px); height: var(--size, 32px); border-radius: 50%; object-fit: cover; flex: none;
+  display: inline-grid; place-items: center; vertical-align: middle; }
+.avatar.initials { background: hsl(var(--hue, 200) 45% 45%); color: #fff; font: 600 calc(var(--size, 32px) * .4)/1 var(--body);
+  letter-spacing: .02em; }
+.person-head { gap: 18px; }
+.person-head h1 { margin-bottom: 2px; }
+.friend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.friend-card { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.friend-card:hover { border-color: var(--accent); }
+.friend-card .who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.friend-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.friend-pick { flex-direction: row; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border: 1px solid var(--line);
+  border-radius: 999px; color: var(--ink); font-size: .9rem; cursor: pointer; }
+.friend-pick:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.friend-pick input { position: absolute; opacity: 0; pointer-events: none; }
+.friend-mini { display: inline-flex; margin-right: -4px; }
+.friend-mini .avatar { box-shadow: 0 0 0 2px var(--surface); }
+.me-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-weight: 600;
+  padding: 3px 10px 3px 3px; border-radius: 999px; }
+.me-link:hover, .me-link.on { background: var(--accent-soft); }
