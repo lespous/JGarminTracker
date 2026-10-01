@@ -123,7 +123,7 @@ def test_gpx_download(client):
     assert r.get_data(as_text=True).count("<trkpt") == 61
     assert client.get(f"/activities/{act_id('Renfo maison')}.gpx").status_code == 404
     assert "Télécharger le GPX" in client.get(f"/activities/{act_id('Course du soir 1')}").get_data(as_text=True)
-    assert client.get("/activities").get_data(as_text=True).count('class="gpx-link"') == 25
+    assert client.get("/activities").get_data(as_text=True).count('class="gpx-btn"') == 25
 
 
 def test_appearance_applies_to_every_page(client):

@@ -199,6 +199,24 @@ def period_bounds(key: str | None, today: date, first: date | None = None, frm: 
     return add_months(month_start(today), -(months - 1)), today, f"{months}m"
 
 
+HEALTH_PERIODS = {
+    "30d": "30 derniers jours", "90d": "3 derniers mois", "365d": "12 derniers mois", "ytd": "Cette année",
+    "last_year": "L'année dernière", "all": "Tout l'historique", "custom": "Dates choisies",
+}
+
+
+def health_period_bounds(key: str | None, today: date, first: date | None = None, frm: date | None = None,
+                         to: date | None = None) -> tuple[date, date, str]:
+    """Période de la page Santé -> (début, fin, clé). Jours glissants (30d, 90d, 365d) ou périodes de Progression."""
+    if key in ("30d", "90d", "365d"):
+        return today - timedelta(days=int(key[:-1]) - 1), today, key
+    if key in ("ytd", "last_year", "all", "custom"):
+        start, end, k = period_bounds(key, today, first, frm, to)
+        if k == key:
+            return start, end, k
+    return today - timedelta(days=29), today, "30d"
+
+
 def previous_period(start: date, end: date) -> tuple[date, date]:
     """Période de même longueur juste avant, pour comparer."""
     length = (end - start).days + 1
@@ -467,7 +485,7 @@ def health_series(session: Session, today: date, days: int = 30) -> dict:
           and rows[d].bb_max is not None else None for d in span]
     steps = col("steps", digits=0)
     stress = col("stress_avg", digits=0)
-    label = units.weekday_day if days <= 31 else units.short_day
+    label = units.weekday_day if days <= 31 else units.short_day if days <= 366 else (lambda d: d.strftime("%d/%m/%y"))
     return {
         "labels": [label(d) for d in span],
         "rhr": rhr, "rhr7": rolling_mean(rhr),

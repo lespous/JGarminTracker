@@ -384,3 +384,10 @@ td.sport-cell { white-space: nowrap; }
 .sm-sports button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: .88rem; }
 .sm-sports button .ph { font-size: 1.1rem; }
 .sm-sports button.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* Colonne GPX (0.10.0) */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+td.gpx-cell { width: 44px; text-align: center; }
+.gpx-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line);
+  color: var(--muted); font-size: 1.1rem; text-decoration: none; }
+.gpx-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }

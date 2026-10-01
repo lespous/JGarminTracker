@@ -90,7 +90,7 @@
   <thead><tr>
     <th><input type="checkbox" id="check-all" aria-label="Tout cocher"></th>
     <th>Date</th><th>Sport</th><th>Parcours</th><th>Activité</th><th class="r">Distance</th><th class="r">Durée</th>
-    <th class="r">Allure / vitesse</th><th class="r">Max</th><th class="r">FC moy.</th><th class="r">D+</th>
+    <th class="r">Allure / vitesse</th><th class="r">Max</th><th class="r">FC moy.</th><th class="r">D+</th><th><span class="sr-only">GPX</span></th>
   </tr></thead>
   <tbody>
   {% set DAYS = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] %}
@@ -115,7 +115,6 @@
         <div class="labels">
           {% for fr in a.friends %}<a class="friend-mini" href="{{ url_for('friend_detail', friend_id=fr.id) }}">{{ friend_avatar(fr, 20) }}</a>{% endfor %}
           {% if a.excluded %}<span class="excluded-chip" title="Hors statistiques">exclue · {{ a.exclude_reason or 'à la main' }}</span>{% endif %}
-          {% if a.track and a.track.n_points > 1 %}<a class="gpx-link" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Télécharger le parcours en GPX">GPX</a>{% endif %}
           {% for tg in a.tags %}
             <span class="tag-chip"><a href="{{ url_with(tag=tg.id) }}"># {{ tg.name }}</a>
               <form class="inline" method="post" action="{{ url_for('tag_remove', act_id=a.id, tag_id=tg.id) }}">
@@ -129,10 +128,11 @@
       <td class="r num muted">{% if a.ignore_max_speed %}<span title="Pointe GPS ignorée : {{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}">—</span>{% else %}{{ a.max_speed|pace(a.sport.pace_unit if a.sport else 'none') }}{% endif %}</td>
       <td class="r num">{{ a.avg_hr|round|int if a.avg_hr else '—' }}</td>
       <td class="r num">{{ a.elevation_gain_m|round|int if a.elevation_gain_m else '—' }}</td>
+      <td class="gpx-cell">{% if a.track and a.track.n_points > 1 %}<a class="gpx-btn" href="{{ url_for('activity_gpx', act_id=a.id) }}" download title="Télécharger le parcours (GPX)" aria-label="Télécharger le parcours de {{ a.name }} en GPX"><i class="ph ph-download-simple" aria-hidden="true"></i></a>{% endif %}</td>
     </tr>
-    <tr class="recat"><td colspan="11" id="pop-{{ a.id }}"></td></tr>
+    <tr class="recat"><td colspan="12" id="pop-{{ a.id }}"></td></tr>
   {% else %}
-    <tr><td colspan="11" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
+    <tr><td colspan="12" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
   {% endfor %}
   </tbody>
 </table>

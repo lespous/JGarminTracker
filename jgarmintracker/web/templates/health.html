@@ -13,14 +13,23 @@
 {% block content %}
 <div class="head">
   <h1>Santé</h1>
-  <span class="muted">{{ days }} derniers jours, jusqu'au {{ today|day }} · {{ hs.days_with_data }} jour(s) avec données</span>
   <div class="spacer"></div>
-  <div class="chips">
-    {% for d, l in [(30, '30 jours'), (90, '90 jours'), (365, '1 an')] %}
-      <a class="chip {{ 'on' if d == days }}" href="{{ url_for('health', days=d) }}">{{ l }}</a>
-    {% endfor %}
-  </div>
+  <form method="get" class="filters">
+    <label>Période
+      <select name="period" id="period" onchange="this.form.submit()">
+        {% for k, v in PERIODS.items() %}<option value="{{ k }}" {{ 'selected' if k == period }}>{{ v }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Du<input type="date" name="from" id="p-from" value="{{ start.isoformat() }}" max="{{ today.isoformat() }}"></label>
+    <label>Au<input type="date" name="to" id="p-to" value="{{ end.isoformat() }}" max="{{ today.isoformat() }}"></label>
+    <button type="submit">Afficher</button>
+  </form>
 </div>
+<p class="muted small" style="margin:0">Du {{ start|day }} au {{ end|day }} ({{ days|number }} jours) · {{ hs.days_with_data }} jour(s) avec données ·
+  comparé aux {{ days|number }} jours précédents.</p>
+<script>
+for (const id of ["p-from", "p-to"]) document.getElementById(id).addEventListener("change", () => { document.getElementById("period").value = "custom"; });
+</script>
 
 <div class="kpis">
   <div class="kpi"><small>FC au repos · moyenne</small><b>{{ hs.rhr|bpm if hs.rhr else '—' }}</b>{{ trend(hs.rhr, hs.rhr_prev, true, units_bpm) }}</div>

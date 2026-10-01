@@ -87,6 +87,20 @@ def test_progress_periods(client):
     assert "Aucune activité" in client.get("/progress?period=last_year").get_data(as_text=True)
 
 
+def test_health_periods(client):
+    from jgarmintracker.stats import health_period_bounds
+
+    assert health_period_bounds("90d", date(2025, 6, 18)) == (date(2025, 3, 21), date(2025, 6, 18), "90d")
+    assert health_period_bounds("nimporte", date(2025, 6, 18))[2] == "30d"
+    html = client.get("/health?period=custom&from=2025-06-01&to=2025-06-10").get_data(as_text=True)
+    assert "Du 01/06/2025 au 10/06/2025 (10 jours)" in html and 'value="custom" selected' in html
+    assert "Du 20/05/2025" in client.get("/health?period=all").get_data(as_text=True)  # première donnée santé
+    html = client.get("/health?days=90").get_data(as_text=True)  # ancien lien
+    assert 'value="90d" selected' in html
+    for url in ["/health?period=ytd", "/health?period=last_year", "/health?period=365d"]:
+        assert client.get(url).status_code == 200, url
+
+
 def test_back_button_survives_actions(client):
     """« Retour » renvoie à la page d'origine même après des actions qui rechargent la fiche."""
     import re

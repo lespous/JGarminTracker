@@ -43,6 +43,7 @@ from ..models import (
     Tag,
 )
 from ..stats import (
+    HEALTH_PERIODS,
     PERIODS,
     age_on,
     career,
@@ -52,6 +53,7 @@ from ..stats import (
     activities_between,
     add_months,
     health_series,
+    health_period_bounds,
     health_summary,
     pace_series,
     period_bounds,
@@ -796,11 +798,14 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     @app.get("/health")
     def health():
         s = db()
-        days = request.args.get("days", type=int)
-        days = days if days in (30, 90, 365) else 30
+        a = request.args
         t = today()
-        return render_template("health.html", days=days, h=health_series(s, t, days), hs=health_summary(s, t, days),
-                               today=t)
+        key = a.get("period") or {"90": "90d", "365": "365d"}.get(a.get("days", ""), "30d")  # ancien lien ?days=
+        first = s.scalar(select(func.min(DailyHealth.day)))
+        start, end, key = health_period_bounds(key, t, first, parse_date(a.get("from")), parse_date(a.get("to")))
+        days = (end - start).days + 1
+        return render_template("health.html", days=days, h=health_series(s, end, days), hs=health_summary(s, end, days),
+                               today=t, start=start, end=end, period=key, PERIODS=HEALTH_PERIODS)
 
     # ---------------------------------------------------------------- sports et règles
     def rule_from_form(form):

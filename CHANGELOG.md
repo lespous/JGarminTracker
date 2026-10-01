@@ -3,6 +3,13 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.9.4 — 2026-10-01
+
+### Ajouté
+- Activités : dernière colonne avec un bouton-icône pour télécharger le GPX (vide pour les sorties sans tracé).
+- Santé : choix de la période (30 jours, 3 mois, 12 mois, cette année, l'année dernière, tout l'historique ou
+  dates libres), comparée à la période précédente de même durée.
+
 ## 0.9.3 — 2026-10-01
 
 ### Corrigé

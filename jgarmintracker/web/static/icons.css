@@ -64,3 +64,4 @@
 .ph-person:before { content: "\e3a8"; }
 /* Icône utilitaire (hors sélecteur) */
 .ph-lock-simple:before { content: "\e308"; }
+.ph-download-simple:before { content: "\e20c"; }

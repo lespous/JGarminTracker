@@ -24,7 +24,7 @@ def sport(s, family, name):
 def test_every_icon_has_a_css_rule():
     css = (STATIC / "icons.css").read_text(encoding="utf-8")
     declared = set(re.findall(r"\.ph-([a-z0-9-]+):before", css))
-    assert set(ICONS) <= declared and declared - set(ICONS) == {"lock-simple"} and (STATIC / "Phosphor.woff2").stat().st_size > 100_000
+    assert set(ICONS) <= declared and declared - set(ICONS) == {"lock-simple", "download-simple"} and (STATIC / "Phosphor.woff2").stat().st_size > 100_000
 
 
 def test_guess_icon():
