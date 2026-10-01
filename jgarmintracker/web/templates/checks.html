@@ -37,11 +37,11 @@
   {% if found[key] %}
   <div class="tbl">
   <table>
-    <thead><tr><th></th><th>Date</th><th>Sport</th><th>Activité</th><th class="r">Distance</th><th>Pourquoi</th><th>Actions</th></tr></thead>
+    <thead><tr><th><input type="checkbox" class="check-section" data-section="{{ key }}" title="Tout cocher dans cette section" aria-label="Tout cocher : {{ title }}"></th><th>Date</th><th>Sport</th><th>Activité</th><th class="r">Distance</th><th>Pourquoi</th><th>Actions</th></tr></thead>
     <tbody>
     {% for f in found[key] %}{% set a = f.activity %}
       <tr>
-        <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
+        <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" data-section="{{ key }}" aria-label="Sélectionner"></td>
         <td class="num">{{ a.start.strftime('%d/%m/%y') }}</td>
         <td><span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color }}"></i>{{ a.sport.label }}</span></td>
         <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a><div class="type-key">{{ a.type_key }}</div></td>
@@ -122,9 +122,21 @@
 <script>
 const checks = [...document.querySelectorAll(".act-check")];
 const countEl = document.getElementById("bulk-count");
-checks.forEach(c => c.addEventListener("change", () => {
+function updateCount() {
   const n = checks.filter(x => x.checked).length;
   countEl.textContent = n ? `${n} activité${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""}` : "Coche des activités pour les exclure des statistiques";
+  // Case « tout cocher » de chaque section : cochée si toute la section l'est, à moitié si une partie.
+  document.querySelectorAll(".check-section").forEach(box => {
+    const rows = checks.filter(x => x.dataset.section === box.dataset.section);
+    const on = rows.filter(x => x.checked).length;
+    box.checked = rows.length > 0 && on === rows.length;
+    box.indeterminate = on > 0 && on < rows.length;
+  });
+}
+checks.forEach(c => c.addEventListener("change", updateCount));
+document.querySelectorAll(".check-section").forEach(box => box.addEventListener("change", () => {
+  checks.filter(x => x.dataset.section === box.dataset.section).forEach(x => { x.checked = box.checked; });
+  updateCount();
 }));
 const all = document.getElementById("check-all-ex");
 if (all) all.addEventListener("change", () => document.querySelectorAll(".ex-check").forEach(c => { c.checked = all.checked; }));

@@ -106,6 +106,10 @@ def act_id(name):
 def test_checks_page_and_actions(client):
     html = client.get("/checks").get_data(as_text=True)
     assert "Course du soir 20" in html and "Course du soir 21" in html and "Course du soir 22" in html
+    # Une case « tout cocher » par section qui a des alertes, reliée aux lignes de sa section.
+    for key in ("impossible", "unusual", "spike"):
+        assert f'class="check-section" data-section="{key}"' in html
+        assert f'class="act-check" data-section="{key}"' in html
     assert 'title="Activités à vérifier">3<' in html  # pastille dans la navigation
     # Exclure la « montre prêtée » : elle reste dans la liste, grisée, mais sort de la progression.
     client.post("/activities/bulk/exclude", data={"act": [act_id("Course du soir 21")], "reason": "Montre prêtée",
