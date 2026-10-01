@@ -16,7 +16,12 @@ from datetime import date
 from pathlib import Path
 from typing import Callable
 
-from garminconnect import (
+from .certs import use_system_certificates
+
+# Avant l'import de garminconnect : curl_cffi lit le fichier de certificats à son chargement.
+use_system_certificates()
+
+from garminconnect import (  # noqa: E402
     Garmin,
     GarminConnectAuthenticationError,
     GarminConnectConnectionError,
