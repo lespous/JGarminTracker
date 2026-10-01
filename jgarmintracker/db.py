@@ -15,7 +15,18 @@ SessionLocal = sessionmaker(expire_on_commit=False)
 
 # Colonnes ajoutées après la création d'une table : {table: {colonne: définition SQL}}.
 # create_all ne modifie pas une table existante ; on les ajoute ici au démarrage.
-NEW_COLUMNS: dict[str, dict[str, str]] = {}
+NEW_COLUMNS: dict[str, dict[str, str]] = {
+    "activities": {  # 0.2.0 : détails supplémentaires d'une activité
+        **{name: "FLOAT" for name in (
+            "max_speed", "elevation_loss_m", "min_elevation_m", "max_elevation_m", "elapsed_s",
+            "hr_zone_1", "hr_zone_2", "hr_zone_3", "hr_zone_4", "hr_zone_5", "cadence_avg", "cadence_max",
+            "stride_cm", "fastest_1k_s", "fastest_mile_s", "fastest_5k_s", "fastest_40k_s", "water_ml", "vo2max",
+        )},
+        "lap_count": "INTEGER",
+        "steps": "INTEGER",
+        "is_pr": "BOOLEAN NOT NULL DEFAULT 0",
+    },
+}
 
 
 def default_db_path() -> Path:

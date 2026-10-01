@@ -216,3 +216,10 @@ code, .mono { font-family: var(--mono); font-size: .85em; }
 pre.raw { max-height: 360px; overflow: auto; background: var(--soft); padding: 12px; border-radius: 6px; font: .75rem/1.45 var(--mono); }
 .empty { max-width: 640px; margin: 40px auto; }
 .empty ol { display: flex; flex-direction: column; gap: 10px; padding-left: 20px; }
+
+/* zones cardio (couleurs habituelles de Garmin, lisibles en clair et en sombre) */
+.z1 { background: #9AA5B1; } .z2 { background: #3D8BD9; } .z3 { background: #4CAF50; }
+.z4 { background: #F0A030; } .z5 { background: #E0453A; }
+.zones-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--soft); }
+.zones-bar i { display: block; height: 100%; }
+table.zones td { padding: 5px 4px; }

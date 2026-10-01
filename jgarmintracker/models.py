@@ -131,6 +131,29 @@ class Activity(Base):
     aerobic_te: Mapped[float | None] = mapped_column(Float, nullable=True)
     anaerobic_te: Mapped[float | None] = mapped_column(Float, nullable=True)
     avg_power: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Ajoutés en 0.2.0 (voir db.NEW_COLUMNS et upgrades.py) : lus dans le même JSON de la liste d'activités.
+    max_speed: Mapped[float | None] = mapped_column(Float, nullable=True)  # m/s
+    elevation_loss_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    min_elevation_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_elevation_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    elapsed_s: Mapped[float | None] = mapped_column(Float, nullable=True)  # pauses comprises
+    lap_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hr_zone_1: Mapped[float | None] = mapped_column(Float, nullable=True)  # secondes dans la zone
+    hr_zone_2: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hr_zone_3: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hr_zone_4: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hr_zone_5: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cadence_avg: Mapped[float | None] = mapped_column(Float, nullable=True)  # pas/min (course)
+    cadence_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    stride_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    steps: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fastest_1k_s: Mapped[float | None] = mapped_column(Float, nullable=True)  # meilleur km dans la sortie
+    fastest_mile_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fastest_5k_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fastest_40k_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    water_ml: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vo2max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    is_pr: Mapped[bool] = mapped_column(Boolean, default=False)  # record personnel selon Garmin
     raw_json: Mapped[str] = mapped_column(Text, default="{}")
     synced_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
@@ -141,6 +164,10 @@ class Activity(Base):
     @property
     def day(self) -> date:
         return self.start.date()
+
+    @property
+    def hr_zones(self) -> list[float | None]:
+        return [self.hr_zone_1, self.hr_zone_2, self.hr_zone_3, self.hr_zone_4, self.hr_zone_5]
 
     @property
     def garmin_url(self) -> str:

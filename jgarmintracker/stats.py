@@ -202,6 +202,13 @@ class Records:
     longest_duration: Activity | None = None
     best_pace: Activity | None = None  # meilleure allure / vitesse moyenne sur une sortie de plus de 5 km
     most_elevation: Activity | None = None
+    max_speed: Activity | None = None
+    # Meilleurs temps mesurés par la montre à l'intérieur d'une sortie : [(libellé, mètres, activité, secondes)].
+    splits: list[tuple[str, int, Activity, float]] = field(default_factory=list)
+
+
+SPLITS = [("1 km", 1000, "fastest_1k_s"), ("1 mile", 1609, "fastest_mile_s"), ("5 km", 5000, "fastest_5k_s"),
+          ("40 km", 40000, "fastest_40k_s")]
 
 
 def records(activities: list[Activity], unit: str, min_pace_distance_m: float = 5000) -> Records:
@@ -221,6 +228,14 @@ def records(activities: list[Activity], unit: str, min_pace_distance_m: float = 
     with_elev = [a for a in activities if a.elevation_gain_m]
     if with_elev:
         r.most_elevation = max(with_elev, key=lambda a: a.elevation_gain_m)
+    with_vmax = [a for a in activities if a.max_speed]
+    if with_vmax and unit != "none":
+        r.max_speed = max(with_vmax, key=lambda a: a.max_speed)
+    for label, meters, attr in SPLITS:
+        timed = [a for a in activities if getattr(a, attr)]
+        if timed:
+            best = min(timed, key=lambda a: getattr(a, attr))
+            r.splits.append((label, meters, best, getattr(best, attr)))
     return r
 
 

@@ -53,6 +53,12 @@
       <a href="{{ url_for('activity_detail', act_id=rec.best_pace.id) }}">{{ rec.best_pace.name }} · {{ rec.best_pace.distance_m|km }} · {{ rec.best_pace.start|day }}</a></div>{% endif %}
     {% if rec.longest_duration %}<div class="record"><small>Plus longue durée</small><b>{{ rec.longest_duration.duration_s|hms }}</b>
       <a href="{{ url_for('activity_detail', act_id=rec.longest_duration.id) }}">{{ rec.longest_duration.name }} · {{ rec.longest_duration.start|day }}</a></div>{% endif %}
+    {% for label, meters, act, secs in rec.splits %}<div class="record"><small>Meilleur {{ label }} (mesuré par la montre)</small>
+      <b>{{ secs|hms }}</b><span class="sub muted small">{{ (meters / secs)|pace(unit if unit != 'none' else 'min_km') }}</span>
+      <a href="{{ url_for('activity_detail', act_id=act.id) }}">{{ act.name }} · {{ act.start|day }}</a></div>{% endfor %}
+    {% if rec.max_speed %}<div class="record"><small>{{ 'Vitesse max' if unit == 'kmh' else 'Allure max' }} (pointe)</small>
+      <b>{{ rec.max_speed.max_speed|pace(unit) }}</b>
+      <a href="{{ url_for('activity_detail', act_id=rec.max_speed.id) }}">{{ rec.max_speed.name }} · {{ rec.max_speed.start|day }}</a></div>{% endif %}
     {% if rec.most_elevation %}<div class="record"><small>Plus gros dénivelé</small><b>{{ rec.most_elevation.elevation_gain_m|meters }}</b>
       <a href="{{ url_for('activity_detail', act_id=rec.most_elevation.id) }}">{{ rec.most_elevation.name }} · {{ rec.most_elevation.start|day }}</a></div>{% endif %}
   </div>

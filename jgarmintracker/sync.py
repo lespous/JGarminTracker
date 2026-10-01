@@ -26,8 +26,12 @@ from .models import Activity, DailyHealth, SyncRun
 DEFAULT_HISTORY_DAYS = 365
 RESYNC_DAYS = 3  # Garmin complète les nuits et les résumés après coup
 
+EXTRA_FIELDS = ("max_speed", "elevation_loss_m", "min_elevation_m", "max_elevation_m", "elapsed_s", "lap_count",
+                "hr_zone_1", "hr_zone_2", "hr_zone_3", "hr_zone_4", "hr_zone_5", "cadence_avg", "cadence_max",
+                "stride_cm", "steps", "fastest_1k_s", "fastest_mile_s", "fastest_5k_s", "fastest_40k_s", "water_ml",
+                "vo2max", "is_pr")
 ACTIVITY_FIELDS = ("start", "type_key", "name", "duration_s", "moving_s", "distance_m", "elevation_gain_m",
-                   "avg_hr", "max_hr", "avg_speed", "calories", "aerobic_te", "anaerobic_te", "avg_power")
+                   "avg_hr", "max_hr", "avg_speed", "calories", "aerobic_te", "anaerobic_te", "avg_power") + EXTRA_FIELDS
 HEALTH_FIELDS = ("resting_hr", "sleep_s", "deep_s", "light_s", "rem_s", "awake_s", "sleep_score", "bb_max",
                  "bb_min", "bb_charged", "bb_drained", "steps", "stress_avg", "stress_max", "vo2max")
 
@@ -66,6 +70,32 @@ def parse_activity(raw: dict) -> dict:
         "aerobic_te": _num(raw.get("aerobicTrainingEffect")),
         "anaerobic_te": _num(raw.get("anaerobicTrainingEffect")),
         "avg_power": _num(raw.get("avgPower")),
+        **parse_activity_extras(raw),
+    }
+
+
+def parse_activity_extras(raw: dict) -> dict:
+    """Détails ajoutés en 0.2.0. Unités vérifiées sur de vraies sorties : m/s, m, s, cm (foulée), ml (eau)."""
+    cadence = _num(raw.get("averageRunningCadenceInStepsPerMinute"))
+    return {
+        "max_speed": _num(raw.get("maxSpeed")) or None,
+        "elevation_loss_m": _num(raw.get("elevationLoss")),
+        "min_elevation_m": _num(raw.get("minElevation")),
+        "max_elevation_m": _num(raw.get("maxElevation")),
+        "elapsed_s": _num(raw.get("elapsedDuration")),
+        "lap_count": _int(raw.get("lapCount")),
+        **{f"hr_zone_{i}": _num(raw.get(f"hrTimeInZone_{i}")) for i in range(1, 6)},
+        "cadence_avg": cadence or None,
+        "cadence_max": (_num(raw.get("maxRunningCadenceInStepsPerMinute")) or None) if cadence else None,
+        "stride_cm": _num(raw.get("avgStrideLength")) or None,
+        "steps": _int(raw.get("steps")) or None,
+        "fastest_1k_s": _num(raw.get("fastestSplit_1000")) or None,
+        "fastest_mile_s": _num(raw.get("fastestSplit_1609")) or None,
+        "fastest_5k_s": _num(raw.get("fastestSplit_5000")) or None,
+        "fastest_40k_s": _num(raw.get("fastestSplit_40000")) or None,
+        "water_ml": _num(raw.get("waterEstimated")) or None,
+        "vo2max": _num(raw.get("vO2MaxValue")) or None,
+        "is_pr": bool(raw.get("pr") or raw.get("isPR")),
     }
 
 

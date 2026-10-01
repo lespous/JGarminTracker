@@ -1,4 +1,4 @@
-"""Mises à jour des données d'une base existante (nouveaux sports, nouvelles règles…).
+"""Mises à jour des données d'une base existante (nouveaux sports, nouvelles règles, nouveaux champs…).
 
 Chaque mise à jour est idempotente et n'est appliquée qu'une fois par base : si tu supprimes ensuite
 un sport qu'elle a créé, il ne revient pas. Ajoute ici des couples (nom, fonction(session)).
@@ -6,12 +6,31 @@ un sport qu'elle a créé, il ne revient pas. Ajoute ici des couples (nom, fonct
 
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import AppliedUpgrade
+from .models import Activity, AppliedUpgrade
 
-UPGRADES: list = []
+
+def upgrade_activity_extras(session: Session) -> None:
+    """0.2.0 : remplit vitesse max, D−, zones cardio, cadence, meilleurs temps… depuis le JSON déjà en base."""
+    from .sync import parse_activity_extras
+
+    for act in session.scalars(select(Activity)):
+        try:
+            raw = json.loads(act.raw_json or "{}")
+        except ValueError:
+            continue
+        for key, value in parse_activity_extras(raw).items():
+            setattr(act, key, value)
+    session.flush()
+
+
+UPGRADES: list = [
+    ("2026-10-activity-extras", upgrade_activity_extras),
+]
 
 
 def run_upgrades(session: Session) -> list[str]:

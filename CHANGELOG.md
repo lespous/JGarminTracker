@@ -3,6 +3,20 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.2.0 — 2026-10-01
+
+### Ajouté
+- Fiche d'une activité : vitesse ou allure max, dénivelé −, altitude min–max, durée écoulée (pauses
+  comprises), nombre de tours, eau perdue estimée, VO2max après la sortie ; pour la course, cadence moyenne
+  et max, longueur de foulée, pas ; temps passé dans chacune des 5 zones cardio ; meilleurs temps mesurés par
+  la montre (1 km, 1 mile, 5 km, 40 km) ; mention quand Garmin a enregistré un record personnel.
+- Progression : meilleurs temps sur 1 km, 1 mile, 5 km et 40 km, et vitesse / allure max dans les records.
+- Activités : colonne « Max » (vitesse ou allure de pointe).
+- Les bases existantes sont complétées au démarrage à partir du JSON déjà stocké : rien à re-télécharger.
+
+### Corrigé
+- Activités : les listes de sports (changement en ligne et en lot) étaient vides.
+
 ## 0.1.1 — 2026-10-01
 
 ### Corrigé

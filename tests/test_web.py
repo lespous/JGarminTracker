@@ -75,6 +75,20 @@ def test_dashboard_shows_week_and_charts(client):
     assert "Volume des 12 dernières semaines" in html and "Course › Trail" in html
 
 
+def test_activity_detail_shows_extras(client):
+    with dbm.new_session() as s:
+        bike = s.scalar(select(Activity.id).where(Activity.name == "Vélo dimanche"))
+        run = s.scalar(select(Activity.id).where(Activity.name == "Course du soir 24"))
+    html = client.get(f"/activities/{bike}").get_data(as_text=True)
+    for text in ("Vitesse max", "Dénivelé −", "Zone 3 · Aérobie", "Meilleurs temps", "40 km", "record personnel"):
+        assert text in html, text
+    html = client.get(f"/activities/{run}").get_data(as_text=True)
+    for text in ("Allure max", "Cadence moyenne", "Longueur de foulée", "1 km", "5 km"):
+        assert text in html, text
+    progress = client.get("/progress").get_data(as_text=True)
+    assert "Meilleur 1 km" in progress and "Allure max" in progress
+
+
 def test_sync_page_logs_run(client):
     html = client.get("/sync").get_data(as_text=True)
     assert "32 activité(s)" in html and "terminée" in html

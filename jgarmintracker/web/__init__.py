@@ -27,6 +27,7 @@ from ..classifier import (
 )
 from ..models import PACE_UNITS, Activity, DailyHealth, Sport, SportFamily, SportRule, SyncRun, Tag
 from ..stats import (
+    SPLITS,
     activities_between,
     add_months,
     health_series,
@@ -233,7 +234,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def activity_detail(act_id: int):
         s = db()
         act = s.get(Activity, act_id) or abort(404)
-        return render_template("activity.html", a=act, families=load_families(s),
+        splits = [(label, meters, getattr(act, attr)) for label, meters, attr in SPLITS if getattr(act, attr)]
+        return render_template("activity.html", a=act, families=load_families(s), splits=splits,
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
     @app.get("/activities/<int:act_id>/sport")

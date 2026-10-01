@@ -17,17 +17,69 @@
     <div class="metric"><small>Distance</small><b>{{ a.distance_m|km if a.distance_m else '—' }}</b></div>
     <div class="metric"><small>Durée totale</small><b>{{ a.duration_s|hms }}</b></div>
     <div class="metric"><small>Durée en mouvement</small><b>{{ a.moving_s|hms }}</b></div>
+    {% if a.elapsed_s and a.duration_s and a.elapsed_s - a.duration_s > 30 %}<div class="metric"><small>Durée écoulée (pauses comprises)</small><b>{{ a.elapsed_s|hms }}</b></div>{% endif %}
     <div class="metric"><small>{{ 'Vitesse moyenne' if unit == 'kmh' else 'Allure moyenne' }}</small><b>{{ a.avg_speed|pace(unit) }}</b></div>
+    {% if a.max_speed and unit != 'none' %}<div class="metric"><small>{{ 'Vitesse max' if unit == 'kmh' else 'Allure max' }}</small><b>{{ a.max_speed|pace(unit) }}</b></div>{% endif %}
     {% if unit != 'kmh' and a.avg_speed %}<div class="metric"><small>Vitesse moyenne</small><b>{{ a.avg_speed|pace('kmh') }}</b></div>{% endif %}
+    {% if unit != 'kmh' and a.max_speed %}<div class="metric"><small>Vitesse max</small><b>{{ a.max_speed|pace('kmh') }}</b></div>{% endif %}
     <div class="metric"><small>Dénivelé +</small><b>{{ a.elevation_gain_m|meters }}</b></div>
+    {% if a.elevation_loss_m %}<div class="metric"><small>Dénivelé −</small><b>{{ a.elevation_loss_m|meters }}</b></div>{% endif %}
+    {% if a.min_elevation_m is not none and a.max_elevation_m is not none %}<div class="metric"><small>Altitude min – max</small><b>{{ a.min_elevation_m|number }} – {{ a.max_elevation_m|number }} m</b></div>{% endif %}
     <div class="metric"><small>FC moyenne</small><b>{{ a.avg_hr|bpm }}</b></div>
     <div class="metric"><small>FC max</small><b>{{ a.max_hr|bpm }}</b></div>
-    <div class="metric"><small>Calories</small><b>{{ a.calories|number }} kcal</b></div>
-    <div class="metric"><small>Effet aérobie</small><b>{{ a.aerobic_te|number(1) }}</b></div>
-    <div class="metric"><small>Effet anaérobie</small><b>{{ a.anaerobic_te|number(1) }}</b></div>
+    {% if a.cadence_avg %}<div class="metric"><small>Cadence moyenne / max</small><b>{{ a.cadence_avg|number }} / {{ a.cadence_max|number }} pas/min</b></div>{% endif %}
+    {% if a.stride_cm %}<div class="metric"><small>Longueur de foulée</small><b>{{ (a.stride_cm / 100)|number(2) }} m</b></div>{% endif %}
+    {% if a.steps %}<div class="metric"><small>Pas</small><b>{{ a.steps|number }}</b></div>{% endif %}
     {% if a.avg_power %}<div class="metric"><small>Puissance moyenne</small><b>{{ a.avg_power|number }} W</b></div>{% endif %}
+    <div class="metric"><small>Calories</small><b>{{ a.calories|number }} kcal</b></div>
+    {% if a.water_ml %}<div class="metric"><small>Eau perdue (estimation)</small><b>{{ a.water_ml|number }} ml</b></div>{% endif %}
+    {% if a.aerobic_te %}<div class="metric"><small>Effet aérobie</small><b>{{ a.aerobic_te|number(1) }}</b></div>{% endif %}
+    {% if a.anaerobic_te %}<div class="metric"><small>Effet anaérobie</small><b>{{ a.anaerobic_te|number(1) }}</b></div>{% endif %}
+    {% if a.vo2max %}<div class="metric"><small>VO2max après la sortie</small><b>{{ a.vo2max|number }}</b></div>{% endif %}
+    {% if a.lap_count %}<div class="metric"><small>Tours</small><b>{{ a.lap_count }}</b></div>{% endif %}
   </div>
+  {% if a.is_pr %}<p class="flash">Garmin a enregistré un record personnel pendant cette sortie.</p>{% endif %}
 </section>
+
+{% set zones = a.hr_zones %}
+{% set zone_total = zones|select|sum %}
+{% if zone_total or splits %}
+<div class="grid2">
+  {% if zone_total %}
+  <section class="panel">
+    <h2>Temps dans les zones cardio <small>{{ zone_total|hms }} mesurées</small></h2>
+    <div class="zones-bar" role="img" aria-label="Répartition du temps par zone cardio">
+      {% for z in zones %}{% if z %}<i class="z{{ loop.index }}" style="width: {{ z / zone_total * 100 }}%"></i>{% endif %}{% endfor %}
+    </div>
+    <table class="zones">
+      <tbody>
+      {% for label in ['Échauffement', 'Endurance', 'Aérobie', 'Seuil', 'Maximum'] %}
+        {% set z = zones[loop.index0] or 0 %}
+        <tr><td><i class="sdot z{{ loop.index }}"></i>Zone {{ loop.index }} · {{ label }}</td>
+          <td class="r num">{{ z|hms if z else '—' }}</td>
+          <td class="r num muted">{{ (z / zone_total * 100)|round|int }} %</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="note">Zones définies dans ta montre / Garmin Connect.</p>
+  </section>
+  {% endif %}
+  {% if splits %}
+  <section class="panel">
+    <h2>Meilleurs temps dans cette sortie</h2>
+    <table class="zones">
+      <tbody>
+      {% for label, meters, secs in splits %}
+        <tr><td>{{ label }}</td><td class="r num">{{ secs|hms }}</td>
+          <td class="r num muted">{{ (meters / secs)|pace(unit if unit != 'none' else 'min_km') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="note">Mesurés par la montre sur le meilleur passage de la sortie, pas forcément au départ.</p>
+  </section>
+  {% endif %}
+</div>
+{% endif %}
 
 <div class="grid2">
   <section class="panel">
