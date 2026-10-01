@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Santé{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% endblock %}
+{% macro trend(cur, prev, better_when_lower=false, fmt=None) -%}
+  {%- if cur is not none and prev is not none -%}
+    {%- set good = (cur < prev) if better_when_lower else (cur > prev) -%}
+    <span class="delta {{ 'up' if good and cur != prev else 'down' if cur != prev }}">période préc. {{ fmt(prev) if fmt else prev }}</span>
+  {%- else -%}<span class="delta">période préc. —</span>{%- endif -%}
+{%- endmacro %}
+{% block content %}
+<div class="head">
+  <h1>Santé</h1>
+  <span class="muted">{{ days }} derniers jours, jusqu'au {{ today|day }} · {{ hs.days_with_data }} jour(s) avec données</span>
+  <div class="spacer"></div>
+  <div class="chips">
+    {% for d, l in [(30, '30 jours'), (90, '90 jours'), (365, '1 an')] %}
+      <a class="chip {{ 'on' if d == days }}" href="{{ url_for('health', days=d) }}">{{ l }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>FC au repos · moyenne</small><b>{{ hs.rhr|bpm if hs.rhr else '—' }}</b>{{ trend(hs.rhr, hs.rhr_prev, true, units_bpm) }}</div>
+  <div class="kpi"><small>Sommeil · moyenne</small><b>{{ (hs.sleep_h * 3600)|hmm if hs.sleep_h else '—' }}</b>{{ trend(hs.sleep_h, hs.sleep_h_prev, false, units_h) }}</div>
+  <div class="kpi"><small>Score de sommeil · moyenne</small><b>{{ hs.score|number if hs.score else '—' }}</b>{{ trend(hs.score, hs.score_prev, false, units_int) }}</div>
+  <div class="kpi"><small>Body Battery max · moyenne</small><b>{{ hs.bb_max|number if hs.bb_max else '—' }}</b>{{ trend(hs.bb_max, hs.bb_max_prev, false, units_int) }}</div>
+  <div class="kpi"><small>Pas · moyenne par jour</small><b>{{ hs.steps|number if hs.steps else '—' }}</b>{{ trend(hs.steps, hs.steps_prev, false, units_int) }}</div>
+  <div class="kpi"><small>Stress · moyenne</small><b>{{ hs.stress|number if hs.stress else '—' }}</b>{{ trend(hs.stress, hs.stress_prev, true, units_int) }}</div>
+  <div class="kpi"><small>VO2max · dernière valeur</small><b>{{ hs.vo2max|number(1) if hs.vo2max else '—' }}</b><span class="sub">estimation Garmin</span></div>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>FC au repos <small>{{ days }} jours</small></h2>
+    <div class="chart-box"><canvas id="rhr" aria-label="FC au repos par jour et moyenne glissante"></canvas></div>
+    <p class="note">Points : valeur du jour. Trait : moyenne glissante 7 jours. Une FC au repos qui baisse sur plusieurs semaines signale en général une meilleure forme ; une hausse soudaine, de la fatigue ou un début de maladie.</p>
+  </section>
+  <section class="panel">
+    <h2>Sommeil par phase <small>{{ days }} nuits, en heures</small></h2>
+    <div class="chart-box"><canvas id="sleep" aria-label="Sommeil par phase et score"></canvas></div>
+    <p class="note">Barres empilées : profond, léger, paradoxal, éveillé (axe de gauche). Trait : score de sommeil sur 100 (axe de droite). Nuit rattachée au jour du réveil.</p>
+  </section>
+  <section class="panel">
+    <h2>Body Battery <small>{{ days }} jours, plage min–max</small></h2>
+    <div class="chart-box"><canvas id="bb" aria-label="Body Battery, plage minimum-maximum par jour"></canvas></div>
+    <p class="note">Chaque barre va du niveau le plus bas au plus haut de la journée. Un haut de barre qui descend : tu récupères moins la nuit.</p>
+  </section>
+  <section class="panel">
+    <h2>Stress <small>{{ days }} jours, moyenne du jour sur 100</small></h2>
+    <div class="chart-box"><canvas id="stress" aria-label="Stress moyen par jour"></canvas></div>
+    <p class="note">Trait plein : moyenne glissante 7 jours. 0–25 repos, 26–50 faible, 51–75 moyen, 76–100 élevé (échelle Garmin).</p>
+  </section>
+  <section class="panel">
+    <h2>Pas <small>{{ days }} jours</small></h2>
+    <div class="chart-box"><canvas id="steps" aria-label="Pas par jour"></canvas></div>
+    <p class="note">Trait : moyenne glissante 7 jours.</p>
+  </section>
+  <section class="panel">
+    <h2>VO2max <small>{{ days }} jours</small></h2>
+    <div class="chart-box"><canvas id="vo2" aria-label="VO2max estimée"></canvas></div>
+    <p class="note">Estimation de la montre (ml/kg/min), mise à jour après certaines sorties seulement : les jours sans nouvelle valeur sont reliés.</p>
+  </section>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const h = {{ h|tojson }};
+  const many = h.labels.length > 60;
+  const pt = many ? 1.5 : 3;
+  const x = { scales: { x: { ticks: { maxTicksLimit: 10 } } } };
+  const avgLine = (data, label = "Moyenne 7 j") => ({ type: "line", label, data, pointRadius: 0, borderWidth: 2,
+    borderColor: cssVar("--ink"), tension: .3 });
+
+  chart("rhr", { type: "line", data: { labels: h.labels, datasets: [
+    { label: "FC repos", data: h.rhr, showLine: false, pointRadius: pt, backgroundColor: cssVar("--out"), borderColor: cssVar("--out") },
+    avgLine(h.rhr7),
+  ] } }, merge({ scales: { y: { ticks: { callback: v => v + " bpm" } } },
+                 plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label} : ${fmt.num(c.parsed.y, c.datasetIndex ? 1 : 0)} bpm` } } } }, x));
+
+  const phases = [["deep", "Profond", "#1F4E79"], ["light", "Léger", "#5B9BD5"], ["rem", "Paradoxal", "#A77BCA"], ["awake", "Éveillé", "#E8A33D"]];
+  chart("sleep", { type: "bar", data: { labels: h.labels, datasets: [
+    { type: "line", label: "Score", data: h.score, yAxisID: "y2", borderColor: cssVar("--ink"), backgroundColor: cssVar("--ink"),
+      pointRadius: many ? 0 : 2, borderWidth: 1.5, tension: .3, order: 0 },
+    ...phases.map(([k, label, color]) => ({ label, data: h[k], backgroundColor: color, stack: "s", order: 1 })),
+  ] } }, merge({
+    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: v => fmt.hmm(v) } },
+              y2: { position: "right", min: 0, max: 100, grid: { display: false }, ticks: { color: cssVar("--muted") } } },
+    plugins: { tooltip: { callbacks: {
+      label: c => c.dataset.label === "Score" ? `Score : ${fmt.num(c.parsed.y)}` : `${c.dataset.label} : ${fmt.hmm(c.parsed.y)}`,
+      footer: items => { const i = items[0].dataIndex; return h.sleep[i] != null ? `Total : ${fmt.hmm(h.sleep[i])}` : "Pas de donnée"; },
+    } } },
+  }, x));
+
+  chart("bb", { type: "bar", data: { labels: h.labels, datasets: [
+    { label: "Body Battery", data: h.bb, backgroundColor: cssVar("--in"), borderRadius: 2 },
+  ] } }, merge({ scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false }, tooltip: { callbacks: {
+    label: c => c.raw ? `min ${c.raw[0]} · max ${c.raw[1]} · rechargé +${h.bb_charged[c.dataIndex] ?? "—"}` : "—" } } } }, x));
+
+  chart("stress", { type: "line", data: { labels: h.labels, datasets: [
+    { label: "Stress", data: h.stress, showLine: false, pointRadius: pt, backgroundColor: cssVar("--warn"), borderColor: cssVar("--warn") },
+    avgLine(h.stress7),
+  ] } }, merge({ scales: { y: { min: 0, max: 100 } } }, x));
+
+  chart("steps", { type: "bar", data: { labels: h.labels, datasets: [
+    avgLine(h.steps7), { label: "Pas", data: h.steps, backgroundColor: cssVar("--accent") },
+  ] } }, merge({ scales: { y: { beginAtZero: true, ticks: { callback: v => fmt.num(v) } } },
+                 plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label} : ${fmt.num(c.parsed.y)}` } } } }, x));
+
+  chart("vo2", { type: "line", data: { labels: h.labels, datasets: [
+    { label: "VO2max", data: h.vo2max, spanGaps: true, pointRadius: many ? 0 : 3, borderColor: cssVar("--accent"),
+      backgroundColor: cssVar("--accent"), tension: .2 },
+  ] } }, merge({ plugins: { legend: { display: false } } }, x));
+});
+</script>
+{% endblock %}

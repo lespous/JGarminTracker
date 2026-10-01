@@ -1,0 +1,21 @@
+{% if job.running %}
+  {% set p = job.progress %}
+  <div hx-get="{{ url_for('sync_status') }}" hx-trigger="every 2s" hx-target="#sync-status" hx-swap="innerHTML">
+    <p class="status-running">
+      {% if not p or p.step == 'connect' %}Reprise de la session Garmin…
+      {% elif p.step == 'activities' %}Activités : {{ p.done }} / {{ p.total or '?' }}
+      {% elif p.step == 'health' %}Santé, jour par jour : {{ p.done }} / {{ p.total }}{% if p.day %} ({{ p.day|day }}){% endif %}
+      {% else %}Finalisation…{% endif %}
+    </p>
+    {% if p and p.total %}<div class="progress-bar"><i style="width: {{ (p.done / p.total * 100)|round|int }}%"></i></div>{% endif %}
+    <p class="muted small">Tu peux quitter cette page : la synchro continue tant que le serveur tourne.</p>
+  </div>
+{% elif run %}
+  {% if run.status == 'ok' %}
+    <p class="status-ok">Dernière synchro terminée le {{ run.finished_at.strftime('%d/%m/%Y à %H:%M') if run.finished_at }} :
+      {{ run.activities_added }} activité(s) ajoutée(s), {{ run.days_added }} jour(s) ajouté(s), {{ run.days_updated }} mis à jour.</p>
+    {% if job.started and run.started_at >= job.started %}<a class="btn" href="{{ url_for('dashboard') }}">Voir le tableau de bord</a>{% endif %}
+  {% elif run.status == 'error' %}
+    <div class="flash error">{{ run.message }}</div>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Tags{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Tags</h1>
+  <span class="muted">Étiquettes libres posées depuis la liste des activités (cocher des lignes, puis « Ajouter le tag »).</span>
+</div>
+<div class="tbl">
+<table>
+  <thead><tr><th>Tag</th><th class="r">Activités</th><th class="r">Distance</th><th class="r">Durée</th><th>Période</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>
+        {% if rename == r.tag.id %}
+        <form class="filters" method="post" action="{{ url_for('tag_rename', tag_id=r.tag.id) }}">
+          <input name="name" value="{{ r.tag.name }}" aria-label="Nouveau nom" required autofocus>
+          <button class="primary">Renommer</button><a class="btn" href="{{ url_for('tags_page') }}">Annuler</a>
+        </form>
+        {% else %}<a href="{{ url_for('activities', tag=r.tag.id) }}"># {{ r.tag.name }}</a>{% endif %}
+      </td>
+      <td class="r num">{{ r.count }}</td>
+      <td class="r num">{{ r.distance|km(1) }}</td>
+      <td class="r num">{{ r.duration|hmm }}</td>
+      <td class="num">{% if r.first %}{{ r.first|day }} → {{ r.last|day }}{% endif %}</td>
+      <td class="actions">
+        <a class="btn" href="{{ url_for('tags_page', rename=r.tag.id) }}">Renommer</a>
+        <a class="btn danger" href="{{ url_for('tags_page', confirm=r.tag.id) }}">Supprimer</a>
+      </td>
+    </tr>
+    {% if confirm == r.tag.id %}
+    <tr><td colspan="6">
+      <form class="confirm" method="post" action="{{ url_for('tag_delete', tag_id=r.tag.id) }}">
+        <span>Supprimer le tag « {{ r.tag.name }} » ? Il sera retiré de {{ r.count }} activité(s) ; les activités restent.</span>
+        <div class="actions"><a class="btn" href="{{ url_for('tags_page') }}">Annuler</a><button class="primary">Supprimer</button></div>
+      </form>
+    </td></tr>
+    {% endif %}
+  {% else %}
+    <tr><td colspan="6" class="muted">Aucun tag pour l'instant.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

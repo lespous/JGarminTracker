@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Bienvenue{% endblock %}
+{% block content %}
+<section class="panel empty">
+  <h1>Bienvenue dans JGarminTracker</h1>
+  <p>La base est encore vide. Trois étapes, une seule fois :</p>
+  <ol>
+    <li>{% if has_tokens %}<span class="status-ok">Fait :</span> session Garmin enregistrée.{% else %}Dans PowerShell, depuis le dossier du projet :
+      <code>.venv\Scripts\jgarmin login</code><br><span class="muted small">E-mail, mot de passe et code MFA éventuel se tapent dans le terminal. Le mot de passe n'est jamais enregistré.</span>{% endif %}</li>
+    <li>Lance la première synchro (12 mois d'historique, quelques minutes) : <code>.venv\Scripts\jgarmin sync</code>,
+      ou le bouton de la page <a href="{{ url_for('sync_page') }}">Synchronisation</a>.</li>
+    <li>Reviens ici : tableau de bord, progression et courbes santé se remplissent.</li>
+  </ol>
+</section>
+{% endblock %}

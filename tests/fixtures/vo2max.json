@@ -1,0 +1,21 @@
+[
+ {
+  "generic": {
+   "calendarDate": "2025-06-01",
+   "vo2MaxPreciseValue": 47.6,
+   "vo2MaxValue": 48.0
+  },
+  "cycling": null
+ },
+ {
+  "generic": {
+   "calendarDate": "2025-06-15",
+   "vo2MaxPreciseValue": 48.3,
+   "vo2MaxValue": 48.0
+  },
+  "cycling": {
+   "calendarDate": "2025-06-15",
+   "vo2MaxPreciseValue": 46.1
+  }
+ }
+]

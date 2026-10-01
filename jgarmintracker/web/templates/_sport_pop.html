@@ -1,0 +1,22 @@
+<form class="pop" method="post" action="{{ url_for('sport_save', act_id=a.id) }}">
+  <input type="hidden" name="sport_id" value="{{ sport.id }}">
+  <input type="hidden" name="next" value="{{ next or '' }}">
+  <strong>{{ a.name or a.type_key }} → {{ sport.label }}</strong>
+  <label><input type="radio" name="scope" value="one" checked>
+    <span>Seulement cette activité<br><span class="muted small">Correction verrouillée : les règles ne la changeront plus.</span></span></label>
+  {% if a.type_key %}
+  <label><input type="radio" name="scope" value="type_key">
+    <span>Créer une règle : type Garmin = <span class="mono">{{ a.type_key }}</span><br>
+    <span class="muted small">{% if same_type %}{{ type_changing }} des {{ same_type }} autre(s) activité(s) de ce type changeront de sport.{% else %}Aucune autre activité de ce type pour l'instant ; la règle servira aux prochaines synchros.{% endif %}</span></span></label>
+  {% endif %}
+  {% if a.name %}
+  <label><input type="radio" name="scope" value="name">
+    <span>Créer une règle : nom = <span class="mono">{{ a.name }}</span><br>
+    <span class="muted small">{% if same_name %}{{ name_changing }} des {{ same_name }} autre(s) activité(s) du même nom changeront de sport.{% else %}Aucune autre activité de ce nom pour l'instant.{% endif %}</span></span></label>
+  {% endif %}
+  <div class="btns">
+    <a class="btn" href="{{ url_for('sports', field='name', match_type='contains', pattern=a.name, sport_id=sport.id) }}#rule-form">Règle personnalisée…</a>
+    <button type="button" onclick="cancelPop({{ a.id }})">Annuler</button>
+    <button class="primary" type="submit">Enregistrer</button>
+  </div>
+</form>

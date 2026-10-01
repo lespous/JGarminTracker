@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ a.name }}{% endblock %}
+{% block content %}
+{% set unit = a.sport.pace_unit if a.sport else 'none' %}
+<div class="head">
+  <div>
+    <h1>{{ a.name or 'Activité sans nom' }}</h1>
+    <span class="muted">{{ a.start|weekday_day }} {{ a.start.year }} à {{ a.start.strftime('%H:%M') }} · type Garmin <span class="mono">{{ a.type_key or '—' }}</span></span>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="{{ a.garmin_url }}" target="_blank" rel="noopener">Ouvrir dans Garmin Connect ↗</a>
+  <a class="btn" href="{{ request.referrer or url_for('activities') }}">Retour</a>
+</div>
+
+<section class="panel">
+  <div class="metrics">
+    <div class="metric"><small>Distance</small><b>{{ a.distance_m|km if a.distance_m else '—' }}</b></div>
+    <div class="metric"><small>Durée totale</small><b>{{ a.duration_s|hms }}</b></div>
+    <div class="metric"><small>Durée en mouvement</small><b>{{ a.moving_s|hms }}</b></div>
+    <div class="metric"><small>{{ 'Vitesse moyenne' if unit == 'kmh' else 'Allure moyenne' }}</small><b>{{ a.avg_speed|pace(unit) }}</b></div>
+    {% if unit != 'kmh' and a.avg_speed %}<div class="metric"><small>Vitesse moyenne</small><b>{{ a.avg_speed|pace('kmh') }}</b></div>{% endif %}
+    <div class="metric"><small>Dénivelé +</small><b>{{ a.elevation_gain_m|meters }}</b></div>
+    <div class="metric"><small>FC moyenne</small><b>{{ a.avg_hr|bpm }}</b></div>
+    <div class="metric"><small>FC max</small><b>{{ a.max_hr|bpm }}</b></div>
+    <div class="metric"><small>Calories</small><b>{{ a.calories|number }} kcal</b></div>
+    <div class="metric"><small>Effet aérobie</small><b>{{ a.aerobic_te|number(1) }}</b></div>
+    <div class="metric"><small>Effet anaérobie</small><b>{{ a.anaerobic_te|number(1) }}</b></div>
+    {% if a.avg_power %}<div class="metric"><small>Puissance moyenne</small><b>{{ a.avg_power|number }} W</b></div>{% endif %}
+  </div>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Sport</h2>
+    <p><span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color }}"></i>{{ a.sport.label }}</span>
+      <span class="muted small">·
+      {% if a.sport_locked %}corrigé à la main{% elif a.sport_source == 'rule' and a.rule %}règle #{{ a.rule.id }} : {{ FIELDS[a.rule.field] }} {{ MATCH_TYPES[a.rule.match_type] }} « {{ a.rule.pattern }} »{% else %}aucune règle, sport par défaut{% endif %}</span></p>
+    <div class="filters">
+      <label>Changer le sport
+        <select name="sport_id" hx-get="{{ url_for('sport_form', act_id=a.id) }}" hx-trigger="change" hx-target="#pop-{{ a.id }}" data-orig="{{ a.sport_id }}" class="sport">
+          {% for f in families %}<optgroup label="{{ f.name }}">
+            {% for sp in f.sports %}<option value="{{ sp.id }}" {{ 'selected' if sp.id == a.sport_id }}>{{ sp.name }}</option>{% endfor %}
+          </optgroup>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <div id="pop-{{ a.id }}"></div>
+    {% if a.sport_locked %}
+    <form method="post" action="{{ url_for('unlock', act_id=a.id) }}"><button>Déverrouiller et reclasser par les règles</button></form>
+    {% endif %}
+  </section>
+  <section class="panel">
+    <h2>Tags</h2>
+    <div class="labels">
+      {% for tg in a.tags %}
+        <span class="tag-chip"><a href="{{ url_for('activities', tag=tg.id) }}"># {{ tg.name }}</a>
+          <form class="inline" method="post" action="{{ url_for('tag_remove', act_id=a.id, tag_id=tg.id) }}">
+            <button class="x" aria-label="Retirer le tag {{ tg.name }}">×</button></form></span>
+      {% else %}<span class="muted small">Aucun tag.</span>{% endfor %}
+    </div>
+    <form class="filters" method="post" action="{{ url_for('bulk_tags') }}">
+      <input type="hidden" name="act" value="{{ a.id }}">
+      <input name="tag" list="tag-list" placeholder="Tag, ex. Marathon" aria-label="Tag" required>
+      <datalist id="tag-list">{% for tg in tags %}<option value="{{ tg.name }}">{% endfor %}</datalist>
+      <button name="action" value="add">Ajouter</button>
+    </form>
+  </section>
+</div>
+
+<details class="panel">
+  <summary>Données brutes reçues de Garmin (JSON)</summary>
+  <pre class="raw">{{ a.raw_json|pretty_json }}</pre>
+</details>
+<script>
+function cancelPop(id) {
+  const select = document.querySelector("select.sport");
+  select.value = select.dataset.orig;
+  document.getElementById("pop-" + id).innerHTML = "";
+}
+</script>
+{% endblock %}

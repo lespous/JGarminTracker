@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Sports{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Sports et règles</h1>
+  <div class="spacer"></div>
+  <form method="post" action="{{ url_for('rules_reapply') }}"><button>Réappliquer toutes les règles</button></form>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Familles et sports</h2>
+    <p class="muted small">La couleur sert dans tous les graphiques. L'unité décide de l'affichage de l'allure (min/km, km/h, min/100 m).</p>
+    {% for fam in families %}
+    <div class="fam-block">
+      <form class="filters" method="post" action="{{ url_for('family_rename', family_id=fam.id) }}">
+        <input name="name" value="{{ fam.name }}" aria-label="Nom de la famille" style="font-weight:600">
+        <button>Renommer</button>
+      </form>
+      {% for sp in fam.sports %}
+      <form id="sport-{{ sp.id }}" class="sport-row" method="post" action="{{ url_for('sport_update', sport_id=sp.id) }}">
+        <input type="color" name="color" value="{{ sp.color }}" aria-label="Couleur de {{ sp.name }}">
+        <input name="name" value="{{ sp.name }}" aria-label="Nom du sport">
+        <select name="family_id" aria-label="Famille">{% for f in families %}<option value="{{ f.id }}" {{ 'selected' if f.id == sp.family_id }}>{{ f.name }}</option>{% endfor %}</select>
+        <select name="pace_unit" aria-label="Unité d'allure">{% for k, v in PACE_UNITS.items() %}<option value="{{ k }}" {{ 'selected' if k == sp.pace_unit }}>{{ v }}</option>{% endfor %}</select>
+        <a class="count" href="{{ url_for('activities', sport='s' ~ sp.id) }}" title="Activités">{{ counts.get(sp.id, 0) }}</a>
+        <div class="actions">
+          <button>Enregistrer</button>
+          {% if not sp.fallback %}<a class="btn danger" href="{{ url_for('sports', confirm=sp.id) }}#sport-{{ sp.id }}">Supprimer</a>
+          {% else %}<span class="muted small" title="Sport attribué quand aucune règle ne s'applique">par défaut</span>{% endif %}
+        </div>
+      </form>
+      {% if confirm == sp.id %}
+      <form class="confirm" method="post" action="{{ url_for('sport_delete', sport_id=sp.id) }}">
+        <span>Supprimer « {{ sp.label }} » et ses règles ? Ses {{ counts.get(sp.id, 0) }} activité(s) seront reclassées par les règles restantes (ou en « Autre »). Les activités elles-mêmes sont conservées.</span>
+        <div class="actions"><a class="btn" href="{{ url_for('sports') }}">Annuler</a><button class="primary">Supprimer</button></div>
+      </form>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <h2>Ajouter un sport</h2>
+    <form class="rule-form" method="post" action="{{ url_for('sport_add') }}">
+      <label>Nom<input name="name" required placeholder="ex. Ski de fond"></label>
+      <label>Famille
+        <select name="family_id">{% for f in families %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select></label>
+      <label>ou nouvelle famille<input name="new_family" placeholder="ex. Sports d'hiver"></label>
+      <label>Unité
+        <select name="pace_unit">{% for k, v in PACE_UNITS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+      <label>Couleur<input type="color" name="color" value="#8A94A0"></label>
+      <div class="actions"><button class="primary">Ajouter</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Types Garmin rencontrés</h2>
+    <p class="muted small">Clique sur un type pour préparer une règle, ou sur le nombre pour voir ses activités.</p>
+    <div class="tbl">
+    <table>
+      <thead><tr><th>Type Garmin</th><th class="r">Activités</th></tr></thead>
+      <tbody>
+      {% for tk, n in type_keys %}
+        <tr><td><a class="mono" href="{{ url_for('sports', field='type_key', match_type='equals', pattern=tk) }}#rule-form">{{ tk or '(vide)' }}</a></td>
+          <td class="r num"><a href="{{ url_for('activities', type=tk) }}">{{ n }}</a></td></tr>
+      {% else %}<tr><td colspan="2" class="muted">Aucune activité synchronisée.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+</div>
+
+<section class="panel" id="rule-form-panel">
+  <h2 id="rule-form">{% if edit %}Modifier la règle #{{ edit.id }}{% else %}Nouvelle règle{% endif %}</h2>
+  <p class="muted small">La règle de plus haute priorité l'emporte ; à priorité égale, le motif le plus long. Les activités corrigées à la main ne sont jamais reclassées. Majuscules et accents ignorés.</p>
+  <form id="rule-fields" class="rule-form" method="post" action="{{ url_for('rules_save') }}">
+    {% if edit %}<input type="hidden" name="id" value="{{ edit.id }}">{% endif %}
+    <label>Champ
+      <select name="field">{% for k, v in FIELDS.items() %}<option value="{{ k }}" {{ 'selected' if f.field == k }}>{{ v }}</option>{% endfor %}</select></label>
+    <label>Condition
+      <select name="match_type">{% for k, v in MATCH_TYPES.items() %}<option value="{{ k }}" {{ 'selected' if f.match_type == k }}>{{ v }}</option>{% endfor %}</select></label>
+    <label class="wide">Motif<input name="pattern" value="{{ f.pattern or '' }}" required placeholder="ex. trail_running, ou « trail » dans le nom"></label>
+    <label class="wide">Sport
+      <select name="sport_id" required>
+        <option value="">Choisir…</option>
+        {% for fam in families %}<optgroup label="{{ fam.name }}">
+          {% for sp in fam.sports %}<option value="{{ sp.id }}" {{ 'selected' if f.sport_id == sp.id }}>{{ sp.name }}</option>{% endfor %}
+        </optgroup>{% endfor %}
+      </select></label>
+    <label>Priorité<input name="priority" type="number" value="{{ f.priority }}"></label>
+    <label>État
+      <select name="enabled"><option value="on">Active</option><option value="off" {{ 'selected' if not f.enabled }}>Désactivée</option></select></label>
+    <div class="actions">
+      {% if edit %}<a class="btn" href="{{ url_for('sports') }}#rule-form">Annuler</a>{% endif %}
+      <button class="primary" type="submit">Enregistrer et reclasser</button>
+    </div>
+  </form>
+  <div id="rule-test" class="test"
+       hx-get="{{ url_for('rules_test') }}" hx-include="#rule-fields"
+       hx-trigger="load, input delay:300ms from:#rule-fields, change from:#rule-fields">
+    <span class="muted small">Test en cours…</span>
+  </div>
+</section>
+
+<div class="head" id="rules">
+  <h2>{{ rules|length }} règle{{ 's' if rules|length > 1 }}</h2>
+  <div class="spacer"></div>
+  <form method="get"><input type="search" name="q" value="{{ request.args.get('q', '') }}" placeholder="Chercher un motif, un sport…" aria-label="Chercher une règle"></form>
+</div>
+<div class="tbl">
+<table>
+  <thead><tr><th>#</th><th class="r">Prio</th><th>Condition</th><th>Sport</th><th>Origine</th><th class="r">Activités</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rules %}
+    <tr class="{{ 'off' if not r.enabled }}">
+      <td class="num muted">{{ r.id }}</td>
+      <td class="r num">{{ r.priority }}</td>
+      <td>{{ FIELDS[r.field] }} {{ MATCH_TYPES[r.match_type] }} <span class="mono">« {{ r.pattern }} »</span></td>
+      <td><span class="sport-chip"><i class="sdot" style="background: {{ r.sport.color }}"></i>{{ r.sport.label }}</span></td>
+      <td><span class="origin {{ r.origin }}">{{ ORIGINS[r.origin] }}</span></td>
+      <td class="r num"><a href="{{ url_for('activities', rule=r.id) }}">{{ hits.get(r.id, 0) }}</a></td>
+      <td class="actions">
+        <a class="btn" href="{{ url_for('sports', edit=r.id) }}#rule-form">Modifier</a>
+        <form method="post" action="{{ url_for('rules_toggle', rule_id=r.id) }}"><button>{{ 'Désactiver' if r.enabled else 'Activer' }}</button></form>
+        <form method="post" action="{{ url_for('rules_delete', rule_id=r.id) }}"><button class="danger">Supprimer</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Semaine du {{ wc.monday|day }}</h1>
+  <span class="muted">en cours, jusqu'à {{ today|weekday_day }}</span>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Activités</small><b>{{ wc.current.count }}</b>
+    <span class="delta {{ 'up' if wc.current.count > wc.previous.count else 'down' if wc.current.count < wc.previous.count }}">sem. préc. {{ wc.previous.count }}</span></div>
+  <div class="kpi"><small>Distance</small><b>{{ wc.current.distance_m|km(1) }}</b>
+    <span class="delta {{ 'up' if wc.current.distance_m > wc.previous.distance_m else 'down' if wc.current.distance_m < wc.previous.distance_m }}">sem. préc. {{ wc.previous.distance_m|km(1) }}</span></div>
+  <div class="kpi"><small>Durée</small><b>{{ wc.current.duration_s|hmm }}</b>
+    <span class="delta {{ 'up' if wc.current.duration_s > wc.previous.duration_s else 'down' if wc.current.duration_s < wc.previous.duration_s }}">sem. préc. {{ wc.previous.duration_s|hmm }}</span></div>
+  <div class="kpi"><small>Dénivelé +</small><b>{{ wc.current.elevation_m|meters }}</b>
+    <span class="delta">sem. préc. {{ wc.previous.elevation_m|meters }}</span></div>
+  <a class="kpi" href="{{ url_for('health') }}"><small>FC au repos · moy. 7 j</small><b>{{ hs.rhr|bpm if hs.rhr else '—' }}</b>
+    <span class="delta {{ 'up' if hs.rhr and hs.rhr_prev and hs.rhr < hs.rhr_prev else 'down' if hs.rhr and hs.rhr_prev and hs.rhr > hs.rhr_prev }}">7 j préc. {{ hs.rhr_prev|bpm if hs.rhr_prev else '—' }}</span></a>
+  <a class="kpi" href="{{ url_for('health') }}"><small>Sommeil · moy. 7 j</small><b>{{ (hs.sleep_h * 3600)|hmm if hs.sleep_h else '—' }}</b>
+    <span class="delta {{ 'up' if hs.sleep_h and hs.sleep_h_prev and hs.sleep_h > hs.sleep_h_prev else 'down' if hs.sleep_h and hs.sleep_h_prev and hs.sleep_h < hs.sleep_h_prev }}">7 j préc. {{ (hs.sleep_h_prev * 3600)|hmm if hs.sleep_h_prev else '—' }}</span></a>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Par famille <small>cette semaine et la précédente</small></h2>
+    {% if wc.families %}
+    <div class="tbl">
+    <table class="fam-table">
+      <thead><tr><th>Famille</th><th class="r">Activités</th><th class="r">Distance</th><th class="r">Durée</th><th class="r">Sem. préc.</th></tr></thead>
+      <tbody>
+      {% for f in wc.families %}
+        <tr>
+          <td><a href="{{ url_for('activities', sport='f' ~ f.family.id, **{'from': wc.monday.isoformat()}) }}">{{ f.family.name }}</a></td>
+          <td class="r num">{{ f.current.count }}</td>
+          <td class="r num">{{ f.current.distance_m|km(1) if f.current.distance_m else '—' }}</td>
+          <td class="r num">{{ f.current.duration_s|hmm if f.current.duration_s else '—' }}</td>
+          <td class="r vs num">{{ f.previous.count }} · {{ f.previous.distance_m|km(1) if f.previous.distance_m else '—' }} · {{ f.previous.duration_s|hmm if f.previous.duration_s else '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="muted">Aucune activité ces deux dernières semaines.</p>{% endif %}
+    <h2>Dernières activités</h2>
+    <div class="tbl">
+    <table>
+      <tbody>
+      {% for a in recent %}
+        <tr>
+          <td class="num">{{ a.start|weekday_day }}</td>
+          <td><span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color }}"></i>{{ a.sport.label }}</span></td>
+          <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a></td>
+          <td class="r num">{{ a.distance_m|km if a.distance_m else a.duration_s|hms }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="head">
+      <h2>Volume des 12 dernières semaines <small>par sport, en {{ 'kilomètres' if metric == 'distance' else 'heures' }}</small></h2>
+      <div class="spacer"></div>
+      <div class="chips">
+        <a class="chip {{ 'on' if metric == 'duration' }}" href="{{ url_with(metric='') }}">Heures</a>
+        <a class="chip {{ 'on' if metric == 'distance' }}" href="{{ url_with(metric='distance') }}">Kilomètres</a>
+      </div>
+    </div>
+    <div class="chart-box lg"><canvas id="volume" aria-label="Volume par semaine et par sport"></canvas></div>
+    <p class="note">Semaines ISO, du lundi au dimanche. La dernière barre est la semaine en cours.</p>
+  </section>
+</div>
+
+<div class="grid3">
+  <section class="panel">
+    <h2>FC au repos <small>30 derniers jours</small></h2>
+    <div class="chart-box sm"><canvas id="rhr" aria-label="Fréquence cardiaque au repos, 30 jours"></canvas></div>
+    <p class="note">Points : valeur du jour. Trait : moyenne glissante 7 jours. Plus bas = mieux récupéré.</p>
+  </section>
+  <section class="panel">
+    <h2>Sommeil <small>30 dernières nuits, en heures</small></h2>
+    <div class="chart-box sm"><canvas id="sleep" aria-label="Durée de sommeil, 30 nuits"></canvas></div>
+    <p class="note">Nuit rattachée au jour du réveil. Trait : moyenne glissante 7 jours.</p>
+  </section>
+  <section class="panel">
+    <h2>Body Battery <small>30 derniers jours, plage min–max</small></h2>
+    <div class="chart-box sm"><canvas id="bb" aria-label="Body Battery, plage minimum-maximum par jour"></canvas></div>
+    <p class="note">Le haut de chaque barre montre jusqu'où tu as rechargé.</p>
+  </section>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const vol = {{ volume|tojson }};
+  const unit = vol.unit;
+  chart("volume", {
+    type: "bar",
+    data: { labels: vol.labels, datasets: vol.datasets.map(d => ({ label: d.label, data: d.data, backgroundColor: d.color, stack: "s" })) },
+  }, {
+    scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v => unit === "h" ? fmt.hmm(v) : fmt.num(v) + " km" } } },
+    plugins: { tooltip: { callbacks: {
+      label: c => c.parsed.y ? `${c.dataset.label} : ${unit === "h" ? fmt.hmm(c.parsed.y) : fmt.num(c.parsed.y, 1) + " km"}` : null,
+      footer: items => "Total : " + (unit === "h" ? fmt.hmm(items.reduce((s, i) => s + i.parsed.y, 0))
+                                               : fmt.num(items.reduce((s, i) => s + i.parsed.y, 0), 1) + " km"),
+    } } },
+  });
+
+  const h = {{ health|tojson }};
+  const small = { plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 6 } } } };
+  chart("rhr", {
+    type: "line",
+    data: { labels: h.labels, datasets: [
+      { label: "FC repos", data: h.rhr, showLine: false, pointRadius: 3, backgroundColor: cssVar("--out"), borderColor: cssVar("--out") },
+      { label: "Moyenne 7 j", data: h.rhr7, pointRadius: 0, borderWidth: 2, borderColor: cssVar("--ink"), tension: .3 },
+    ] },
+  }, merge({ scales: { y: { ticks: { callback: v => v + " bpm" } } },
+             plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label} : ${fmt.num(c.parsed.y)} bpm` } } } }, small));
+  chart("sleep", {
+    type: "bar",
+    data: { labels: h.labels, datasets: [
+      { type: "line", label: "Moyenne 7 j", data: h.sleep7, pointRadius: 0, borderWidth: 2, borderColor: cssVar("--ink"), tension: .3 },
+      { label: "Sommeil", data: h.sleep, backgroundColor: cssVar("--accent") },
+    ] },
+  }, merge({ scales: { y: { beginAtZero: true, ticks: { callback: v => fmt.hmm(v) } } },
+             plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label} : ${fmt.hmm(c.parsed.y)}` } } } }, small));
+  chart("bb", {
+    type: "bar",
+    data: { labels: h.labels, datasets: [{ label: "Body Battery", data: h.bb, backgroundColor: cssVar("--in"), borderRadius: 2 }] },
+  }, merge({ scales: { y: { min: 0, max: 100 } },
+             plugins: { tooltip: { callbacks: { label: c => c.raw ? `min ${c.raw[0]} · max ${c.raw[1]}` : "—" } } } }, small));
+});
+</script>
+{% endblock %}

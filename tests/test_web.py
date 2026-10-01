@@ -1,0 +1,149 @@
+from datetime import date
+
+import pytest
+from sqlalchemy import select
+
+from jgarmintracker import db as dbm
+from jgarmintracker.garmin import SessionExpired
+from jgarmintracker.models import Activity, Sport, SportFamily, SportRule, SyncRun, Tag
+from jgarmintracker.web import create_app
+
+from .conftest import TODAY, FakeSource
+
+
+@pytest.fixture
+def app(tmp_path, monkeypatch):
+    # Les pages calculent « aujourd'hui » : on le fige sur la date des fixtures.
+    class FrozenDate(date):
+        @classmethod
+        def today(cls):
+            return TODAY
+
+    monkeypatch.setattr("jgarmintracker.web.date", FrozenDate)
+    monkeypatch.setattr("jgarmintracker.sync.date", FrozenDate)
+    app = create_app(tmp_path / "web.db")
+    app.config.update(TESTING=True, SYNC_INLINE=True, SYNC_SOURCE=FakeSource)
+    return app
+
+
+@pytest.fixture
+def client(app):
+    c = app.test_client()
+    assert c.post("/sync").status_code == 302  # synchro avec FakeSource, sans réseau
+    return c
+
+
+def ids(family, name):
+    with dbm.new_session() as s:
+        return s.scalar(select(Sport.id).join(Sport.family).where(SportFamily.name == family, Sport.name == name))
+
+
+def test_empty_db_shows_welcome(app):
+    r = app.test_client().get("/")
+    assert r.status_code == 200 and "jgarmin login".encode() in r.data
+
+
+def test_pages_render(client):
+    with dbm.new_session() as s:
+        act_id = s.scalar(select(Activity.id))
+    f_course = f"f{dbm.new_session().scalar(select(SportFamily.id).where(SportFamily.name == 'Course'))}"
+    for url in ["/", "/?metric=distance", "/activities", "/activities?sport=" + f_course + "&q=course&dmin=5&tmax=90",
+                "/activities?from=2025-06-01&to=2025-06-18&dmin=abc", f"/activities/{act_id}",
+                "/progress", "/progress?sport=" + f_course + "&months=6", "/progress?months=24",
+                f"/progress?sport=s{ids('Vélo', 'Route')}", f"/progress?sport=s{ids('Natation', 'Piscine')}",
+                f"/progress?sport=s{ids('Renforcement', 'Musculation')}",
+                "/health", "/health?days=90", "/health?days=365", "/sports", "/sports?edit=1", "/sports?confirm=2",
+                "/sports/rules/test?field=name&match_type=contains&pattern=course&sport_id=1",
+                "/tags", "/sync", "/sync/status"]:
+        r = client.get(url)
+        assert r.status_code == 200, url
+
+
+def test_dashboard_shows_week_and_charts(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "Semaine du 16/06/2025" in html
+    assert "Volume des 12 dernières semaines" in html and "Course › Trail" in html
+
+
+def test_sync_page_logs_run(client):
+    html = client.get("/sync").get_data(as_text=True)
+    assert "32 activité(s)" in html and "terminée" in html
+
+
+def test_sync_without_tokens_explains_login(app):
+    def no_session():
+        raise SessionExpired()
+
+    app.config["SYNC_SOURCE"] = no_session
+    c = app.test_client()
+    c.post("/sync")
+    assert "jgarmin login" in c.get("/sync/status").get_data(as_text=True)
+    with dbm.new_session() as s:
+        assert s.scalar(select(SyncRun.status)) == "error"
+
+
+def test_change_sport_one_activity_locks_it(client):
+    yoga = ids("Renforcement", "Yoga")
+    with dbm.new_session() as s:
+        act = s.scalar(select(Activity).where(Activity.name == "Paddle lac"))
+    r = client.get(f"/activities/{act.id}/sport?sport_id={yoga}")
+    assert r.status_code == 200 and "Yoga" in r.get_data(as_text=True)
+    client.post(f"/activities/{act.id}/sport", data={"sport_id": yoga, "scope": "one", "next": "/activities"})
+    with dbm.new_session() as s:
+        a = s.get(Activity, act.id)
+        assert a.sport_id == yoga and a.sport_locked and a.sport_source == "manual"
+    client.post(f"/activities/{act.id}/unlock")
+    with dbm.new_session() as s:
+        assert s.get(Activity, act.id).sport.label == "Autre"
+
+
+def test_change_sport_by_type_creates_rule(client):
+    other = ids("Autre", "Autre")
+    with dbm.new_session() as s:
+        act = s.scalar(select(Activity).where(Activity.type_key == "running"))
+    client.post(f"/activities/{act.id}/sport", data={"sport_id": other, "scope": "type_key"})
+    with dbm.new_session() as s:
+        assert {a.sport_id for a in s.scalars(select(Activity).where(Activity.type_key == "running"))} == {other}
+        assert s.scalar(select(SportRule).where(SportRule.pattern == "running", SportRule.origin == "learned"))
+
+
+def test_bulk_sport_and_tags(client):
+    trail = ids("Course", "Trail")
+    with dbm.new_session() as s:
+        picked = s.scalars(select(Activity.id).where(Activity.type_key == "running").limit(2)).all()
+    client.post("/activities/bulk/sport", data={"act": picked, "sport_id": trail})
+    client.post("/activities/bulk/tags", data={"act": picked, "tag": "Préparation", "action": "add"})
+    with dbm.new_session() as s:
+        acts = [s.get(Activity, i) for i in picked]
+        assert all(a.sport_id == trail and a.sport_locked for a in acts)
+        assert all([t.name for t in a.tags] == ["Préparation"] for a in acts)
+        # Sans « créer une règle », les autres courses ne bougent pas.
+        assert not s.scalar(select(SportRule).where(SportRule.origin == "learned"))
+        tag_id = s.scalar(select(Tag.id))
+    assert "Préparation" in client.get(f"/activities?tag={tag_id}").get_data(as_text=True)
+    client.post(f"/tags/{tag_id}/delete")
+    with dbm.new_session() as s:
+        assert s.scalar(select(Tag)) is None and s.get(Activity, picked[0]) is not None
+
+
+def test_rules_and_sports_management(client):
+    piscine = ids("Natation", "Piscine")
+    r = client.post("/sports/rules/save", data={"field": "name", "match_type": "contains", "pattern": "paddle",
+                                                 "sport_id": piscine}, follow_redirects=True)
+    assert "1 activité(s) reclassée(s)" in r.get_data(as_text=True)
+    r = client.post("/sports/rules/save", data={"field": "name", "match_type": "regex", "pattern": "(",
+                                                 "sport_id": piscine}, follow_redirects=True)
+    assert "Expression régulière invalide" in r.get_data(as_text=True)
+    client.post("/sports/add", data={"name": "Ski de fond", "new_family": "Hiver", "pace_unit": "kmh", "color": "#123456"})
+    with dbm.new_session() as s:
+        ski = s.scalar(select(Sport).where(Sport.name == "Ski de fond"))
+        assert ski.family.name == "Hiver" and ski.color == "#123456"
+    client.post(f"/sports/{piscine}/delete")
+    with dbm.new_session() as s:
+        assert s.get(Sport, piscine) is None
+        assert s.scalar(select(Activity).where(Activity.name == "Piscine midi")).sport.label == "Autre"
+
+
+def test_fallback_sport_cannot_be_deleted(client):
+    r = client.post(f"/sports/{ids('Autre', 'Autre')}/delete", follow_redirects=True)
+    assert "ne peut pas être supprimé" in r.get_data(as_text=True)

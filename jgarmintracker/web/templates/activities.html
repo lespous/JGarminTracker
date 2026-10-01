@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Activités{% endblock %}
+{% macro sport_options(selected=None, families=families) -%}
+  {% for f in families %}<optgroup label="{{ f.name }}">
+    {% for sp in f.sports %}<option value="{{ sp.id }}" {{ 'selected' if sp.id == selected }}>{{ sp.name }}</option>{% endfor %}
+  </optgroup>{% endfor %}
+{%- endmacro %}
+{% block content %}
+<div class="head">
+  <h1>Activités</h1>
+  {% if sel %}<span class="chip on">{{ sel_label }} <a href="{{ url_with(sport='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
+  {% if filter_tag %}<span class="chip on"># {{ filter_tag.name }} <a href="{{ url_with(tag='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
+  {% if filter_rule %}<span class="chip on">Règle #{{ filter_rule.id }} <a href="{{ url_with(rule='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
+  {% if request.args.get('type') %}<span class="chip on">Type {{ request.args.get('type') }} <a href="{{ url_with(type='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
+  <div class="spacer"></div>
+  <span class="muted">{{ rows|length }} activité{{ 's' if rows|length > 1 }} · <b class="num">{{ total_dist|km(1) }}</b> · <b class="num">{{ total_dur|hmm }}</b></span>
+</div>
+
+<form class="filters" method="get">
+  <label>Du<input type="date" name="from" value="{{ date_from or '' }}"></label>
+  <label>Au<input type="date" name="to" value="{{ date_to or '' }}"></label>
+  <label>Sport
+    <select name="sport" onchange="this.form.submit()">
+      <option value="">Tous</option>
+      {% for f in families %}
+        <optgroup label="{{ f.name }}">
+          <option value="f{{ f.id }}" {{ 'selected' if sel == 'f' ~ f.id }}>Toute la famille {{ f.name }}</option>
+          {% for sp in f.sports %}<option value="s{{ sp.id }}" {{ 'selected' if sel == 's' ~ sp.id }}>{{ sp.name }}</option>{% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Tag
+    <select name="tag" onchange="this.form.submit()">
+      <option value="">Tous</option>
+      {% for tg in tags %}<option value="{{ tg.id }}" {{ 'selected' if filter_tag and filter_tag.id == tg.id }}>{{ tg.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Distance min (km)<input name="dmin" inputmode="decimal" class="amount" value="{{ request.args.get('dmin', '') }}" placeholder="0"></label>
+  <label>Distance max (km)<input name="dmax" inputmode="decimal" class="amount" value="{{ request.args.get('dmax', '') }}" placeholder="∞"></label>
+  <label>Durée min (min)<input name="tmin" inputmode="decimal" class="amount" value="{{ request.args.get('tmin', '') }}" placeholder="0"></label>
+  <label>Durée max (min)<input name="tmax" inputmode="decimal" class="amount" value="{{ request.args.get('tmax', '') }}" placeholder="∞"></label>
+  <label>Recherche<input type="search" name="q" value="{{ request.args.get('q', '') }}" placeholder="nom, type Garmin…"></label>
+  {% for k in ('rule', 'type') %}{% if request.args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ request.args.get(k) }}">{% endif %}{% endfor %}
+  <button type="submit">Filtrer</button>
+  {% if request.args %}<a class="chip" href="{{ url_for('activities') }}">Tout effacer</a>{% endif %}
+</form>
+
+<form id="bulk" class="bulk" method="post" action="{{ url_for('bulk_tags') }}">
+  <span id="bulk-count" class="muted">Coche des activités pour changer leur sport ou les taguer</span>
+  <div class="bulk-group">
+    <select name="sport_id" aria-label="Sport pour les activités cochées">
+      <option value="">Sport…</option>
+      {{ sport_options() }}
+    </select>
+    <label class="check"><input type="checkbox" name="learn">
+      <span>Créer une règle par type Garmin</span></label>
+    <button class="primary" formaction="{{ url_for('bulk_sport') }}">Changer le sport</button>
+  </div>
+  <div class="bulk-group">
+    <input name="tag" list="tag-list" placeholder="Tag, ex. Vacances" aria-label="Tag">
+    <datalist id="tag-list">{% for tg in tags %}<option value="{{ tg.name }}">{% endfor %}</datalist>
+    <button name="action" value="add">Ajouter le tag</button>
+    <button name="action" value="remove">Retirer le tag</button>
+  </div>
+</form>
+
+<div class="tbl">
+<table>
+  <thead><tr>
+    <th><input type="checkbox" id="check-all" aria-label="Tout cocher"></th>
+    <th>Date</th><th>Sport</th><th>Activité</th><th class="r">Distance</th><th class="r">Durée</th>
+    <th class="r">Allure / vitesse</th><th class="r">FC moy.</th><th class="r">D+</th><th>Classée par</th>
+  </tr></thead>
+  <tbody>
+  {% for a in rows %}
+    <tr class="{{ 'locked' if a.sport_locked }}">
+      <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
+      <td class="num">{{ a.start.strftime('%d/%m/%y') }}<div class="type-key">{{ a.start.strftime('%H:%M') }}</div></td>
+      <td>
+        <span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color if a.sport else '#888' }}"></i>
+        <select class="sport" name="sport_id" aria-label="Sport" data-orig="{{ a.sport_id }}"
+                hx-get="{{ url_for('sport_form', act_id=a.id) }}" hx-trigger="change" hx-target="#pop-{{ a.id }}">
+          {{ sport_options(a.sport_id) }}
+        </select></span>
+      </td>
+      <td class="name">
+        <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
+        <div class="labels"><span class="type-key">{{ a.type_key }}</span>
+          {% for tg in a.tags %}
+            <span class="tag-chip"><a href="{{ url_with(tag=tg.id) }}"># {{ tg.name }}</a>
+              <form class="inline" method="post" action="{{ url_for('tag_remove', act_id=a.id, tag_id=tg.id) }}">
+                <button class="x" title="Retirer ce tag" aria-label="Retirer le tag {{ tg.name }}">×</button></form></span>
+          {% endfor %}
+        </div>
+      </td>
+      <td class="r num">{{ a.distance_m|km if a.distance_m else '—' }}</td>
+      <td class="r num">{{ a.duration_s|hms }}</td>
+      <td class="r num">{{ a.avg_speed|pace(a.sport.pace_unit if a.sport else 'none') }}</td>
+      <td class="r num">{{ a.avg_hr|round|int if a.avg_hr else '—' }}</td>
+      <td class="r num">{{ a.elevation_gain_m|round|int if a.elevation_gain_m else '—' }}</td>
+      <td class="how">
+        {% if a.sport_locked %}
+          <form class="inline" method="post" action="{{ url_for('unlock', act_id=a.id) }}">
+            manuel <button class="linkish" title="Retirer la correction et reclasser par les règles">déverrouiller</button></form>
+        {% elif a.sport_source == 'rule' and a.rule_id %}<a href="{{ url_for('sports', edit=a.rule_id) }}#rule-form">règle #{{ a.rule_id }}</a>
+        {% else %}{{ SOURCES[a.sport_source] }}{% endif %}
+      </td>
+    </tr>
+    <tr class="recat"><td colspan="10" id="pop-{{ a.id }}"></td></tr>
+  {% else %}
+    <tr><td colspan="10" class="muted">Aucune activité ne correspond à ces filtres.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<script>
+function cancelPop(id) {
+  const cell = document.getElementById("pop-" + id);
+  const select = cell.closest("tr").previousElementSibling.querySelector("select.sport");
+  select.value = select.dataset.orig;
+  cell.innerHTML = "";
+}
+const checks = [...document.querySelectorAll(".act-check")];
+const countEl = document.getElementById("bulk-count");
+function updateCount() {
+  const n = checks.filter(c => c.checked).length;
+  countEl.textContent = n ? `${n} activité${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""}` : "Coche des activités pour changer leur sport ou les taguer";
+}
+checks.forEach(c => c.addEventListener("change", updateCount));
+document.getElementById("check-all").addEventListener("change", e => {
+  checks.forEach(c => { c.checked = e.target.checked; });
+  updateCount();
+});
+</script>
+{% endblock %}

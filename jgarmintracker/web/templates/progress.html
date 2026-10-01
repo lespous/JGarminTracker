@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Progression · {{ label }}{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% endblock %}
+{% set pace_label = {'min_km': 'Allure (min/km)', 'min_100m': 'Allure (min/100 m)', 'kmh': 'Vitesse (km/h)'}.get(unit) %}
+{% block content %}
+<div class="head">
+  <h1>Progression · {{ label }}</h1>
+  <div class="spacer"></div>
+  <form method="get" class="filters">
+    <label>Sport
+      <select name="sport" onchange="this.form.submit()">
+        {% for f in families %}
+          <optgroup label="{{ f.name }}">
+            <option value="f{{ f.id }}" {{ 'selected' if sel == 'f' ~ f.id }}>Toute la famille {{ f.name }}</option>
+            {% for sp in f.sports %}<option value="s{{ sp.id }}" {{ 'selected' if sel == 's' ~ sp.id }}>{{ sp.name }}</option>{% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Période
+      <select name="months" onchange="this.form.submit()">
+        {% for m in (3, 6, 12, 24) %}<option value="{{ m }}" {{ 'selected' if m == months }}>{{ m }} mois</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+</div>
+
+{% if not acts %}
+<section class="panel"><p class="muted">Aucune activité « {{ label }} » depuis le {{ start|day }}.</p></section>
+{% else %}
+<div class="kpis">
+  <div class="kpi"><small>Sorties</small><b>{{ acts|length }}</b><span class="sub">depuis le {{ start|day }}</span></div>
+  <div class="kpi"><small>Distance totale</small><b>{{ tot.distance_m|km(0) }}</b></div>
+  <div class="kpi"><small>Durée totale</small><b>{{ tot.duration_s|hmm }}</b></div>
+  <div class="kpi"><small>Dénivelé + total</small><b>{{ tot.elevation_m|meters }}</b></div>
+  {% if trend %}
+  <div class="kpi"><small>Tendance {{ 'de la vitesse' if unit == 'kmh' else "de l'allure" }}</small>
+    <b class="{{ 'pos' if trend.faster else 'neg' }}">{{ trend.text }}</b>
+    <span class="sub">{{ 'plus rapide' if trend.faster else 'plus lent' }} sur la période (droite de tendance)</span></div>
+  {% endif %}
+</div>
+
+<section class="panel">
+  <h2>Records <small>sur la période</small></h2>
+  <div class="records">
+    {% if rec.longest %}<div class="record"><small>Plus longue sortie</small><b>{{ rec.longest.distance_m|km }}</b>
+      <a href="{{ url_for('activity_detail', act_id=rec.longest.id) }}">{{ rec.longest.name }} · {{ rec.longest.start|day }}</a></div>{% endif %}
+    {% if rec.best_pace %}<div class="record"><small>Meilleure {{ 'vitesse' if unit == 'kmh' else 'allure' }} moyenne ({{ 'plus de 1 km' if unit == 'min_100m' else 'plus de 5 km' }})</small>
+      <b>{{ rec.best_pace.avg_speed|pace(unit) }}</b>
+      <a href="{{ url_for('activity_detail', act_id=rec.best_pace.id) }}">{{ rec.best_pace.name }} · {{ rec.best_pace.distance_m|km }} · {{ rec.best_pace.start|day }}</a></div>{% endif %}
+    {% if rec.longest_duration %}<div class="record"><small>Plus longue durée</small><b>{{ rec.longest_duration.duration_s|hms }}</b>
+      <a href="{{ url_for('activity_detail', act_id=rec.longest_duration.id) }}">{{ rec.longest_duration.name }} · {{ rec.longest_duration.start|day }}</a></div>{% endif %}
+    {% if rec.most_elevation %}<div class="record"><small>Plus gros dénivelé</small><b>{{ rec.most_elevation.elevation_gain_m|meters }}</b>
+      <a href="{{ url_for('activity_detail', act_id=rec.most_elevation.id) }}">{{ rec.most_elevation.name }} · {{ rec.most_elevation.start|day }}</a></div>{% endif %}
+  </div>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Distance et durée par mois <small>{{ months }} derniers mois</small></h2>
+    <div class="chart-box"><canvas id="monthly" aria-label="Distance et durée par mois"></canvas></div>
+    <p class="note">Barres : kilomètres (axe de gauche). Trait : heures (axe de droite).</p>
+  </section>
+  {% if pace_label %}
+  <section class="panel">
+    <h2>{{ pace_label }} de chaque sortie <small>{{ months }} derniers mois</small></h2>
+    <div class="chart-box"><canvas id="pace" aria-label="{{ pace_label }} de chaque sortie, avec tendance"></canvas></div>
+    <p class="note">{% if unit == 'kmh' %}Plus haut = plus rapide.{% else %}Axe inversé : plus haut = plus rapide.{% endif %}
+      Points : allure moyenne de chaque sortie (pauses comprises). Trait : tendance linéaire.</p>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const m = {{ monthly|tojson }};
+  chart("monthly", {
+    type: "bar",
+    data: { labels: m.labels, datasets: [
+      { label: "Distance", data: m.distance, backgroundColor: cssVar("--accent"), yAxisID: "y", order: 2 },
+      { type: "line", label: "Durée", data: m.duration, borderColor: cssVar("--warn"), backgroundColor: cssVar("--warn"),
+        yAxisID: "y2", tension: .3, pointRadius: 3, order: 1 },
+    ] },
+  }, {
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => fmt.num(v) + " km" } },
+      y2: { position: "right", beginAtZero: true, grid: { display: false }, ticks: { color: cssVar("--muted"), callback: v => fmt.hmm(v) } },
+    },
+    plugins: { tooltip: { callbacks: { label: c => c.dataset.label === "Durée" ? `Durée : ${fmt.hmm(c.parsed.y)}`
+                                                  : `Distance : ${fmt.num(c.parsed.y, 1)} km (${m.count[c.dataIndex]} sortie(s))` } } },
+  });
+
+  const unit = {{ unit|tojson }};
+  const p = {{ pace|tojson }};
+  const show = v => unit === "kmh" ? fmt.num(v, 1) + " km/h" : fmt.mmss(v) + (unit === "min_km" ? " /km" : " /100 m");
+  chart("pace", {
+    type: "line",
+    data: { labels: p.labels, datasets: [
+      { label: "Sortie", data: p.values, showLine: false, pointRadius: 4, backgroundColor: cssVar("--accent"), borderColor: cssVar("--accent") },
+      { label: "Tendance", data: p.trend, pointRadius: 0, borderWidth: 2, borderDash: [6, 4], borderColor: cssVar("--ink") },
+    ] },
+  }, {
+    scales: { y: { reverse: unit !== "kmh", ticks: { callback: v => show(v) } } },
+    plugins: { tooltip: { callbacks: {
+      title: items => items.length ? `${p.labels[items[0].dataIndex]} · ${p.names[items[0].dataIndex]}` : "",
+      label: c => `${c.dataset.label} : ${show(c.parsed.y)}`,
+    } } },
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

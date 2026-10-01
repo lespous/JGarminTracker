@@ -1,0 +1,24 @@
+{% if errors %}
+  {% for e in errors %}<span class="neg small">{{ e }}</span>{% endfor %}
+{% else %}
+  <div class="small">
+    <b>{{ matches|length }}</b> activité{{ 's' if matches|length != 1 }} correspond{{ 'ent' if matches|length != 1 }}.
+    {% if changing %} <b>{{ changing }}</b> changeront de sport.{% endif %}
+    {% if locked %} {{ locked }} corrigée{{ 's' if locked > 1 }} à la main ne bougeront pas.{% endif %}
+    {% if others %} <span class="muted">{{ others }} sont aujourd'hui classées par une autre règle : la priorité décidera.</span>{% endif %}
+  </div>
+  {% if matches %}
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Date</th><th>Activité</th><th>Type Garmin</th><th>Sport actuel</th></tr></thead>
+    <tbody>
+    {% for a in matches[:15] %}
+      <tr><td class="num">{{ a.start.strftime('%d/%m/%y') }}</td><td>{{ a.name }}</td><td class="mono">{{ a.type_key }}</td>
+        <td>{{ a.sport.label if a.sport else '—' }}{% if a.sport_locked %} <span class="muted">(manuel)</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if matches|length > 15 %}<span class="muted small">… et {{ matches|length - 15 }} autres.</span>{% endif %}
+  {% endif %}
+{% endif %}

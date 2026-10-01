@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Synchronisation{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Synchronisation</h1>
+  <span class="muted">{{ n_acts }} activité(s) et {{ n_days }} jour(s) de données santé en base.</span>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Synchroniser maintenant</h2>
+    {% if not has_tokens %}
+      <div class="flash error">Pas de session Garmin sur ce PC. Ouvre PowerShell dans le dossier de JGarminTracker et lance
+        <code>.venv\Scripts\jgarmin login</code> : l'e-mail, le mot de passe et le code MFA éventuel se tapent là, jamais dans le navigateur.</div>
+    {% endif %}
+    <p class="muted small">Récupère les nouvelles activités et les données santé des 3 derniers jours (Garmin complète les nuits après coup).
+      Le premier lancement récupère 12 mois : compte quelques minutes, la page suit l'avancement.</p>
+    <form method="post" action="{{ url_for('sync_start') }}" class="filters">
+      <button class="primary" {{ 'disabled' if job.running }}>Synchroniser maintenant</button>
+      <label class="check" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="full"> Relire les 12 derniers mois</label>
+    </form>
+    <div id="sync-status" hx-get="{{ url_for('sync_status') }}" hx-trigger="load" hx-swap="innerHTML"></div>
+  </section>
+  <section class="panel">
+    <h2>Session Garmin</h2>
+    <p class="small">Jetons de session : <span class="mono">{{ tokens_dir }}</span> —
+      {% if has_tokens %}<span class="status-ok">présents</span>{% else %}<span class="status-error">absents</span>{% endif %}</p>
+    <p class="muted small">Le mot de passe n'est jamais enregistré. Pour changer de compte : <code>jgarmin logout</code> puis <code>jgarmin login</code>.
+      Les données restent dans la base locale <span class="mono">jgarmin.db</span> et ne quittent pas ce PC.</p>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Journal des dernières synchros</h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Début</th><th>Durée</th><th>Mode</th><th>Statut</th><th class="r">Activités +</th><th class="r">Mises à jour</th><th class="r">Jours +</th><th class="r">Mis à jour</th><th>Message</th></tr></thead>
+    <tbody>
+    {% for r in runs %}
+      <tr>
+        <td class="num">{{ r.started_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td class="num">{{ ((r.finished_at - r.started_at).total_seconds())|hms if r.finished_at else '…' }}</td>
+        <td>{{ 'complète' if r.mode == 'full' else 'incrémentale' }}</td>
+        <td class="status-{{ r.status }}">{{ {'ok': 'terminée', 'error': 'erreur', 'running': 'en cours'}[r.status] }}</td>
+        <td class="r num">{{ r.activities_added }}</td><td class="r num">{{ r.activities_updated }}</td>
+        <td class="r num">{{ r.days_added }}</td><td class="r num">{{ r.days_updated }}</td>
+        <td class="small">{{ r.message }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="muted">Aucune synchro pour l'instant.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

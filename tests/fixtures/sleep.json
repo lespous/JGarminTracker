@@ -1,0 +1,456 @@
+{
+ "2025-05-20": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-20",
+   "sleepTimeSeconds": 25813,
+   "deepSleepSeconds": 4837,
+   "remSleepSeconds": 5453,
+   "lightSleepSeconds": 15523,
+   "awakeSleepSeconds": 911,
+   "sleepScores": {
+    "overall": {
+     "value": 71,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-21": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-21",
+   "sleepTimeSeconds": 26426,
+   "deepSleepSeconds": 4874,
+   "remSleepSeconds": 5506,
+   "lightSleepSeconds": 16046,
+   "awakeSleepSeconds": 922,
+   "sleepScores": {
+    "overall": {
+     "value": 72,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-22": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-22",
+   "sleepTimeSeconds": 27039,
+   "deepSleepSeconds": 4911,
+   "remSleepSeconds": 5559,
+   "lightSleepSeconds": 16569,
+   "awakeSleepSeconds": 933,
+   "sleepScores": {
+    "overall": {
+     "value": 73,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-23": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-23",
+   "sleepTimeSeconds": 27652,
+   "deepSleepSeconds": 4948,
+   "remSleepSeconds": 5612,
+   "lightSleepSeconds": 17092,
+   "awakeSleepSeconds": 944,
+   "sleepScores": {
+    "overall": {
+     "value": 74,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-24": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-24",
+   "sleepTimeSeconds": 28265,
+   "deepSleepSeconds": 4985,
+   "remSleepSeconds": 5665,
+   "lightSleepSeconds": 17615,
+   "awakeSleepSeconds": 955,
+   "sleepScores": {
+    "overall": {
+     "value": 75,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-25": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-25",
+   "sleepTimeSeconds": 25278,
+   "deepSleepSeconds": 5022,
+   "remSleepSeconds": 5718,
+   "lightSleepSeconds": 14538,
+   "awakeSleepSeconds": 966,
+   "sleepScores": {
+    "overall": {
+     "value": 76,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-26": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-26",
+   "sleepTimeSeconds": 25891,
+   "deepSleepSeconds": 5059,
+   "remSleepSeconds": 5771,
+   "lightSleepSeconds": 15061,
+   "awakeSleepSeconds": 977,
+   "sleepScores": {
+    "overall": {
+     "value": 77,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-27": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-27",
+   "sleepTimeSeconds": 26504,
+   "deepSleepSeconds": 5096,
+   "remSleepSeconds": 5824,
+   "lightSleepSeconds": 15584,
+   "awakeSleepSeconds": 988,
+   "sleepScores": {
+    "overall": {
+     "value": 78,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-28": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-28",
+   "sleepTimeSeconds": 27117,
+   "deepSleepSeconds": 5133,
+   "remSleepSeconds": 5877,
+   "lightSleepSeconds": 16107,
+   "awakeSleepSeconds": 999,
+   "sleepScores": {
+    "overall": {
+     "value": 79,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-29": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-29",
+   "sleepTimeSeconds": 27730,
+   "deepSleepSeconds": 5170,
+   "remSleepSeconds": 5930,
+   "lightSleepSeconds": 16630,
+   "awakeSleepSeconds": 1010,
+   "sleepScores": {
+    "overall": {
+     "value": 80,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-30": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-30",
+   "sleepTimeSeconds": 28343,
+   "deepSleepSeconds": 5207,
+   "remSleepSeconds": 5983,
+   "lightSleepSeconds": 17153,
+   "awakeSleepSeconds": 1021,
+   "sleepScores": {
+    "overall": {
+     "value": 81,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-05-31": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-05-31",
+   "sleepTimeSeconds": 25356,
+   "deepSleepSeconds": 5244,
+   "remSleepSeconds": 6036,
+   "lightSleepSeconds": 14076,
+   "awakeSleepSeconds": 1032,
+   "sleepScores": {
+    "overall": {
+     "value": 82,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-01": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-01",
+   "sleepTimeSeconds": 25969,
+   "deepSleepSeconds": 5281,
+   "remSleepSeconds": 6089,
+   "lightSleepSeconds": 14599,
+   "awakeSleepSeconds": 1043,
+   "sleepScores": {
+    "overall": {
+     "value": 83,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-02": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-02",
+   "sleepTimeSeconds": 26582,
+   "deepSleepSeconds": 5318,
+   "remSleepSeconds": 6142,
+   "lightSleepSeconds": 15122,
+   "awakeSleepSeconds": 1054,
+   "sleepScores": {
+    "overall": {
+     "value": 84,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-03": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-03",
+   "sleepTimeSeconds": 27195,
+   "deepSleepSeconds": 5355,
+   "remSleepSeconds": 6195,
+   "lightSleepSeconds": 15645,
+   "awakeSleepSeconds": 1065,
+   "sleepScores": {
+    "overall": {
+     "value": 85,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-04": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-04",
+   "sleepTimeSeconds": 27808,
+   "deepSleepSeconds": 5392,
+   "remSleepSeconds": 6248,
+   "lightSleepSeconds": 16168,
+   "awakeSleepSeconds": 1076,
+   "sleepScores": {
+    "overall": {
+     "value": 86,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-05": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-05",
+   "sleepTimeSeconds": 28421,
+   "deepSleepSeconds": 5429,
+   "remSleepSeconds": 5401,
+   "lightSleepSeconds": 17591,
+   "awakeSleepSeconds": 1087,
+   "sleepScores": {
+    "overall": {
+     "value": 87,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-06": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-06",
+   "sleepTimeSeconds": 25434,
+   "deepSleepSeconds": 5466,
+   "remSleepSeconds": 5454,
+   "lightSleepSeconds": 14514,
+   "awakeSleepSeconds": 1098,
+   "sleepScores": {
+    "overall": {
+     "value": 88,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-07": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-07",
+   "sleepTimeSeconds": 26047,
+   "deepSleepSeconds": 5503,
+   "remSleepSeconds": 5507,
+   "lightSleepSeconds": 15037,
+   "awakeSleepSeconds": 1109,
+   "sleepScores": {
+    "overall": {
+     "value": 89,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-08": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-08",
+   "sleepTimeSeconds": 26660,
+   "deepSleepSeconds": 5540,
+   "remSleepSeconds": 5560,
+   "lightSleepSeconds": 15560,
+   "awakeSleepSeconds": 1120,
+   "sleepScores": {
+    "overall": {
+     "value": 70,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-09": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-09",
+   "sleepTimeSeconds": 27273,
+   "deepSleepSeconds": 5577,
+   "remSleepSeconds": 5613,
+   "lightSleepSeconds": 16083,
+   "awakeSleepSeconds": 1131,
+   "sleepScores": {
+    "overall": {
+     "value": 71,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-10": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-10",
+   "sleepTimeSeconds": 27886,
+   "deepSleepSeconds": 5614,
+   "remSleepSeconds": 5666,
+   "lightSleepSeconds": 16606,
+   "awakeSleepSeconds": 1142,
+   "sleepScores": {
+    "overall": {
+     "value": 72,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-11": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-11",
+   "sleepTimeSeconds": 28499,
+   "deepSleepSeconds": 5651,
+   "remSleepSeconds": 5719,
+   "lightSleepSeconds": 17129,
+   "awakeSleepSeconds": 1153,
+   "sleepScores": {
+    "overall": {
+     "value": 73,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-12": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-12",
+   "sleepTimeSeconds": 25512,
+   "deepSleepSeconds": 5688,
+   "remSleepSeconds": 5772,
+   "lightSleepSeconds": 14052,
+   "awakeSleepSeconds": 1164,
+   "sleepScores": {
+    "overall": {
+     "value": 74,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-14": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-14",
+   "sleepTimeSeconds": 26738,
+   "deepSleepSeconds": 4862,
+   "remSleepSeconds": 5878,
+   "lightSleepSeconds": 15998,
+   "awakeSleepSeconds": 1186,
+   "sleepScores": {
+    "overall": {
+     "value": 76,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-15": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-15",
+   "sleepTimeSeconds": 27351,
+   "deepSleepSeconds": 4899,
+   "remSleepSeconds": 5931,
+   "lightSleepSeconds": 16521,
+   "awakeSleepSeconds": 1197,
+   "sleepScores": {
+    "overall": {
+     "value": 77,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-16": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-16",
+   "sleepTimeSeconds": 27964,
+   "deepSleepSeconds": 4936,
+   "remSleepSeconds": 5984,
+   "lightSleepSeconds": 17044,
+   "awakeSleepSeconds": 1208,
+   "sleepScores": {
+    "overall": {
+     "value": 78,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-17": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-17",
+   "sleepTimeSeconds": 28577,
+   "deepSleepSeconds": 4973,
+   "remSleepSeconds": 6037,
+   "lightSleepSeconds": 17567,
+   "awakeSleepSeconds": 1219,
+   "sleepScores": {
+    "overall": {
+     "value": 79,
+     "qualifierKey": "GOOD"
+    }
+   }
+  }
+ },
+ "2025-06-18": {
+  "dailySleepDTO": {
+   "calendarDate": "2025-06-18",
+   "sleepTimeSeconds": null
+  }
+ }
+}
