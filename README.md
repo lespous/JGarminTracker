@@ -28,6 +28,9 @@ $env:PYTHONIOENCODING = "utf-8"   # accents corrects dans la console
 .\jgarmin.bat                     # ouvre http://127.0.0.1:5002
 ```
 
+Ensuite, pour synchroniser : double-clic sur `jgarmin-sync.bat` (lance `jgarmin login` d'abord s'il n'y a pas
+encore de session ; `jgarmin-sync.bat --full` relit les 12 derniers mois).
+
 Les jetons de session sont rangés dans `%USERPROFILE%\.jgarmin\tokens` (ou `$JGARMIN_TOKENS`). S'ils
 expirent, la synchro le dit : relance `jgarmin login`. Le bouton « Synchroniser » de l'interface ne demande
 jamais de mot de passe.
