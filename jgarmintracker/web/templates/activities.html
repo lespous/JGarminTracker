@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Activités{% endblock %}
-{% macro sport_options(selected=None, families=families) -%}
+{% macro sport_options(families, selected=None) -%}
   {% for f in families %}<optgroup label="{{ f.name }}">
     {% for sp in f.sports %}<option value="{{ sp.id }}" {{ 'selected' if sp.id == selected }}>{{ sp.name }}</option>{% endfor %}
   </optgroup>{% endfor %}
@@ -51,7 +51,7 @@
   <div class="bulk-group">
     <select name="sport_id" aria-label="Sport pour les activités cochées">
       <option value="">Sport…</option>
-      {{ sport_options() }}
+      {{ sport_options(families) }}
     </select>
     <label class="check"><input type="checkbox" name="learn">
       <span>Créer une règle par type Garmin</span></label>
@@ -81,7 +81,7 @@
         <span class="sport-chip"><i class="sdot" style="background: {{ a.sport.color if a.sport else '#888' }}"></i>
         <select class="sport" name="sport_id" aria-label="Sport" data-orig="{{ a.sport_id }}"
                 hx-get="{{ url_for('sport_form', act_id=a.id) }}" hx-trigger="change" hx-target="#pop-{{ a.id }}">
-          {{ sport_options(a.sport_id) }}
+          {{ sport_options(families, a.sport_id) }}
         </select></span>
       </td>
       <td class="name">

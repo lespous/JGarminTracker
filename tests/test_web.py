@@ -59,6 +59,16 @@ def test_pages_render(client):
         assert r.status_code == 200, url
 
 
+def test_sport_selects_are_filled(client):
+    import re
+
+    html = client.get("/activities").get_data(as_text=True)
+    selects = re.findall(r'<select class="sport".*?</select>', html, re.S)
+    assert selects and all("Home trainer" in s for s in selects)
+    bulk = re.search(r'<select name="sport_id" aria-label="Sport pour les activités cochées">.*?</select>', html, re.S)
+    assert "Musculation" in bulk.group(0)
+
+
 def test_dashboard_shows_week_and_charts(client):
     html = client.get("/").get_data(as_text=True)
     assert "Semaine du 16/06/2025" in html
