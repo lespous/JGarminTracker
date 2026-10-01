@@ -3,18 +3,15 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
-## Non publié
-
-### Corrigé
-- Connexion impossible derrière un proxy d'entreprise qui inspecte le HTTPS (Cisco Umbrella, Zscaler…) :
-  `CERTIFICATE_VERIFY_FAILED`. Les certificats racine de Windows sont ajoutés à ceux de Python
-  (`%USERPROFILE%\.jgarmin\ca-bundle.pem`). Désactivable avec `JGARMIN_SYSTEM_CERTS=0`.
-
 ## 0.1.0 — 2026-10-01
 
 Première version.
 
 ### Ajouté
+- Fonctionne derrière un proxy d'entreprise qui inspecte le HTTPS (Cisco Umbrella, Zscaler…) : les
+  certificats racine de Windows sont ajoutés à ceux de Python (`%USERPROFILE%\.jgarmin\ca-bundle.pem`).
+  Désactivable avec `JGARMIN_SYSTEM_CERTS=0`.
+- Page Santé : le score de sommeil n'est affiché que si Garmin en fournit pour la montre.
 - **Connexion Garmin** : `jgarmin login` (e-mail, mot de passe et code MFA demandés dans le terminal). Le mot de
   passe n'est jamais enregistré ; seuls les jetons de session le sont, dans `%USERPROFILE%\.jgarmin\tokens`.
   `jgarmin logout` les supprime.
