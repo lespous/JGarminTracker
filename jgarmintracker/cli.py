@@ -202,14 +202,31 @@ def reclassify():
     console.print(f"{n} activité(s) ont changé de sport.")
 
 
+DEFAULT_PORT = 5003  # 5002 est pris par l'agent Cisco Secure Client sur ce PC
+
+
+def port_in_use(host: str, port: int) -> bool:
+    """Vrai si un programme répond déjà sur ce port. Windows laisse parfois deux serveurs ouvrir le même
+    port : le second démarre sans erreur mais ne reçoit jamais les requêtes."""
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        return sock.connect_ex((host, port)) == 0
+
+
 @app.command()
 def serve(
     host: Annotated[str, typer.Option()] = "127.0.0.1",
-    port: Annotated[int, typer.Option()] = 5002,
+    port: Annotated[int, typer.Option()] = DEFAULT_PORT,
     debug: Annotated[bool, typer.Option()] = False,
 ):
-    """Lancer l'interface web sur http://127.0.0.1:5002."""
+    """Lancer l'interface web sur http://127.0.0.1:5003."""
     from .web import create_app
 
+    if port_in_use(host, port):
+        console.print(f"[red]Le port {port} est déjà utilisé par un autre programme (ou JGarminTracker tourne déjà).[/red]\n"
+                      f"Choisis-en un autre : jgarmin serve --port {port + 1}")
+        raise typer.Exit(1)
     console.print(f"JGarminTracker {__version__} : http://{host}:{port}")
     create_app(init=False).run(host=host, port=port, debug=debug)

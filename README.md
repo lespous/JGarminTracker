@@ -25,7 +25,7 @@ $env:PYTHONIOENCODING = "utf-8"   # accents corrects dans la console
 ```powershell
 .venv\Scripts\jgarmin login       # e-mail, mot de passe, code MFA si le compte l'exige
 .venv\Scripts\jgarmin sync        # 1re fois : 12 mois d'historique, quelques minutes
-.\jgarmin.bat                     # ouvre http://127.0.0.1:5002
+.\jgarmin.bat                     # ouvre http://127.0.0.1:5003
 ```
 
 Ensuite, pour synchroniser : double-clic sur `jgarmin-sync.bat` (lance `jgarmin login` d'abord s'il n'y a pas
@@ -46,7 +46,7 @@ jgarmin health [--days 14]
 jgarmin week [--sport Course]
 jgarmin sports
 jgarmin reclassify
-jgarmin serve [--port 5002]
+jgarmin serve [--port 5003]
 ```
 
 Base : `jgarmin.db` dans le dossier courant, ou `--db chemin`, ou `$JGARMIN_DB`.

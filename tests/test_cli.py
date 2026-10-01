@@ -61,5 +61,17 @@ def test_sync_without_tokens_says_login(dbfile):
     assert result.exit_code == 1 and "jgarmin login" in result.output
 
 
+def test_serve_refuses_a_port_already_answering(dbfile):
+    import socket
+
+    with socket.socket() as busy:
+        busy.bind(("127.0.0.1", 0))
+        busy.listen()
+        port = busy.getsockname()[1]
+        assert cli.port_in_use("127.0.0.1", port)
+        result = runner.invoke(app, ["--db", dbfile, "serve", "--port", str(port)])
+    assert result.exit_code == 1 and "déjà utilisé" in result.output
+
+
 def test_logout_without_tokens(dbfile):
     assert "Aucun jeton" in run(dbfile, "logout")

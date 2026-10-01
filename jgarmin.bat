@@ -13,6 +13,6 @@ if not exist ".venv\Scripts\jgarmin.exe" (
 )
 
 rem Ouvre le navigateur 2 secondes apres le demarrage du serveur.
-start "" /b cmd /c "timeout /t 2 /nobreak >nul & start http://127.0.0.1:5002"
-".venv\Scripts\jgarmin.exe" serve --port 5002
+start "" /b cmd /c "timeout /t 2 /nobreak >nul & start http://127.0.0.1:5003"
+".venv\Scripts\jgarmin.exe" serve --port 5003
 pause

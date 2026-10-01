@@ -3,6 +3,13 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.1.1 — 2026-10-01
+
+### Corrigé
+- L'interface ne répondait pas : le port 5002 est aussi écouté par l'agent Cisco Secure Client, qui recevait
+  les requêtes à la place du serveur. Port par défaut : **5003** (`jgarmin.bat`, `jgarmin serve`).
+- `jgarmin serve` refuse de démarrer, avec un message clair, si un autre programme répond déjà sur le port.
+
 ## 0.1.0 — 2026-10-01
 
 Première version.
