@@ -70,7 +70,7 @@
   .rule .ok { color: var(--accent-d); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
 
   /* Parcours GPS (tracé inventé) */
-  .map { left: 1300px; top: 730px; width: 250px; height: 250px; padding: 18px; transform: rotate(7deg); background: #FBFBFE;
+  .map { left: 1300px; top: 730px; width: 250px; height: 250px; padding: 18px; transform: rotate(7deg); background: #FBFBFE; z-index: 2;  /* devant la liste des activités */
     display: flex; flex-direction: column-reverse; gap: 10px; }
   .map .tag { align-self: flex-start; font: 700 14px var(--mono); color: #fff; background: var(--accent-d); padding: 3px 8px; border-radius: 3px; }
   .map svg.route { width: 100%; flex: 1; border-radius: 8px;
