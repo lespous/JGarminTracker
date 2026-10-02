@@ -3,6 +3,12 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.11.1 — 2026-10-02
+
+### Modifié
+- Matériel : le choix des sports (affectation en bloc, sports par défaut) reprend les tuiles du menu des sports
+  de la page Activités ; un point de couleur marque les sports cochés.
+
 ## 0.11.0 — 2026-10-02
 
 ### Ajouté

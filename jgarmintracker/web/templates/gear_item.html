@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import gear_avatar %}
-{% from "_gear_form.html" import gear_fields %}
+{% from "_gear_form.html" import gear_fields, sport_tiles %}
 {% block title %}{{ g.name }}{% endblock %}
 {% block content %}
 <div class="head person-head">
@@ -60,14 +60,7 @@
     <h2>Modifier</h2>
     <form class="rule-form gear-form" method="post" action="{{ url_for('gear_update', gear_id=g.id) }}" enctype="multipart/form-data">
       {{ gear_fields(g) }}
-      <fieldset class="sport-picks wide">
-        <legend>Par défaut pour ces sports <small>(posé sur les nouvelles sorties synchronisées pendant sa période de service)</small></legend>
-        {% for f in families if f.sports %}
-        <div class="sp-fam"><span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
-          <div class="chips">{% for sp in f.sports %}<label class="pick-chip" style="--c: {{ sp.color }}"><input type="checkbox" name="default_sport" value="{{ sp.id }}" {{ 'checked' if sp.id in defaults }}><i class="ph ph-{{ sp.icon_name }}" aria-hidden="true"></i>{{ sp.name }}</label>{% endfor %}</div>
-        </div>
-        {% endfor %}
-      </fieldset>
+      {{ sport_tiles(families, 'default_sport', defaults, 'Par défaut pour ces sports (posé sur les nouvelles sorties synchronisées pendant sa période de service)') }}
       <div class="actions">
         <button class="primary">Enregistrer</button>
         <a class="btn danger" href="{{ url_for('gear_detail', gear_id=g.id, confirm=1) }}#delete">Supprimer</a>

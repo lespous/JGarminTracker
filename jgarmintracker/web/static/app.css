@@ -429,14 +429,14 @@ td.gpx-cell { width: 44px; text-align: center; }
 .assign-form { display: flex; flex-direction: column; gap: 12px; }
 .sport-picks { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .sport-picks legend { font-size: .8rem; color: var(--muted); padding: 0; margin-bottom: 4px; }
-.sp-fam { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: center; }
-@media (max-width: 640px) { .sp-fam { grid-template-columns: 1fr; } }
-.pick-chip { flex-direction: row; align-items: center; gap: 6px; padding: 4px 11px 4px 8px; border: 1px solid var(--line);
-  border-radius: 999px; color: var(--ink); font-size: .85rem; cursor: pointer; background: var(--surface); }
-.pick-chip .ph { color: var(--c); font-size: 1.05rem; }
-.pick-chip:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
-.pick-chip input { position: absolute; opacity: 0; pointer-events: none; }
-.pick-chip:has(input:focus-visible), .friend-pick:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sport-tiles { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 6px 12px; align-items: center; }
+@media (max-width: 520px) { .sport-tiles { grid-template-columns: 1fr; } }
+label.sm-tile { cursor: pointer; position: relative; }
+.sm-tile input { position: absolute; opacity: 0; pointer-events: none; }
+.sm-tile:has(input:checked) { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); font-weight: 600; }
+.sm-tile:has(input:checked)::after { content: ""; position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.sm-tile:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.friend-pick:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
 .check-line { flex-direction: row; align-items: center; gap: 8px; color: var(--ink); font-size: .9rem; }
 .preview-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .preview-head .spacer { flex: 1; }
@@ -454,5 +454,4 @@ td.gpx-cell { width: 44px; text-align: center; }
 .gear-icons .auto { font-size: .72rem; }
 .gear-form .wide, .gear-form > .actions { grid-column: 1 / -1; }
 .gear-form input[type=color] { height: 32px; padding: 2px; width: 100%; }
-.gear-form .sport-picks .sp-fam { grid-template-columns: 1fr; gap: 4px; }
 .gear-kind-row { display: flex; flex-direction: column; gap: 6px; }

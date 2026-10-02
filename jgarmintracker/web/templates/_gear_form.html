@@ -1,3 +1,21 @@
+{# Choix de sports à cocher, mêmes tuiles que le menu des sports de la page Activités. #}
+{% macro sport_tiles(families, name, checked, legend) -%}
+  <fieldset class="sport-picks wide">
+    <legend>{{ legend }}</legend>
+    <div class="sport-tiles">
+      {% for f in families if f.sports %}
+      <span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
+      <div class="sm-sports">
+        {% for sp in f.sports %}
+        <label class="sm-tile" title="{{ sp.label }}" style="--c: {{ sp.color }}"><input type="checkbox" name="{{ name }}" value="{{ sp.id }}" {{ 'checked' if sp.id in checked }}>
+          <i class="ph ph-{{ sp.icon_name }}" aria-hidden="true"></i><span>{{ sp.name }}</span></label>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+{%- endmacro %}
+
 {# Champs d'un matériel, communs à l'ajout (g = None) et à la modification. #}
 {% macro gear_fields(g=None) -%}
   {%- set kind = g.kind if g else 'bike' -%}

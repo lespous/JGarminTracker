@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import gear_avatar %}
-{% from "_gear_form.html" import gear_fields %}
+{% from "_gear_form.html" import gear_fields, sport_tiles %}
 {% block title %}Matériel{% endblock %}
 {% block content %}
 <div class="head">
@@ -53,14 +53,7 @@
       <label>Du<input type="date" name="from" id="assign-from" value="{{ pre.since or '' if pre }}"></label>
       <label>Au<input type="date" name="to" id="assign-to" value="{{ pre.retired or '' if pre }}"></label>
     </div>
-    <fieldset class="sport-picks">
-      <legend>Sports concernés</legend>
-      {% for f in families if f.sports %}
-      <div class="sp-fam"><span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
-        <div class="chips">{% for sp in f.sports %}<label class="pick-chip" style="--c: {{ sp.color }}"><input type="checkbox" name="sport" value="{{ sp.id }}" {{ 'checked' if sp.id in pre_sports }}><i class="ph ph-{{ sp.icon_name }}" aria-hidden="true"></i>{{ sp.name }}</label>{% endfor %}</div>
-      </div>
-      {% endfor %}
-    </fieldset>
+    {{ sport_tiles(families, 'sport', pre_sports, 'Sports concernés') }}
     <label class="check-line"><input type="checkbox" name="replace" checked> Remplacer le matériel du même type déjà posé sur ces sorties</label>
     <label class="check-line"><input type="checkbox" name="make_default" checked> L'utiliser aussi par défaut pour les prochaines sorties synchronisées de ces sports</label>
     <div id="assign-preview" class="test" hx-get="{{ url_for('gear_assign_preview') }}" hx-include="#assign-form"
