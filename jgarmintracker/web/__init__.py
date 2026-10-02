@@ -38,6 +38,7 @@ from .. import segments as segments_mod
 from .. import form as form_mod
 from .. import review as review_mod
 from .. import review_card
+from . import nav
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -226,7 +227,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0), ICONS=icons.ICONS,
         initials=photos.initials, hue=photos.hue,
         GEAR_KINDS=gear_mod.KINDS, GEAR_ICONS=gear_mod.ICONS, gear_icon=gear_mod.icon_of,
-        GOAL_METRICS=goals_mod.METRICS, GOAL_PERIODS=goals_mod.PERIODS, goal_fmt=goals_mod.fmt, goal_title=goals_mod.title,
+        NAV=nav.NAV, GOAL_METRICS=goals_mod.METRICS, GOAL_PERIODS=goals_mod.PERIODS, goal_fmt=goals_mod.fmt, goal_title=goals_mod.title,
         TASK_SUGGESTIONS=maintenance.SUGGESTIONS, sky=weather_mod.sky_label, compass=weather_mod.compass,
     )
 
@@ -253,6 +254,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "weight_due": weight.reminder(s, today()) if request.endpoint not in ("sync_chip", "static") else None,
             "maintenance_due": maintenance.due(s, today()) if request.endpoint not in ("sync_chip", "static") else [],
             "theme_css": themes.theme_css(settings.active_palette(s), mode),
+            "nav_owner": nav.owner(request.endpoint), "page_tabs": nav.tabs_for(request.endpoint),
         }
 
     def today() -> date:

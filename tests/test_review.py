@@ -63,7 +63,8 @@ def test_review_card(synced):
 def test_review_pages(client):  # noqa: F811
     html = client.get("/review").get_data(as_text=True)
     assert "Bilan 2025" in html and "Projection fin 2025" in html and "Chaque jour de l'année" in html
-    assert ">Bilan<" in html and "/review/2025.png" in html and "Télécharger l'image" in html
+    assert "Bilan de l&#39;année</a>" in html  # onglet de Progression
+    assert "/review/2025.png" in html and "Télécharger l'image" in html
     assert "Bilan 2025" in client.get("/review?year=1990").get_data(as_text=True)  # année sans sortie : la dernière
     png = client.get("/review/2025.png")
     assert png.mimetype == "image/png" and "attachment" not in png.headers.get("Content-Disposition", "")

@@ -82,3 +82,16 @@
 .ph-arrow-up:before { content: "\e08e"; }
 /* Segments (0.14.0) */
 .ph-flag-checkered:before { content: "\ea38"; }
+/* Menu (0.17.0) */
+.ph-house:before { content: "\e2c2"; }
+.ph-list-bullets:before { content: "\e2f2"; }
+.ph-map-trifold:before { content: "\e31a"; }
+.ph-users-three:before { content: "\e68e"; }
+.ph-chart-line-up:before { content: "\e156"; }
+.ph-gauge:before { content: "\e628"; }
+.ph-arrows-clockwise:before { content: "\e094"; }
+.ph-list-checks:before { content: "\eadc"; }
+.ph-gear-six:before { content: "\e272"; }
+.ph-tag:before { content: "\e478"; }
+.ph-caret-down:before { content: "\e136"; }
+.ph-clock-counter-clockwise:before { content: "\e1a0"; }

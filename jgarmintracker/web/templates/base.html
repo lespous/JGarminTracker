@@ -14,10 +14,37 @@
 <body class="layout-{{ ui_layout }}">
 <header class="topbar">
   <a class="brand" href="{{ url_for('dashboard') }}">JGarminTracker <span class="version">v{{ VERSION }}</span></a>
-  <nav>
-    {% set sections = {'activity_detail': 'activities', 'palette_form': 'settings_page', 'friend_detail': 'friends_page', 'gear_detail': 'gear_page', 'route_detail': 'routes_page'} %}
-    {% for ep, label in [('dashboard','Tableau de bord'), ('activities','Activités'), ('progress','Progression'), ('review_page','Bilan'), ('map_page','Carte'), ('routes_page','Parcours'), ('health','Santé'), ('form_page','Forme'), ('sports','Sports'), ('tags_page','Tags'), ('sync_page','Synchronisation'), ('history_page','Historique'), ('checks_page','Vérifications'), ('friends_page','Amis'), ('gear_page','Matériel'), ('settings_page','Paramètres')] %}
-      <a href="{{ url_for(ep) }}" class="{{ 'on' if request.endpoint == ep or sections.get(request.endpoint) == ep }}">{{ label }}{% if ep == 'checks_page' and checks_count %} <span class="badge" title="Activités à vérifier">{{ checks_count }}</span>{% endif %}{% if ep == 'health' and weight_due and weight_due.due %} <span class="due-dot" title="Pesée à faire" aria-label="Pesée à faire"></span>{% endif %}{% if ep == 'gear_page' and maintenance_due %} <span class="due-dot" title="{{ maintenance_due|length }} entretien(s) à faire" aria-label="Entretien à faire"></span>{% endif %}</a>
+  {% set nav_alerts = {'checks_page': checks_count, 'health': weight_due and weight_due.due, 'gear_page': maintenance_due} %}
+  {# Alerte d'une entrée : pastille ou nombre. #}
+  {% macro alert(ep) -%}
+    {%- if ep == 'checks_page' and checks_count %}<span class="badge" title="Activités à vérifier">{{ checks_count }}</span>
+    {%- elif ep == 'health' and weight_due and weight_due.due %}<span class="due-dot" title="Pesée à faire" aria-label="Pesée à faire"></span>
+    {%- elif ep == 'gear_page' and maintenance_due %}<span class="due-dot" title="{{ maintenance_due|length }} entretien(s) à faire" aria-label="Entretien à faire"></span>
+    {%- endif -%}
+  {%- endmacro %}
+  {% macro nav_link(ep, label, icon) -%}
+    <a href="{{ url_for(ep) }}" class="nav-link {{ 'on' if nav_owner == ep }}" {% if nav_owner == ep %}aria-current="page"{% endif %}><i class="ph ph-{{ icon }}" aria-hidden="true"></i><span>{{ label }}</span>{{ alert(ep) }}</a>
+  {%- endmacro %}
+  {# Colonne : catégories titrées. #}
+  <nav class="nav-col" aria-label="Menu">
+    {% for title, _icon, items in NAV %}
+      {% if not loop.first %}<div class="nav-cat">{{ title }}</div>{% endif %}
+      {% for ep, label, icon in items %}{{ nav_link(ep, label, icon) }}{% endfor %}
+    {% endfor %}
+  </nav>
+  {# En-tête : une catégorie = un menu déroulant (lien direct s'il n'y a qu'une page). #}
+  <nav class="nav-top" aria-label="Menu">
+    {% for title, cicon, items in NAV %}
+      {% if items|length == 1 %}{{ nav_link(*items[0]) }}
+      {% else %}
+        {% set active = nav_owner in items|map(attribute=0)|list %}
+        {% set has_alert = namespace(v=false) %}
+        {% for ep, _l, _i in items %}{% if nav_alerts.get(ep) %}{% set has_alert.v = true %}{% endif %}{% endfor %}
+        <details class="nav-drop">
+          <summary class="nav-link {{ 'on' if active }}"><i class="ph ph-{{ cicon }}" aria-hidden="true"></i><span>{{ title }}</span>{% if has_alert.v %}<span class="due-dot" aria-label="Alerte"></span>{% endif %}<i class="ph ph-caret-down caret" aria-hidden="true"></i></summary>
+          <div class="nav-menu">{% for ep, label, icon in items %}{{ nav_link(ep, label, icon) }}{% endfor %}</div>
+        </details>
+      {% endif %}
     {% endfor %}
   </nav>
   <div class="bar-tools">
@@ -33,12 +60,24 @@
   </div>
 </header>
 <main>
+  {% if page_tabs %}
+  <nav class="page-tabs" aria-label="Sections">
+    {% for ep, label, icon in page_tabs[0] %}<a href="{{ url_for(ep) }}" class="{{ 'on' if ep == page_tabs[1] }}" {% if ep == page_tabs[1] %}aria-current="page"{% endif %}><i class="ph ph-{{ icon }}" aria-hidden="true"></i>{{ label }}</a>{% endfor %}
+  </nav>
+  {% endif %}
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
   {% endwith %}
   {% block content %}{% endblock %}
 </main>
 <script>
+// Menus déroulants de l'en-tête : un seul ouvert à la fois, fermés par un clic ailleurs ou Échap.
+(() => {
+  const drops = [...document.querySelectorAll(".nav-drop")];
+  drops.forEach(d => d.addEventListener("toggle", () => { if (d.open) drops.forEach(o => { if (o !== d) o.open = false; }); }));
+  document.addEventListener("click", (e) => { if (!e.target.closest(".nav-drop")) drops.forEach(d => { d.open = false; }); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") drops.forEach(d => { if (d.open) { d.open = false; d.querySelector("summary").focus(); } }); });
+})();
 // Mode réellement affiché (en mode « Selon Windows », dépend du système) : sert au bouton soleil / lune.
 (() => {
   const root = document.documentElement;

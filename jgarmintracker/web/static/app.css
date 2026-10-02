@@ -25,10 +25,35 @@ h2 { font-size: 1.1rem; }
   border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
 .brand { font-weight: 700; font-size: 1.1rem; color: var(--accent); text-decoration: none; }
 .brand .version { font: 500 .7rem var(--mono); color: var(--muted); margin-left: 4px; }
-.topbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
-.topbar nav a { padding: 6px 12px; border-radius: 5px; color: var(--muted); text-decoration: none; }
-.topbar nav a:hover { background: var(--soft); color: var(--ink); }
-.topbar nav a.on { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+/* Menu (0.17.0) : catégories titrées en colonne, menus déroulants en en-tête (voir web/nav.py) */
+.topbar nav { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.nav-link { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 6px; color: var(--muted);
+  text-decoration: none; white-space: nowrap; cursor: pointer; }
+.nav-link > .ph { font-size: 1.1rem; flex: none; }
+.nav-link:hover { background: var(--soft); color: var(--ink); }
+.nav-link.on { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.nav-link.on > .ph { color: var(--accent); }
+.nav-link .badge, .nav-link .due-dot { margin-left: auto; }
+.topbar .nav-col { display: none; }
+.nav-cat { font: 600 .68rem var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 14px 12px 4px; }
+.nav-drop { position: relative; }
+.nav-drop > summary { list-style: none; }
+.nav-drop > summary::-webkit-details-marker { display: none; }
+.nav-drop > summary .caret { font-size: .8rem; margin-left: 2px; transition: transform .15s; }
+.nav-drop[open] > summary { background: var(--soft); color: var(--ink); }
+.nav-drop[open] > summary .caret { transform: rotate(180deg); }
+.nav-drop .nav-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; z-index: 1100; padding: 6px;
+  display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .16); }
+.nav-drop .nav-menu .due-dot, .nav-drop .nav-menu .badge { margin-left: auto; }
+.nav-drop .nav-menu .nav-link { justify-content: flex-start; }
+@media (prefers-reduced-motion: reduce) { .nav-drop > summary .caret { transition: none; } }
+.page-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: -6px; }
+.page-tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; color: var(--muted); text-decoration: none;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.page-tabs a:hover { color: var(--ink); }
+.page-tabs a.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.page-tabs a.on .ph { color: var(--accent); }
 .badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--warn);
   color: var(--surface); font-size: .75rem; font-weight: 600; text-align: center; }
 
@@ -255,7 +280,10 @@ form.sync-chip { display: flex; gap: 6px; align-items: center; }
   body.layout-col_left .topbar { grid-column: 1; grid-row: 1; position: sticky; top: 0; height: 100vh;
     flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 22px; padding: 28px 20px;
     border-bottom: 0; border-right: 1px solid var(--line); overflow-y: auto; }
-  body.layout-col_left .topbar nav { flex-direction: column; gap: 2px; }
+  body.layout-col_left .topbar nav { flex-direction: column; align-items: stretch; gap: 2px; }
+  body.layout-col_left .topbar .nav-col { display: flex; }
+  body.layout-col_left .topbar .nav-top { display: none; }
+  body.layout-col_left .nav-col .nav-link:first-child { margin-bottom: 2px; }
   body.layout-col_left .bar-tools { margin: auto 0 0; flex-direction: column; align-items: flex-start; gap: 12px; }
   body.layout-col_left form.sync-chip { flex-wrap: wrap; }
   body.layout-col_left main { grid-column: 2; grid-row: 1; width: 100%; }
