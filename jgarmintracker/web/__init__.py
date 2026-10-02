@@ -1251,7 +1251,9 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def review_png(year: int):
         s = db()
         r = review_mod.review(s, year, today())
-        data = review_card.render(r, settings.active_palette(s))
+        prof = s.get(Profile, 1)
+        name = (prof.nickname or f"{prof.first_name} {prof.last_name}".strip()) if prof else ""
+        data = review_card.render(r, settings.active_palette(s), name, prof.photo if prof and prof.has_photo else None)
         return Response(data, mimetype="image/png",
                         headers={"Content-Disposition": f'attachment; filename="bilan-{year}.png"'}
                         if request.args.get("download") else {})

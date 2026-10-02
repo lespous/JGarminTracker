@@ -11,7 +11,7 @@ from jgarmintracker.models import Activity, Friend
 from jgarmintracker.stats import activities_between
 
 from .conftest import TODAY
-from .test_friends import act_id, client  # noqa: F401  (fixture client réutilisée)
+from .test_friends import client  # noqa: F401  (fixture client réutilisée)
 
 
 def test_review_partial_year(synced):
@@ -43,9 +43,21 @@ def test_review_partial_year(synced):
 
 def test_review_card(synced):
     r = review.review(synced, 2025, TODAY)
-    data = review_card.render(r, themes.PALETTES[themes.DEFAULT_PALETTE])
+    pal = themes.PALETTES[themes.DEFAULT_PALETTE]
+    data = review_card.render(r, pal)
     img = Image.open(io.BytesIO(data))
     assert img.format == "PNG" and img.size == (1080, 1350)
+    # Photo de profil (ronde, en haut à gauche) et nom ; sans photo : initiales sur l'accent.
+    from .test_friends import image_bytes
+
+    red = review_card.render(r, pal, "Marie Dupont", image_bytes(400, 400, "PNG", (220, 30, 30)))
+    px = Image.open(io.BytesIO(red)).convert("RGB").getpixel((72 + 60, 112 + 60))
+    assert px[0] > 180 and px[1] < 80  # centre de l'avatar : la photo
+    init = review_card.render(r, pal, "Marie Dupont")
+    accent = tuple(int(pal["dark"]["accent"][i:i + 2], 16) for i in (1, 3, 5))
+    assert Image.open(io.BytesIO(init)).convert("RGB").getpixel((72 + 12, 112 + 60)) == accent
+    long = review_card.render(r, pal, "Un nom vraiment très long qui ne tiendrait jamais en grand")
+    assert Image.open(io.BytesIO(long)).size == (1080, 1350)
 
 
 def test_review_pages(client):  # noqa: F811
