@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import friend_avatar, gear_avatar %}
+{% from "_weather.html" import weather_chip %}
 {% block title %}Activités{% endblock %}
 {% macro sport_options(families, selected=None) -%}
   {% for f in families %}<optgroup label="{{ f.name }}">
@@ -108,7 +109,7 @@
     <tr class="{{ 'locked' if a.sport_locked }} {{ 'excluded-row' if a.excluded }}">
       <td><input type="checkbox" name="act" value="{{ a.id }}" form="bulk" class="act-check" aria-label="Sélectionner"></td>
       <td class="when"><span class="day-dot {{ 'we' if a.start.weekday() >= 5 }}" title="{{ DAY_NAMES[a.start.weekday()] }}">{{ DAYS[a.start.weekday()] }}</span>
-        <span class="num">{{ a.start.strftime('%d/%m/%y') }}<span class="hour">{{ a.start.strftime('%H:%M') }}</span></span></td>
+        <span class="num">{{ a.start.strftime('%d/%m/%y') }}<span class="hour">{{ a.start.strftime('%H:%M') }}{{ weather_chip(a.weather) }}</span></span></td>
       <td class="sport-cell">
         <button type="button" class="sport-btn" data-act="{{ a.id }}" data-sport="{{ a.sport_id }}"
                 title="{{ a.sport.label if a.sport else 'Sans sport' }}{{ ' · corrigé à la main' if a.sport_locked }} — cliquer pour changer"

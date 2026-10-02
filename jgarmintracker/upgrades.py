@@ -47,9 +47,17 @@ def assign_icons(session: Session) -> None:
     session.flush()
 
 
+def find_routes(session: Session) -> None:
+    """0.13.0 : premiers parcours répétés, à partir des tracés déjà en base."""
+    from .routes import rebuild
+
+    rebuild(session)
+
+
 UPGRADES: list = [
     ("2026-10-activity-extras", upgrade_activity_extras),
     ("2026-10-icons", assign_icons),
+    ("2026-10-routes", find_routes),
 ]
 
 

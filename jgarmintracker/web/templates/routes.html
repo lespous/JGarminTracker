@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Parcours{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Parcours</h1>
+  <span class="muted">{{ rows|length }} parcours faits plusieurs fois</span>
+  <div class="spacer"></div>
+  <div class="chips">
+    <a class="chip {{ 'on' if not fam }}" href="{{ url_with(family='') }}">Tous</a>
+    {% for f in families %}<a class="chip {{ 'on' if fam == f.id }}" href="{{ url_with(family=f.id) }}"><i class="ph ph-{{ f.icon or 'pulse' }} sicon" aria-hidden="true"></i>{{ f.name }}</a>{% endfor %}
+  </div>
+  <div class="chips">
+    <a class="chip {{ 'on' if order == 'count' }}" href="{{ url_with(order='') }}">Les plus faits</a>
+    <a class="chip {{ 'on' if order == 'recent' }}" href="{{ url_with(order='recent') }}">Les plus récents</a>
+  </div>
+</div>
+
+{% if rows %}
+<div class="route-grid">
+  {% for r in rows %}
+  {% set color = r.sport.color if r.sport else '#888' %}
+  <a class="route-card" href="{{ url_for('route_detail', route_id=r.group.id) }}">
+    <span class="route-map">{% if r.group.rep and r.group.rep.track and r.group.rep.track.preview_path %}<svg viewBox="0 0 64 40" width="96" height="60" aria-hidden="true"><path d="{{ r.group.rep.track.preview_path }}" stroke="{{ color }}"/></svg>{% endif %}</span>
+    <span class="who">
+      <b>{{ r.group.name }}</b>
+      <span class="small muted">{% if r.sport %}<i class="ph ph-{{ r.sport.icon_name }} sicon" style="color: {{ color }}" aria-hidden="true"></i>{{ r.sport.label }} · {% endif %}{{ r.group.rep.distance_m|km if r.group.rep else '' }}</span>
+    </span>
+    <span class="route-stats">
+      <span><small>Passages</small><b class="num">{{ r.count }}</b></span>
+      <span><small>Meilleur</small><b class="num">{{ r.best.activity.duration_s|hms }}</b></span>
+      <span><small>Dernier</small><b class="num">{{ r.last.activity.start|day }}</b>
+        {% if r.last.rank == 1 %}<em class="pb">record</em>{% else %}<em class="muted small">{{ r.last.rank }}e</em>{% endif %}</span>
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<section class="panel"><p class="muted">Aucun parcours fait au moins deux fois pour l'instant. Les parcours se repèrent à partir des tracés GPS récupérés à la synchro.</p></section>
+{% endif %}
+
+<section class="panel">
+  <p class="note">Même parcours : même famille de sports, distance à 5 % près, départ et arrivée à moins de 300 m, et au moins 80 % du tracé en commun dans le même sens. Le calcul se refait après chaque synchro qui apporte de nouveaux tracés. Les sorties exclues des statistiques ne comptent pas.</p>
+  <form method="post" action="{{ url_for('routes_rebuild') }}"><button>Recalculer maintenant</button></form>
+</section>
+{% endblock %}

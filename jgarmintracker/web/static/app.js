@@ -16,6 +16,13 @@ const fmt = {
     const m = Math.round(h * 60);
     return m >= 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : `${m}min`;
   },
+  // Secondes -> « 1h09min24s », « 50min02s » (durée d'une sortie, comme units.hms).
+  hms: (s) => {
+    if (s == null) return "—";
+    const t = Math.round(s), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+    const mm = String(m).padStart(2, "0"), ss = String(sec).padStart(2, "0");
+    return h ? `${h}h${mm}min${ss}s` : m ? `${m}min${ss}s` : `${sec}s`;
+  },
 };
 
 function baseOptions(extra = {}) {

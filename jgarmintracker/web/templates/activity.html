@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import friend_avatar, gear_avatar %}
+{% from "_weather.html" import weather_panel %}
 {% block title %}{{ a.name }}{% endblock %}
 {% block head %}{% if points %}
 <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
@@ -53,6 +54,32 @@
   </div>
   {% if a.is_pr %}<p class="flash">Garmin a enregistré un record personnel pendant cette sortie.</p>{% endif %}
 </section>
+
+{% set has_wx = a.weather and a.weather.temp_c is not none %}
+{% if has_wx or route %}
+<div class="grid2">
+  {% if route %}
+  <section class="panel" id="route">
+    <h2>Même parcours <small><a href="{{ url_for('route_detail', route_id=route.group.id) }}">{{ route.group.name }}</a></small></h2>
+    <div class="metrics">
+      <div class="metric"><small>Passages</small><b>{{ route.passages|length }}</b></div>
+      {% if route.me %}<div class="metric"><small>Cette sortie</small><b>{{ route.me.rank }}{{ 'er' if route.me.rank == 1 else 'e' }} sur {{ route.passages|length }}</b></div>{% endif %}
+      {% if route.best %}<div class="metric"><small>Meilleur temps</small><b>{{ route.best.activity.duration_s|hms }}</b>
+        <span class="sub muted small">{% if route.best.activity.id == a.id %}c'est celle-ci{% else %}<a href="{{ url_for('activity_detail', act_id=route.best.activity.id) }}">le {{ route.best.activity.start|day }}</a>{% endif %}</span></div>{% endif %}
+      {% if route.best and route.me and route.best.activity.id != a.id %}<div class="metric"><small>Écart au meilleur</small><b>+{{ (a.duration_s - route.best.activity.duration_s)|hms }}</b></div>{% endif %}
+    </div>
+    <a class="small" href="{{ url_for('route_detail', route_id=route.group.id) }}">Comparer tous les passages</a>
+  </section>
+  {% endif %}
+  {% if has_wx %}
+  <section class="panel" id="weather">
+    <h2>Météo au départ <small>{{ a.start.strftime('%H:%M') }}{% if a.weather.station %} · station {{ a.weather.station }}{% endif %}</small></h2>
+    {{ weather_panel(a.weather) }}
+    <p class="note">Relevé de la station météo la plus proche, fourni par Garmin avec la sortie.</p>
+  </section>
+  {% endif %}
+</div>
+{% endif %}
 
 {% if points %}
 <section class="panel">

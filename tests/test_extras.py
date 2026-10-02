@@ -38,8 +38,10 @@ def test_existing_db_gets_columns_and_backfill(tmp_path):
     with dbm.new_session() as s:
         sync(s, FakeSource(), today=TODAY, history_days=30)
     con = sqlite3.connect(path)
+    con.execute("DROP INDEX IF EXISTS ix_activities_route_id")
     for col in dbm.NEW_COLUMNS["activities"]:
-        con.execute(f"ALTER TABLE activities DROP COLUMN {col}")
+        if col != "route_id":  # SQLite refuse de supprimer une colonne qui référence une autre table
+            con.execute(f"ALTER TABLE activities DROP COLUMN {col}")
     con.execute("DELETE FROM applied_upgrades")
     con.commit()
     con.close()

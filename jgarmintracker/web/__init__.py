@@ -32,6 +32,8 @@ from .. import checks, icons, photos, settings, themes, tracks, weight
 from .. import gear as gear_mod
 from .. import goals as goals_mod
 from .. import maintenance
+from .. import routes as routes_mod
+from .. import weather as weather_mod
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -43,6 +45,7 @@ from ..models import (
     GearTask,
     Goal,
     Profile,
+    RouteGroup,
     Sport,
     SportFamily,
     SportRule,
@@ -213,7 +216,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         initials=photos.initials, hue=photos.hue,
         GEAR_KINDS=gear_mod.KINDS, GEAR_ICONS=gear_mod.ICONS, gear_icon=gear_mod.icon_of,
         GOAL_METRICS=goals_mod.METRICS, GOAL_PERIODS=goals_mod.PERIODS, goal_fmt=goals_mod.fmt, goal_title=goals_mod.title,
-        TASK_SUGGESTIONS=maintenance.SUGGESTIONS,
+        TASK_SUGGESTIONS=maintenance.SUGGESTIONS, sky=weather_mod.sky_label, compass=weather_mod.compass,
     )
 
     @app.teardown_appcontext
@@ -272,7 +275,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         stmt = select(Activity).options(
             joinedload(Activity.sport).joinedload(Sport.family), selectinload(Activity.tags),
             selectinload(Activity.track).defer(ActivityTrack.points_json),  # la mini-carte suffit ici
-            selectinload(Activity.friends).defer(Friend.photo), selectinload(Activity.gear),
+            selectinload(Activity.friends).defer(Friend.photo), selectinload(Activity.gear), selectinload(Activity.weather),
         )
         if date_from:
             stmt = stmt.where(Activity.start >= datetime.combine(date_from, datetime.min.time()))
@@ -350,9 +353,15 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         back_url = detail_back_url(act_id)
         splits = [(label, meters, getattr(act, attr)) for label, meters, attr in SPLITS if getattr(act, attr)]
         points = tracks.loads(act.track.points_json) if act.track and act.track.n_points else []
+        route = None
+        if act.route:
+            ps = routes_mod.passages(act.route)
+            me = next((p for p in ps if p.activity.id == act.id), None)
+            best = min(ps, key=lambda p: p.rank) if ps else None
+            route = SimpleNamespace(group=act.route, passages=ps, me=me, best=best)
         return render_template("activity.html", a=act, families=load_families(s), splits=splits, points=points,
                                all_friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
-                               gear_choices=gear_choices(s, act), back_url=back_url,
+                               gear_choices=gear_choices(s, act), back_url=back_url, route=route,
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
     # ---------------------------------------------------------------- carte de tous les parcours
@@ -1046,6 +1055,63 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         flash(f"Tag « {name} » supprimé ({n} activité(s) détaguée(s)). Les activités elles-mêmes sont conservées.")
         return redirect(url_for("tags_page"))
 
+    # ---------------------------------------------------------------- parcours répétés
+    def route_summary(g: RouteGroup) -> SimpleNamespace:
+        ps = routes_mod.passages(g)
+        best = min(ps, key=lambda p: p.rank) if ps else None
+        last = ps[0] if ps else None
+        return SimpleNamespace(group=g, passages=ps, best=best, last=last, count=len(ps),
+                               sport=g.rep.sport if g.rep else None)
+
+    @app.get("/routes")
+    def routes_page():
+        s = db()
+        fam = request.args.get("family", type=int)
+        rows = [route_summary(g) for g in s.scalars(
+            select(RouteGroup).options(selectinload(RouteGroup.activities), joinedload(RouteGroup.rep)))]
+        rows = [r for r in rows if r.count >= 2]
+        families = sorted({r.sport.family for r in rows if r.sport}, key=lambda f: f.position)
+        if fam:
+            rows = [r for r in rows if r.sport and r.sport.family_id == fam]
+        order = request.args.get("order", "count")
+        if order == "recent":
+            rows.sort(key=lambda r: r.last.activity.start, reverse=True)
+        else:
+            rows.sort(key=lambda r: (-r.count, r.group.name))
+        return render_template("routes.html", rows=rows, families=families, fam=fam, order=order)
+
+    @app.get("/routes/<int:route_id>")
+    def route_detail(route_id: int):
+        s = db()
+        g = s.get(RouteGroup, route_id) or abort(404)
+        r = route_summary(g)
+        points = tracks.loads(g.rep.track.points_json) if g.rep and g.rep.track else []
+        unit = r.sport.pace_unit if r.sport else "none"
+        chrono = sorted(r.passages, key=lambda p: p.activity.start)
+        chart = {"labels": [units.day(p.activity.start) for p in chrono],
+                 "secs": [round(p.activity.duration_s) for p in chrono],
+                 "best": [p.rank == 1 for p in chrono]}
+        return render_template("route.html", r=r, points=points, unit=unit, chart=chart,
+                               auto=routes_mod.auto_name(g.rep) if g.rep else "")
+
+    @app.post("/routes/<int:route_id>/rename")
+    def route_rename(route_id: int):
+        s = db()
+        g = s.get(RouteGroup, route_id) or abort(404)
+        name = request.form.get("name", "").strip()[:120]
+        g.name, g.custom_name = (name, True) if name else (routes_mod.auto_name(g.rep) if g.rep else g.name, False)
+        s.commit()
+        flash(f"Parcours renommé « {g.name} ».")
+        return redirect(url_for("route_detail", route_id=g.id))
+
+    @app.post("/routes/rebuild")
+    def routes_rebuild():
+        s = db()
+        res = routes_mod.rebuild(s)
+        s.commit()
+        flash(f"Parcours recalculés : {res['routes']} parcours répétés, {res['activities']} sorties regroupées.")
+        return redirect(url_for("routes_page"))
+
     # ---------------------------------------------------------------- progression
     @app.get("/progress")
     def progress():
@@ -1077,7 +1143,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "progress.html", families=families, sel=sel, label=label, unit=unit, acts=acts,
             volume=volume_series(acts, start, end), pace=pace, trend=trend, rec=records(acts, unit), tot=totals(acts),
             prev=prev, prev_start=prev_start, prev_end=prev_end, start=start, end=end, today=t,
-            period=period, PERIODS=PERIODS, goals=goals_mod.all_progress(s, t),
+            period=period, PERIODS=PERIODS, goals=goals_mod.all_progress(s, t), meteo=weather_mod.by_weather(acts),
             goal_edit=request.args.get("goal_edit", type=int), goal_confirm=request.args.get("goal_confirm", type=int),
         )
 

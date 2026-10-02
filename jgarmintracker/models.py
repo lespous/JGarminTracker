@@ -337,6 +337,7 @@ class Activity(Base):
     exclude_reason: Mapped[str | None] = mapped_column(String(120), nullable=True)
     ignore_max_speed: Mapped[bool] = mapped_column(Boolean, default=False)  # pointe GPS aberrante
     review_ok: Mapped[bool] = mapped_column(Boolean, default=False)  # « c'est bien moi » : plus d'alerte
+    route_id: Mapped[int | None] = mapped_column(ForeignKey("route_groups.id"), nullable=True, index=True)  # 0.13.0
     raw_json: Mapped[str] = mapped_column(Text, default="{}")
     synced_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
@@ -348,6 +349,8 @@ class Activity(Base):
     gear: Mapped[list[Gear]] = relationship(secondary=activity_gear, back_populates="activities", order_by="Gear.kind")
     track: Mapped[ActivityTrack | None] = relationship(back_populates="activity", cascade="all, delete-orphan",
                                                        lazy="select")
+    weather: Mapped[ActivityWeather | None] = relationship(back_populates="activity", cascade="all, delete-orphan")
+    route: Mapped[RouteGroup | None] = relationship(back_populates="activities", foreign_keys=[route_id])
 
     @property
     def day(self) -> date:
@@ -360,6 +363,44 @@ class Activity(Base):
     @property
     def garmin_url(self) -> str:
         return f"https://connect.garmin.com/modern/activity/{self.garmin_id}"
+
+
+class ActivityWeather(Base):
+    """Météo au départ d'une activité (0.13.0), relevée par Garmin à la station la plus proche. Unités métriques
+    (Garmin envoie des °F et des mph : conversion dans weather.py). Ligne vide = demandé, rien reçu."""
+
+    __tablename__ = "activity_weather"
+
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activities.id"), primary_key=True)
+    temp_c: Mapped[float | None] = mapped_column(Float, nullable=True)
+    feels_c: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dew_c: Mapped[float | None] = mapped_column(Float, nullable=True)
+    humidity: Mapped[float | None] = mapped_column(Float, nullable=True)  # %
+    wind_kmh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gust_kmh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    wind_deg: Mapped[float | None] = mapped_column(Float, nullable=True)  # d'où vient le vent
+    sky: Mapped[str] = mapped_column(String(60), default="")  # description Garmin (anglais), traduite à l'affichage
+    station: Mapped[str] = mapped_column(String(40), default="")
+    raw_json: Mapped[str] = mapped_column(Text, default="{}")
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    activity: Mapped[Activity] = relationship(back_populates="weather")
+
+
+class RouteGroup(Base):
+    """Parcours fait plusieurs fois (0.13.0) : sorties au même tracé, dans le même sens (voir routes.py)."""
+
+    __tablename__ = "route_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), default="")
+    custom_name: Mapped[bool] = mapped_column(Boolean, default=False)  # renommé à la main : gardé au recalcul
+    rep_activity_id: Mapped[int | None] = mapped_column(ForeignKey("activities.id"), nullable=True)  # tracé de référence
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    rep: Mapped[Activity | None] = relationship(foreign_keys=[rep_activity_id])
+    activities: Mapped[list[Activity]] = relationship(back_populates="route", foreign_keys="Activity.route_id",
+                                                      order_by="Activity.start")
 
 
 class ActivityTrack(Base):

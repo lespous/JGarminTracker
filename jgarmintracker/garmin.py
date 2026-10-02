@@ -162,5 +162,15 @@ class GarminSource:
         return self.api.get_activity_details(str(garmin_id), maxchart=1, maxpoly=MAX_POINTS)
 
     @_translate
+    def weather(self, garmin_id: int) -> dict | None:
+        """Météo au départ (°F, mph : converti dans weather.py). Sortie sans météo : None."""
+        try:
+            return self.api.get_activity_weather(str(garmin_id)) or None
+        except GarminConnectConnectionError as e:
+            if any(code in str(e) for code in ("No data received", "404", "204")):  # sortie en salle, ancienne…
+                return None
+            raise
+
+    @_translate
     def vo2max(self, start: date, end: date) -> list | dict | None:
         return self.api.get_max_metrics_range(start.isoformat(), end.isoformat())

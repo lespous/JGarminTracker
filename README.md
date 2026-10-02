@@ -112,6 +112,13 @@ Page **Progression**, section Objectifs : distance, durée, sorties ou dénivel�
 les sports, une famille ou un sport ; progression et rythme sur le tableau de bord. Page **Carte**, bouton
 « Chaleur » : tous les parcours superposés, les routes les plus faites ressortent.
 
+## Parcours répétés et météo
+
+Onglet **Parcours** : les sorties faites sur le même tracé, dans le même sens, regroupées automatiquement à partir
+des tracés (calcul local), avec classement des passages et courbe des temps. Chaque sortie reçoit aussi la météo
+au départ (Garmin, station la plus proche, convertie en °C et km/h), visible dans sa fiche, dans la liste et dans
+Progression (allure selon la température et le vent).
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)

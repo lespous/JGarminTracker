@@ -489,3 +489,32 @@ tr.due .task-state .small { color: var(--warn); font-weight: 600; }
 .service-banner > .ph { color: var(--warn); }
 .tbl .x { border: 0; background: none; padding: 0 6px; color: var(--muted); font-size: 1rem; line-height: 1; }
 .tbl .x:hover { color: var(--out); }
+
+/* Météo et parcours répétés (0.13.0) */
+td.wx-cell { white-space: nowrap; width: 54px; }
+.wx-chip { display: inline-flex; align-items: center; gap: 3px; font: 500 .8rem var(--mono); color: var(--muted); }
+.wx-chip .ph { font-size: 1.05rem; color: var(--ink); }
+.hour .wx-chip { font-size: .72rem; margin-left: 6px; }
+.hour .wx-chip .ph { font-size: .9rem; color: var(--muted); }
+td.when .hour { display: inline-flex; align-items: center; }
+.wx { display: flex; flex-direction: column; gap: 12px; }
+.wx-main { display: flex; align-items: center; gap: 12px; }
+.wx-main > .ph { font-size: 2.4rem; color: var(--accent); }
+.wx-main > span { display: flex; flex-direction: column; line-height: 1.2; }
+.wx-main b { font-size: 1.6rem; }
+.wind-arrow { display: inline-grid; place-items: center; vertical-align: -2px; transform: rotate(var(--deg)); color: var(--accent); }
+.route-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.route-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px 14px; align-items: center; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.route-card:hover { border-color: var(--accent); }
+.route-card .who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.route-map { display: grid; place-items: center; width: 96px; height: 60px; border-radius: 6px; background: var(--soft); }
+.route-map path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.route-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.route-stats > span { display: flex; flex-direction: column; }
+.route-stats small { color: var(--muted); font-size: .75rem; }
+.route-stats b { font-size: .92rem; }
+.route-stats em { font-style: normal; font-size: .75rem; }
+.pb { color: var(--in); font-weight: 600; }
+tr.best-row td { font-weight: 600; }
+tr.best-row .ph-trophy { color: var(--warn); }

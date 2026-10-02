@@ -10,15 +10,15 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
   et les coins jamais explorés. Tracés déjà en base, aucun appel Garmin.
 - [x] **Entretien du matériel** (0.12.0) : rappels par matériel (« chaîne tous les 3 000 km », « révision chaque année »),
   pastille dans la navigation quand c'est dû, historique des entretiens.
+- [x] **Parcours répétés** (0.13.0) : reconnaître les sorties faites sur le même tracé et comparer les temps (meilleur
+  temps, évolution, dernière fois).
+- [x] **Météo de la sortie** (0.13.0) : température et vent au départ (fournis par Garmin avec l'activité).
 
 ## Plus tard
 
 ### Sorties
-- [ ] **Parcours répétés** : reconnaître les sorties faites sur le même tracé et comparer les temps (meilleur
-  temps, évolution, dernière fois).
 - [ ] **Tours et intervalles** : laps de chaque sortie (allure, FC, dénivelé par km) dans la fiche. Un appel
   Garmin de plus par sortie.
-- [ ] **Météo de la sortie** : température et vent au départ (fournis par Garmin avec l'activité).
 
 ### Santé
 - [ ] **Charge d'entraînement et récupération** : charge sur 7 jours face à celle sur 28 jours, mise en face de

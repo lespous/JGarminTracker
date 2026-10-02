@@ -71,3 +71,12 @@
 .ph-wrench:before { content: "\e5d4"; }
 .ph-package:before { content: "\e390"; }
 .ph-warning:before { content: "\e4e0"; }
+/* Météo et parcours répétés (0.13.0) */
+.ph-cloud-lightning:before { content: "\e1b2"; }
+.ph-cloud-snow:before { content: "\e1b8"; }
+.ph-cloud-rain:before { content: "\e1b4"; }
+.ph-cloud-fog:before { content: "\e53c"; }
+.ph-cloud-sun:before { content: "\e540"; }
+.ph-cloud:before { content: "\e1aa"; }
+.ph-thermometer:before { content: "\e5c6"; }
+.ph-arrow-up:before { content: "\e08e"; }

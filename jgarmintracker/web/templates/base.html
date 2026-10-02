@@ -15,8 +15,8 @@
 <header class="topbar">
   <a class="brand" href="{{ url_for('dashboard') }}">JGarminTracker <span class="version">v{{ VERSION }}</span></a>
   <nav>
-    {% set sections = {'activity_detail': 'activities', 'palette_form': 'settings_page', 'friend_detail': 'friends_page', 'gear_detail': 'gear_page'} %}
-    {% for ep, label in [('dashboard','Tableau de bord'), ('activities','Activités'), ('progress','Progression'), ('map_page','Carte'), ('health','Santé'), ('sports','Sports'), ('tags_page','Tags'), ('sync_page','Synchronisation'), ('history_page','Historique'), ('checks_page','Vérifications'), ('friends_page','Amis'), ('gear_page','Matériel'), ('settings_page','Paramètres')] %}
+    {% set sections = {'activity_detail': 'activities', 'palette_form': 'settings_page', 'friend_detail': 'friends_page', 'gear_detail': 'gear_page', 'route_detail': 'routes_page'} %}
+    {% for ep, label in [('dashboard','Tableau de bord'), ('activities','Activités'), ('progress','Progression'), ('map_page','Carte'), ('routes_page','Parcours'), ('health','Santé'), ('sports','Sports'), ('tags_page','Tags'), ('sync_page','Synchronisation'), ('history_page','Historique'), ('checks_page','Vérifications'), ('friends_page','Amis'), ('gear_page','Matériel'), ('settings_page','Paramètres')] %}
       <a href="{{ url_for(ep) }}" class="{{ 'on' if request.endpoint == ep or sections.get(request.endpoint) == ep }}">{{ label }}{% if ep == 'checks_page' and checks_count %} <span class="badge" title="Activités à vérifier">{{ checks_count }}</span>{% endif %}{% if ep == 'health' and weight_due and weight_due.due %} <span class="due-dot" title="Pesée à faire" aria-label="Pesée à faire"></span>{% endif %}{% if ep == 'gear_page' and maintenance_due %} <span class="due-dot" title="{{ maintenance_due|length }} entretien(s) à faire" aria-label="Entretien à faire"></span>{% endif %}</a>
     {% endfor %}
   </nav>

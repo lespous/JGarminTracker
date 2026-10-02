@@ -1,0 +1,23 @@
+{# Météo au départ : petite pastille (liste) et détail (fiche). w = ActivityWeather ou None. #}
+{% macro weather_chip(w) -%}
+  {%- if w and w.temp_c is not none -%}
+    {%- set label, icon = sky(w.sky) -%}
+    <span class="wx-chip" title="{{ label ~ ' · ' if label }}{{ w.temp_c|number(1) }} °C{% if w.wind_kmh is not none %} · vent {{ w.wind_kmh|round|int }} km/h {{ compass(w.wind_deg) }}{% endif %}"><i class="ph ph-{{ icon }}" aria-hidden="true"></i>{{ w.temp_c|round|int }}°</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro weather_panel(w) -%}
+  {%- set label, icon = sky(w.sky) -%}
+  <div class="wx">
+    <div class="wx-main"><i class="ph ph-{{ icon }}" aria-hidden="true"></i>
+      <span><b class="num">{{ w.temp_c|number(1) }} °C</b>{% if label %}<span class="muted">{{ label }}</span>{% endif %}</span></div>
+    <div class="metrics">
+      {% if w.feels_c is not none %}<div class="metric"><small>Ressenti</small><b>{{ w.feels_c|number(1) }} °C</b></div>{% endif %}
+      {% if w.wind_kmh is not none %}<div class="metric"><small>Vent</small><b>{{ w.wind_kmh|round|int }} km/h
+        {% if w.wind_deg is not none %}<span class="wind-arrow" style="--deg: {{ w.wind_deg + 180 }}deg" title="Vient du {{ compass(w.wind_deg) }}"><i class="ph ph-arrow-up" aria-hidden="true"></i></span> {{ compass(w.wind_deg) }}{% endif %}</b></div>{% endif %}
+      {% if w.gust_kmh %}<div class="metric"><small>Rafales</small><b>{{ w.gust_kmh|round|int }} km/h</b></div>{% endif %}
+      {% if w.humidity is not none %}<div class="metric"><small>Humidité</small><b>{{ w.humidity|round|int }} %</b></div>{% endif %}
+      {% if w.dew_c is not none %}<div class="metric"><small>Point de rosée</small><b>{{ w.dew_c|number(1) }} °C</b></div>{% endif %}
+    </div>
+  </div>
+{%- endmacro %}

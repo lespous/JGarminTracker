@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_weather.html" import weather_chip %}
+{% block title %}{{ r.group.name }}{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% if points %}
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
+<script src="{{ url_for('static', filename='leaflet.js') }}" defer></script>
+<script src="{{ url_for('static', filename='maps.js') }}" defer></script>
+{% endif %}
+{% endblock %}
+{% block content %}
+{% set color = r.sport.color if r.sport else '#2A6B62' %}
+<div class="head">
+  <div>
+    <h1>{{ r.group.name }}</h1>
+    <span class="muted">{% if r.sport %}<i class="ph ph-{{ r.sport.icon_name }} sicon" style="color: {{ color }}" aria-hidden="true"></i>{{ r.sport.label }} · {% endif %}{{ r.group.rep.distance_m|km if r.group.rep }} · {{ r.count }} passages</span>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="{{ url_for('routes_page') }}">Tous les parcours</a>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Passages</small><b>{{ r.count }}</b><span class="sub">du {{ r.passages[-1].activity.start|day }} au {{ r.last.activity.start|day }}</span></div>
+  <div class="kpi"><small>Meilleur temps</small><b>{{ r.best.activity.duration_s|hms }}</b><span class="sub">{{ r.best.activity.start|day }} · {{ r.best.activity.avg_speed|pace(unit) }}</span></div>
+  {% set times = r.passages|map(attribute='activity.duration_s')|list %}
+  <div class="kpi"><small>Temps moyen</small><b>{{ (times|sum / times|length)|hms }}</b></div>
+  <div class="kpi"><small>Dernier passage</small><b>{{ r.last.activity.duration_s|hms }}</b>
+    <span class="sub">{{ r.last.rank }}{{ 'er' if r.last.rank == 1 else 'e' }} sur {{ r.count }}{% if r.last.rank > 1 %} · +{{ (r.last.activity.duration_s - r.best.activity.duration_s)|hms }}{% endif %}</span></div>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Temps de chaque passage</h2>
+    <div class="chart-box"><canvas id="times" aria-label="Temps de chaque passage, du plus ancien au plus récent"></canvas></div>
+    <p class="note">Plus bas = plus rapide. Point vert : meilleur temps.</p>
+  </section>
+  <section class="panel">
+    <h2>Tracé <small>sortie de référence</small></h2>
+    {% if points %}<div id="route-map" class="map-box" role="img" aria-label="Carte du parcours"></div>{% else %}<p class="muted small">Tracé indisponible.</p>{% endif %}
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Passages <small>du plus récent au plus ancien</small></h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th class="r">Rang</th><th>Date</th><th></th><th>Sortie</th><th class="r">Temps</th><th class="r">Écart</th><th class="r">{{ 'Vitesse' if unit == 'kmh' else 'Allure' }}</th><th class="r">FC moy.</th></tr></thead>
+    <tbody>
+    {% for p in r.passages %}
+      <tr class="{{ 'best-row' if p.rank == 1 }}">
+        <td class="r num">{% if p.rank == 1 %}<i class="ph ph-trophy" aria-hidden="true"></i> {% endif %}{{ p.rank }}</td>
+        <td class="num">{{ p.activity.start|day }}</td>
+        <td class="wx-cell">{{ weather_chip(p.activity.weather) }}</td>
+        <td class="name"><a href="{{ url_for('activity_detail', act_id=p.activity.id) }}">{{ p.activity.name }}</a></td>
+        <td class="r num">{{ p.activity.duration_s|hms }}</td>
+        <td class="r num muted">{{ '+' ~ (p.activity.duration_s - r.best.activity.duration_s)|hms if p.rank > 1 else '—' }}</td>
+        <td class="r num">{{ p.activity.avg_speed|pace(unit) }}</td>
+        <td class="r num">{{ p.activity.avg_hr|round|int if p.activity.avg_hr else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Nom</h2>
+  <form class="filters" method="post" action="{{ url_for('route_rename', route_id=r.group.id) }}">
+    <label>Nom du parcours<input name="name" value="{{ r.group.name if r.group.custom_name }}" placeholder="{{ auto }}" maxlength="120" size="40"></label>
+    <button class="primary">Renommer</button>
+  </form>
+  <p class="note">Laisse vide pour revenir au nom automatique (lieu et distance). Un nom choisi est gardé quand les parcours sont recalculés.</p>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const c = {{ chart|tojson }};
+  chart("times", {
+    type: "line",
+    data: { labels: c.labels, datasets: [{ label: "Temps", data: c.secs, borderColor: {{ color|tojson }}, tension: .2,
+      pointRadius: c.best.map(b => b ? 6 : 3), pointBackgroundColor: c.best.map(b => b ? cssVar("--in") : {{ color|tojson }}) }] },
+  }, { plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => fmt.hms(x.parsed.y) } } },
+       scales: { y: { ticks: { callback: v => fmt.hmm(v / 3600) } } } });
+  {% if points %}trackMap("route-map", {{ points|tojson }}, {{ color|tojson }});{% endif %}
+});
+</script>
+{% endblock %}

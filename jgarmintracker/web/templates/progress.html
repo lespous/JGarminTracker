@@ -89,6 +89,29 @@
   {% endif %}
 </div>
 
+{% if meteo.used >= 3 and unit != 'none' %}
+{% macro band_rows(bands) -%}
+  {% set speeds = bands|selectattr('count')|map(attribute='speed')|list %}
+  {% set fastest = (speeds|max) if speeds else none %}
+  {% for b in bands %}
+    <tr class="{{ 'best-row' if b.count and b.speed == fastest and speeds|length > 1 }}"><td>{{ b.label }}</td><td class="r num">{{ b.count or '—' }}</td>
+      <td class="r num">{{ b.speed|pace(unit) if b.count else '—' }}</td></tr>
+  {% endfor %}
+{%- endmacro %}
+<section class="panel" id="meteo">
+  <h2>Selon la météo <small>{{ meteo.used }} sortie{{ 's' if meteo.used > 1 }} avec météo sur la période</small></h2>
+  <div class="grid2">
+    <div class="tbl"><table class="zones">
+      <thead><tr><th>Température au départ</th><th class="r">Sorties</th><th class="r">{{ 'Vitesse' if unit == 'kmh' else 'Allure' }} moyenne</th></tr></thead>
+      <tbody>{{ band_rows(meteo.temps) }}</tbody></table></div>
+    <div class="tbl"><table class="zones">
+      <thead><tr><th>Vent au départ</th><th class="r">Sorties</th><th class="r">{{ 'Vitesse' if unit == 'kmh' else 'Allure' }} moyenne</th></tr></thead>
+      <tbody>{{ band_rows(meteo.winds) }}</tbody></table></div>
+  </div>
+  <p class="note">{{ 'Vitesse' if unit == 'kmh' else 'Allure' }} moyenne = total des kilomètres sur le temps en mouvement de ces sorties. En gras : la tranche la plus rapide. Le vent est celui relevé au départ, sans tenir compte de sa direction par rapport au parcours.</p>
+</section>
+{% endif %}
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const m = {{ volume|tojson }};

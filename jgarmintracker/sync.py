@@ -20,7 +20,7 @@ from typing import Callable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import gear, tracks
+from . import gear, routes, tracks, weather
 from .classifier import Classifier
 from .garmin import GarminError, SyncError
 from .models import Activity, ActivityTrack, DailyHealth, SyncRun
@@ -238,6 +238,24 @@ def save_track(session: Session, act: Activity, details: dict | None) -> bool:
     return bool(points)
 
 
+def fetch_weather(session: Session, source, todo: list[Activity], notify, pause: float = 0) -> int:
+    """Météo de chaque sortie de la liste (une demande par sortie, validée une à une). Renvoie le nombre reçu."""
+    if not hasattr(source, "weather"):
+        return 0
+    got = 0
+    for i, act in enumerate(todo, 1):
+        notify(Progress("weather", i - 1, len(todo), act.day))
+        try:
+            raw = source.weather(act.garmin_id)
+        except SyncError:
+            break  # facultatif : la suite viendra à la prochaine synchro, sans mettre la synchro en erreur
+        got += weather.save(session, act, raw)
+        session.commit()
+        if pause and i < len(todo):
+            time.sleep(pause)
+    return got
+
+
 def plan(session: Session, today: date, full: bool, days: int, history_days: int) -> tuple[date, date]:
     """Dates de départ (activités, santé). Premier lancement ou --full : tout l'historique demandé."""
     first = today - timedelta(days=history_days - 1)
@@ -291,6 +309,12 @@ def sync(session: Session, source, *, today: date | None = None, full: bool = Fa
             session.commit()
             if pause and i < len(todo):
                 time.sleep(pause)
+        if run.tracks_added:
+            routes.rebuild(session)  # nouveaux tracés : parcours répétés à recalculer
+            session.commit()
+
+        # Météo au départ, en dernier : l'historique se complète petit à petit, plus récentes d'abord.
+        fetch_weather(session, source, weather.missing(session), notify, pause)
         run.status = "ok"
         notify(Progress("done", len(span), len(span)))
     except SyncError as e:
@@ -355,6 +379,10 @@ def sync_history(session: Session, source, start: date, end: date, *, activities
                 session.commit()
                 if pause and i < len(todo):
                     time.sleep(pause)
+            if run.tracks_added:
+                routes.rebuild(session)
+                session.commit()
+            fetch_weather(session, source, [a for a in weather.missing(session) if lo <= a.start < hi], notify, pause)
         run.status = "ok"
         notify(Progress("done"))
     except SyncError as e:

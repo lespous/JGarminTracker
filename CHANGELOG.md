@@ -3,6 +3,21 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.13.0 — 2026-10-02
+
+### Ajouté
+- **Parcours répétés** (nouvel onglet Parcours) : les sorties faites sur le même tracé, dans le même sens, sont
+  regroupées automatiquement (même famille de sports, distance à 5 % près, départ et arrivée à moins de 300 m,
+  80 % du tracé en commun). Pour chaque parcours : passages, meilleur temps, temps moyen, courbe des temps, carte,
+  classement de chaque passage avec l'écart au meilleur, et nom modifiable (gardé aux recalculs). Dans la fiche
+  d'une sortie : « Même parcours », son rang et l'écart au meilleur. Recalcul après chaque synchro qui apporte de
+  nouveaux tracés.
+- **Météo au départ** de chaque sortie, récupérée chez Garmin (station la plus proche) : température et ressenti,
+  vent et direction, rafales, humidité, point de rosée, ciel. Dans la fiche, à côté de l'heure dans la liste des
+  activités et des passages d'un parcours, et dans Progression (« Selon la météo » : allure moyenne par tranche
+  de température et de vent). L'historique se complète petit à petit à chaque synchro, après les tracés ; une
+  limite Garmin (429) l'arrête sans mettre la synchro en erreur.
+
 ## 0.12.0 — 2026-10-02
 
 ### Ajouté

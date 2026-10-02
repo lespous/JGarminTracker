@@ -30,6 +30,7 @@ NEW_COLUMNS: dict[str, dict[str, str]] = {
         "exclude_reason": "VARCHAR(120)",
         "ignore_max_speed": "BOOLEAN NOT NULL DEFAULT 0",
         "review_ok": "BOOLEAN NOT NULL DEFAULT 0",
+        "route_id": "INTEGER REFERENCES route_groups(id)",  # 0.13.0 : parcours répétés
     },
     "sync_runs": {"tracks_added": "INTEGER NOT NULL DEFAULT 0"},  # 0.3.0
     "sport_families": {"icon": "VARCHAR(40)"},  # 0.8.0 : icônes

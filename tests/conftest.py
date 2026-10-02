@@ -47,6 +47,21 @@ class FakeSource:
         self.tracks_asked.append(garmin_id)
         return self.tracks.get(str(garmin_id))
 
+    weather_before_429: int | None = None
+    weather_asked: list[int] = []
+
+    def weather(self, garmin_id: int):
+        """Météo inventée, en °F et mph comme Garmin ; rien pour les sorties en salle (renfo, home trainer)."""
+        if self.weather_before_429 is not None and len(self.weather_asked) >= self.weather_before_429:
+            raise RateLimited()
+        self.weather_asked = [*self.weather_asked, garmin_id]
+        if garmin_id in (10000027, 10000031):
+            return None
+        n = garmin_id % 100
+        return {"temp": 41 + n * 1.8, "apparentTemp": 39 + n * 1.8, "dewPoint": 40, "relativeHumidity": 70,
+                "windSpeed": n % 20, "windGust": None, "windDirection": (n * 37) % 360,
+                "weatherTypeDTO": {"desc": "Partly Cloudy" if n % 2 else "Unknown"}, "weatherStationDTO": {"id": "06999"}}
+
     def vo2max(self, start: date, end: date):
         return [v for v in self.vo2 if start.isoformat() <= v["generic"]["calendarDate"] <= end.isoformat()]
 

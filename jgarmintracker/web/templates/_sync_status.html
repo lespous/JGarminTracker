@@ -6,6 +6,7 @@
       {% elif p.step == 'activities' %}Activités : {{ p.done }} / {{ p.total or '?' }}
       {% elif p.step == 'health' %}Santé, jour par jour : {{ p.done }} / {{ p.total }}{% if p.day %} ({{ p.day|day }}){% endif %}
       {% elif p.step == 'tracks' %}Tracés GPS : {{ p.done }} / {{ p.total }}{% if p.day %} (sortie du {{ p.day|day }}){% endif %}
+      {% elif p.step == 'weather' %}Météo des sorties : {{ p.done }} / {{ p.total }}{% if p.day %} (sortie du {{ p.day|day }}){% endif %}
       {% else %}Finalisation…{% endif %}
     </p>
     {% if p and p.total %}<div class="progress-bar"><i style="width: {{ (p.done / p.total * 100)|round|int }}%"></i></div>{% endif %}
