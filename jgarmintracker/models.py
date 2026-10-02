@@ -10,7 +10,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
-    LargeBinary,  # photos (profil, amis)
+    LargeBinary,  # photos (profil, amis, matériel)
     String,
     Table,
     Text,
@@ -157,6 +157,49 @@ class Friend(Base):
         return self.nickname or self.full_name
 
 
+activity_gear = Table(
+    "activity_gear",
+    Base.metadata,
+    Column("activity_id", ForeignKey("activities.id"), primary_key=True),
+    Column("gear_id", ForeignKey("gear.id"), primary_key=True),
+)
+
+gear_default_sports = Table(
+    "gear_default_sports",
+    Base.metadata,
+    Column("gear_id", ForeignKey("gear.id"), primary_key=True),
+    Column("sport_id", ForeignKey("sports.id"), primary_key=True),
+)
+
+
+class Gear(Base):
+    """Matériel (0.11.0) : vélo, chaussures… Au plus un matériel de chaque type par sortie (voir gear.py).
+    Photo en JPEG 256 px dans la base, comme les amis."""
+
+    __tablename__ = "gear"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    kind: Mapped[str] = mapped_column(String(10), default="bike")  # bike | shoes | other (gear.KINDS)
+    brand: Mapped[str] = mapped_column(String(120), default="")  # marque et modèle
+    icon: Mapped[str | None] = mapped_column(String(40), nullable=True)  # None = icône du type
+    color: Mapped[str] = mapped_column(String(7), default="#2E86DE")
+    since: Mapped[date | None] = mapped_column(Date, nullable=True)  # mise en service
+    retired: Mapped[date | None] = mapped_column(Date, nullable=True)  # date de retrait
+    max_km: Mapped[float | None] = mapped_column(Float, nullable=True)  # alerte d'usure
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)  # euros, pour le coût au km
+    note: Mapped[str] = mapped_column(Text, default="")
+    photo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)
+    has_photo: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    activities: Mapped[list[Activity]] = relationship(secondary=activity_gear, back_populates="gear")
+    default_sports: Mapped[list[Sport]] = relationship(secondary=gear_default_sports)
+
+    def in_service(self, day: date) -> bool:
+        return (self.since is None or self.since <= day) and (self.retired is None or day <= self.retired)
+
+
 class Profile(Base):
     """Ton profil (une seule ligne, id = 1). Mesures en unités usuelles : cm, kg, bpm."""
 
@@ -245,6 +288,7 @@ class Activity(Base):
     tags: Mapped[list[Tag]] = relationship(secondary=activity_tags, back_populates="activities", order_by="Tag.name")
     friends: Mapped[list[Friend]] = relationship(secondary=activity_friends, back_populates="activities",
                                                  order_by="Friend.first_name")
+    gear: Mapped[list[Gear]] = relationship(secondary=activity_gear, back_populates="activities", order_by="Gear.kind")
     track: Mapped[ActivityTrack | None] = relationship(back_populates="activity", cascade="all, delete-orphan",
                                                        lazy="select")
 

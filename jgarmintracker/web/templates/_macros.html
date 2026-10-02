@@ -11,3 +11,12 @@
 {% macro friend_avatar(fr, size=32) -%}
   {{ avatar(fr, url_for('friend_photo', friend_id=fr.id), size) }}
 {%- endmacro %}
+
+{# Matériel : même avatar rond ; sans photo, l'icône du matériel sur sa couleur. #}
+{% macro gear_avatar(g, size=32) -%}
+  {%- if g.has_photo -%}
+    <img class="avatar" src="{{ url_for('gear_photo', gear_id=g.id) }}" width="{{ size }}" height="{{ size }}" style="--size: {{ size }}px" alt="{{ g.name }}" title="{{ g.name }}" loading="lazy">
+  {%- else -%}
+    <span class="avatar gear-icon" style="--size: {{ size }}px; --c: {{ g.color }}" title="{{ g.name }}" aria-label="{{ g.name }}"><i class="ph ph-{{ gear_icon(g) }}" aria-hidden="true"></i></span>
+  {%- endif -%}
+{%- endmacro %}

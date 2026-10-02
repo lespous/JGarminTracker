@@ -1,0 +1,23 @@
+{# Champs d'un matériel, communs à l'ajout (g = None) et à la modification. #}
+{% macro gear_fields(g=None) -%}
+  {%- set kind = g.kind if g else 'bike' -%}
+  <label>Nom<input name="name" value="{{ g.name if g }}" required maxlength="80" placeholder="ex. Vélo de route"></label>
+  <label>Type
+    <select name="kind" class="gear-kind">
+      {% for k, (label, icon, color) in GEAR_KINDS.items() %}<option value="{{ k }}" data-icon="{{ icon }}" data-color="{{ color }}" {{ 'selected' if k == kind }}>{{ label }}</option>{% endfor %}
+    </select></label>
+  <label>Marque et modèle<input name="brand" value="{{ g.brand if g }}" maxlength="120" placeholder="ex. Canyon Endurace"></label>
+  <label>Mise en service<input type="date" name="since" value="{{ g.since or '' if g }}"></label>
+  <label>Retrait<input type="date" name="retired" value="{{ g.retired or '' if g }}" title="Après cette date, il n'est plus proposé ni posé par défaut"></label>
+  <label>Alerte d'usure (km)<input name="max_km" inputmode="decimal" class="amount" value="{{ g.max_km|number if g and g.max_km }}" placeholder="ex. 800 pour des chaussures"></label>
+  <label>Prix d'achat (€)<input name="price" inputmode="decimal" class="amount" value="{{ g.price|number(2) if g and g.price }}" placeholder="facultatif"></label>
+  <label>Couleur<input type="color" name="color" value="{{ g.color if g else GEAR_KINDS['bike'][2] }}" class="gear-color"></label>
+  <fieldset class="gear-icons wide">
+    <legend>Icône (si pas de photo)</legend>
+    <label title="Icône du type"><input type="radio" name="icon" value="" {{ 'checked' if not g or not g.icon }}><span class="auto">auto</span></label>
+    {% for ic in GEAR_ICONS %}<label title="{{ ic }}"><input type="radio" name="icon" value="{{ ic }}" {{ 'checked' if g and g.icon == ic }}><i class="ph ph-{{ ic }}" aria-hidden="true"></i><span class="sr-only">{{ ic }}</span></label>{% endfor %}
+  </fieldset>
+  <label class="wide">{{ 'Remplacer la photo' if g and g.has_photo else 'Photo' }}<input type="file" name="photo" accept="image/*"></label>
+  {% if g and g.has_photo %}<label class="check" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink)"><input type="checkbox" name="remove_photo"> Retirer la photo</label>{% endif %}
+  <label class="wide">Note<input name="note" value="{{ g.note if g }}" placeholder="ex. taille 44, pneus changés en mai…"></label>
+{%- endmacro %}

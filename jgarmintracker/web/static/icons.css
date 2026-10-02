@@ -65,3 +65,9 @@
 /* Icône utilitaire (hors sélecteur) */
 .ph-lock-simple:before { content: "\e308"; }
 .ph-download-simple:before { content: "\e20c"; }
+/* Matériel (0.11.0) */
+.ph-backpack:before { content: "\e922"; }
+.ph-watch:before { content: "\e4e6"; }
+.ph-wrench:before { content: "\e5d4"; }
+.ph-package:before { content: "\e390"; }
+.ph-warning:before { content: "\e4e0"; }

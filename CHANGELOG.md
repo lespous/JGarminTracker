@@ -3,6 +3,24 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.11.0 — 2026-10-02
+
+### Ajouté
+- **Matériel** (nouvel onglet) : vélos, chaussures et « autre », avec photo ronde (comme les amis) ou icône
+  colorée, marque et modèle, dates de mise en service et de retrait, alerte d'usure en km et prix d'achat
+  (coût au km). Fiche par matériel : sorties, distance, temps, dénivelé, usure, sports par défaut.
+- **Affecter en bloc** : un matériel sur toutes les sorties de certains sports entre deux dates (par ex. le
+  nouveau vélo depuis le 21/04/2026), avec aperçu en direct des sorties touchées et du matériel remplacé. Une
+  sortie porte au plus un matériel de chaque type.
+- **Matériel par défaut d'un sport** : posé automatiquement sur les nouvelles sorties synchronisées pendant sa
+  période de service.
+- Activités : mini-avatar du matériel sous le nom de la sortie et filtre « Matériel » ; fiche d'une sortie :
+  choix du matériel par type.
+
+### Corrigé
+- Sports : le bouton « Enregistrer et reclasser » ne touche plus le champ État quand il est plus large que sa
+  colonne.
+
 ## 0.10.0 — 2026-10-01
 
 ### Ajouté

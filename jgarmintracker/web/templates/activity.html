@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import friend_avatar %}
+{% from "_macros.html" import friend_avatar, gear_avatar %}
 {% block title %}{{ a.name }}{% endblock %}
 {% block head %}{% if points %}
 <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
@@ -144,6 +144,26 @@ document.addEventListener("DOMContentLoaded", () => trackMap("track-map", {{ poi
     </form>
   </section>
 </div>
+
+<section class="panel" id="gear">
+  <h2>Matériel</h2>
+  {% if gear_choices %}
+  <form method="post" action="{{ url_for('activity_gear_save', act_id=a.id) }}" class="fam-block">
+    {% for kind, label, items, current in gear_choices %}
+    <div class="gear-kind-row">
+      <span class="muted small">{{ label }}</span>
+      <div class="friend-picks">
+        <label class="friend-pick"><input type="radio" name="gear_{{ kind }}" value="" {{ 'checked' if not current }}><span class="avatar gear-none" style="--size: 32px" aria-hidden="true">–</span><span>Aucun</span></label>
+        {% for gr in items %}
+        <label class="friend-pick"><input type="radio" name="gear_{{ kind }}" value="{{ gr.id }}" {{ 'checked' if gr == current }}>{{ gear_avatar(gr, 32) }}<span>{{ gr.name }}{% if gr.retired %} <small class="muted">(retiré)</small>{% endif %}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    <div><button class="primary">Enregistrer</button> <a class="btn" href="{{ url_for('gear_page') }}">Gérer le matériel</a></div>
+  </form>
+  {% else %}<p class="muted small">Aucun matériel en service à cette date. <a href="{{ url_for('gear_page') }}">Ajoute ton vélo ou tes chaussures</a>, puis choisis-les ici.</p>{% endif %}
+</section>
 
 <section class="panel" id="friends">
   <h2>Avec qui</h2>

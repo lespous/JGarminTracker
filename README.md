@@ -97,6 +97,14 @@ Onglet **Amis** : les personnes avec qui tu fais certaines sorties (photo facult
 d'une activité (« Avec qui »). Page **Profil** (lien en haut de la navigation) : identité, mesures, zones cardio et
 bilan de carrière. Les photos sont réduites à 256 px et gardées dans `jgarmin.db` : jamais dans Git.
 
+## Matériel
+
+Onglet **Matériel** : vélos, chaussures et autre matériel (photo, marque et modèle, mise en service, retrait,
+alerte d'usure en km, prix pour le coût au km). Une sortie porte au plus un matériel de chaque type.
+« Affecter en bloc » pose un matériel sur toutes les sorties de certains sports entre deux dates, avec un aperçu
+des sorties touchées ; un matériel peut aussi être le défaut d'un sport, posé alors sur les nouvelles sorties
+synchronisées pendant sa période de service. Choix par sortie dans sa fiche, filtre dans Activités.
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)

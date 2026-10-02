@@ -29,12 +29,14 @@ from ..classifier import (
     validate_rule,
 )
 from .. import checks, icons, photos, settings, themes, tracks, weight
+from .. import gear as gear_mod
 from ..models import (
     PACE_UNITS,
     Activity,
     ActivityTrack,
     DailyHealth,
     Friend,
+    Gear,
     Profile,
     Sport,
     SportFamily,
@@ -101,7 +103,8 @@ def parse_date(raw: str | None) -> date | None:
 def parse_float(raw: str | None) -> float | None:
     """Saisie d'un filtre (« 5 », « 5,5 ») ; une saisie invalide est ignorée plutôt que de casser la page."""
     try:
-        return float(raw.replace(",", ".").strip()) if raw and raw.strip() else None
+        text = "".join(ch for ch in (raw or "") if not ch.isspace())  # « 1 000 » affiché avec espace insécable
+        return float(text.replace(",", ".")) if text else None
     except ValueError:
         return None
 
@@ -203,6 +206,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         ORIGINS=ORIGINS, units_bpm=units.bpm, units_h=lambda h: units.hmm(h * 3600), units_int=units.number,
         units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0), ICONS=icons.ICONS,
         initials=photos.initials, hue=photos.hue,
+        GEAR_KINDS=gear_mod.KINDS, GEAR_ICONS=gear_mod.ICONS, gear_icon=gear_mod.icon_of,
     )
 
     @app.teardown_appcontext
@@ -259,7 +263,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         stmt = select(Activity).options(
             joinedload(Activity.sport).joinedload(Sport.family), selectinload(Activity.tags),
             selectinload(Activity.track).defer(ActivityTrack.points_json),  # la mini-carte suffit ici
-            selectinload(Activity.friends).defer(Friend.photo),
+            selectinload(Activity.friends).defer(Friend.photo), selectinload(Activity.gear),
         )
         if date_from:
             stmt = stmt.where(Activity.start >= datetime.combine(date_from, datetime.min.time()))
@@ -283,6 +287,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             stmt = stmt.where(Activity.type_key == a.get("type"))
         if friend_id := a.get("friend", type=int):
             stmt = stmt.where(Activity.friends.any(Friend.id == friend_id))
+        if gear_id := a.get("gear", type=int):
+            stmt = stmt.where(Activity.gear.any(Gear.id == gear_id))
         if a.get("status") == "excluded":
             stmt = stmt.where(Activity.excluded.is_(True))
         elif a.get("status") == "kept":
@@ -297,6 +303,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             filter_rule=s.get(SportRule, rid) if rid else None, date_from=date_from, date_to=date_to,
             friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
             filter_friend=s.get(Friend, friend_id) if friend_id else None,
+            all_gear=s.scalars(select(Gear).order_by(Gear.kind, Gear.name)).all(),
+            filter_gear=s.get(Gear, gear_id) if gear_id else None,
             total_dist=sum(r.distance_m or 0 for r in rows), total_dur=sum(r.duration_s or 0 for r in rows),
         )
 
@@ -314,6 +322,18 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             return saved[1]
         return session.get("activities_url") or url_for("activities")
 
+    def gear_choices(s, act: Activity) -> list:
+        """Par type : (type, libellé, matériel proposé, matériel actuel). Proposé : en service le jour de la sortie,
+        plus celui déjà posé. Types sans aucun matériel enregistré omis."""
+        all_gear = s.scalars(select(Gear).order_by(Gear.name)).all()
+        out = []
+        for kind, (label, _icon, _color) in gear_mod.KINDS.items():
+            current = next((g for g in act.gear if g.kind == kind), None)
+            items = [g for g in all_gear if g.kind == kind and (g.in_service(act.day) or g is current)]
+            if items:
+                out.append((kind, label, items, current))
+        return out
+
     @app.get("/activities/<int:act_id>")
     def activity_detail(act_id: int):
         s = db()
@@ -323,7 +343,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         points = tracks.loads(act.track.points_json) if act.track and act.track.n_points else []
         return render_template("activity.html", a=act, families=load_families(s), splits=splits, points=points,
                                all_friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
-                               back_url=back_url,
+                               gear_choices=gear_choices(s, act), back_url=back_url,
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
     # ---------------------------------------------------------------- carte de tous les parcours
@@ -576,6 +596,164 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def profile_photo():
         prof = db().get(Profile, 1)
         return photo_response(prof.photo if prof else None)
+
+    # ---------------------------------------------------------------- matériel
+    def gear_from_form(g: Gear, f) -> list[str]:
+        """Remplit g depuis le formulaire ; renvoie les champs ignorés (valeur hors limites)."""
+        g.name = f.get("name", "").strip()[:80] or g.name
+        g.kind = f.get("kind") if f.get("kind") in gear_mod.KINDS else g.kind or "bike"
+        g.brand = f.get("brand", "").strip()[:120]
+        g.icon = f.get("icon") if f.get("icon") in gear_mod.ICONS else None
+        color = f.get("color", "")
+        g.color = color if len(color) == 7 and color.startswith("#") else gear_mod.KINDS[g.kind][2]
+        g.since, g.retired = parse_date(f.get("since")), parse_date(f.get("retired"))
+        g.note = f.get("note", "").strip()
+        ignored = []
+        for key, lo, hi, label in (("max_km", 1, 100000, "kilométrage max"), ("price", 0, 100000, "prix")):
+            value = parse_float(f.get(key))
+            if value is not None and not lo <= value <= hi:
+                ignored.append(label)
+                value = getattr(g, key)
+            setattr(g, key, value)
+        if g.since and g.retired and g.retired < g.since:
+            g.retired = None
+            ignored.append("date de retrait (avant la mise en service)")
+        if f.get("remove_photo") == "on":
+            g.photo, g.has_photo = None, False
+        try:
+            data = read_photo()
+        except photos.PhotoError as e:
+            ignored.append(str(e))
+            data = None
+        if data:
+            g.photo, g.has_photo = data, True
+        return ignored
+
+    def gear_rows(s) -> list:
+        """(matériel, stats, usure, coût au km) ; en service d'abord, par type puis par nom."""
+        rows = []
+        for g in s.scalars(select(Gear).options(selectinload(Gear.activities), selectinload(Gear.default_sports))):
+            st = friend_stats(g)
+            rows.append((g, st, gear_mod.wear(g, st.totals.distance_m), gear_mod.cost_per_km(g, st.totals.distance_m)))
+        kinds = list(gear_mod.KINDS)
+        rows.sort(key=lambda r: (r[0].retired is not None, kinds.index(r[0].kind) if r[0].kind in kinds else 9,
+                                 -(r[0].since or date.min).toordinal(), r[0].name.lower()))
+        return rows
+
+    def assign_args(s, src) -> dict:
+        g = s.get(Gear, src.get("gear_id", type=int) or 0)
+        sport_ids = [int(i) for i in src.getlist("sport") if i.isdigit()]
+        return {"g": g, "sport_ids": sport_ids, "start": parse_date(src.get("from")), "end": parse_date(src.get("to")),
+                "replace": src.get("replace") == "on", "make_default": src.get("make_default") == "on"}
+
+    @app.get("/gear")
+    def gear_page():
+        s = db()
+        rows = gear_rows(s)
+        pre = s.get(Gear, request.args.get("assign", type=int) or 0) or next((r[0] for r in rows if not r[0].retired), None)
+        return render_template("gear.html", rows=rows, families=load_families(s), pre=pre,
+                               pre_sports={sp.id for sp in pre.default_sports} if pre else set())
+
+    @app.post("/gear/add")
+    def gear_add():
+        s = db()
+        if not request.form.get("name", "").strip():
+            flash("Donne un nom au matériel, par ex. « Vélo de route ».", "error")
+            return redirect(url_for("gear_page"))
+        g = Gear(name="", kind=request.form.get("kind") if request.form.get("kind") in gear_mod.KINDS else "bike")
+        ignored = gear_from_form(g, request.form)
+        s.add(g)
+        s.commit()
+        if ignored:
+            flash("Ignoré : " + ", ".join(ignored) + ".", "error")
+        flash(f"« {g.name} » ajouté. Affecte-le à tes sorties ci-dessous.")
+        return redirect(url_for("gear_page", assign=g.id) + "#assign")
+
+    @app.get("/gear/<int:gear_id>")
+    def gear_detail(gear_id: int):
+        s = db()
+        g = s.get(Gear, gear_id) or abort(404)
+        st = friend_stats(g)
+        return render_template("gear_item.html", g=g, st=st, w=gear_mod.wear(g, st.totals.distance_m),
+                               cost=gear_mod.cost_per_km(g, st.totals.distance_m), families=load_families(s),
+                               defaults={sp.id for sp in g.default_sports}, confirm=request.args.get("confirm"))
+
+    @app.post("/gear/<int:gear_id>/update")
+    def gear_update(gear_id: int):
+        s = db()
+        g = s.get(Gear, gear_id) or abort(404)
+        ignored = gear_from_form(g, request.form)
+        ids = [int(i) for i in request.form.getlist("default_sport") if i.isdigit()]
+        g.default_sports = []
+        gear_mod.make_default(s, g, ids)
+        s.commit()
+        if ignored:
+            flash("Ignoré : " + ", ".join(ignored) + ".", "error")
+        flash(f"« {g.name} » enregistré.")
+        return redirect(url_for("gear_detail", gear_id=g.id))
+
+    @app.post("/gear/<int:gear_id>/delete")
+    def gear_delete(gear_id: int):
+        s = db()
+        g = s.get(Gear, gear_id) or abort(404)
+        name, n = g.name, len(g.activities)
+        g.activities.clear()
+        g.default_sports = []
+        s.delete(g)
+        s.commit()
+        flash(f"« {name} » supprimé ({n} sortie(s) détachée(s) ; les activités restent).")
+        return redirect(url_for("gear_page"))
+
+    @app.get("/gear/<int:gear_id>/photo.jpg")
+    def gear_photo(gear_id: int):
+        g = db().get(Gear, gear_id) or abort(404)
+        return photo_response(g.photo)
+
+    @app.get("/gear/assign/preview")
+    def gear_assign_preview():
+        s = db()
+        args = assign_args(s, request.args)
+        acts = gear_mod.candidates(s, args["sport_ids"], args["start"], args["end"]) if args["g"] else []
+        res = gear_mod.plan_assign(acts, args["g"], args["replace"]) if args["g"] else None
+        return render_template("_gear_preview.html", acts=acts, res=res, **args)
+
+    @app.post("/gear/assign")
+    def gear_assign():
+        s = db()
+        args = assign_args(s, request.form)
+        g = args["g"]
+        if g is None or not args["sport_ids"]:
+            flash("Choisis un matériel et au moins un sport.", "error")
+            return redirect(url_for("gear_page") + "#assign")
+        acts = gear_mod.candidates(s, args["sport_ids"], args["start"], args["end"])
+        res = gear_mod.assign(acts, g, args["replace"])
+        if args["make_default"]:
+            gear_mod.make_default(s, g, args["sport_ids"])
+        s.commit()
+        msg = f"« {g.name} » affecté à {res.changed} sortie(s)"
+        details = [f"{res.replaced} à la place d'un autre {gear_mod.kind_label(g.kind).lower()}" if res.replaced else "",
+                   f"{res.kept} gardent leur matériel" if res.kept else "", f"{res.already} l'avaient déjà" if res.already else ""]
+        msg += (" (" + ", ".join(d for d in details if d) + ")" if any(details) else "") + "."
+        if args["make_default"]:
+            msg += " Il sera aussi posé sur les prochaines sorties synchronisées de ces sports."
+        flash(msg)
+        return redirect(url_for("gear_detail", gear_id=g.id))
+
+    @app.post("/activities/<int:act_id>/gear")
+    def activity_gear_save(act_id: int):
+        """Fiche d'une sortie : un choix par type (ou aucun)."""
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        for kind in gear_mod.KINDS:
+            raw = request.form.get(f"gear_{kind}")
+            if raw is None:
+                continue
+            g = s.get(Gear, int(raw)) if raw.isdigit() else None
+            gear_mod.set_kind(act, kind, g if g and g.kind == kind else None)
+        s.commit()
+        names = ", ".join(g.name for g in act.gear)
+        flash(f"Matériel : {names}." if names else "Aucun matériel pour cette sortie.")
+        return redirect(url_for("activity_detail", act_id=act.id) + "#gear")
 
     # ---------------------------------------------------------------- vérifications et exclusions
     @app.post("/activities/bulk/exclude")

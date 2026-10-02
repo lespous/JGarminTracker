@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import friend_avatar %}
+{% from "_macros.html" import friend_avatar, gear_avatar %}
 {% block title %}Activités{% endblock %}
 {% macro sport_options(families, selected=None) -%}
   {% for f in families %}<optgroup label="{{ f.name }}">
@@ -12,6 +12,7 @@
   {% if sel %}<span class="chip on">{{ sel_label }} <a href="{{ url_with(sport='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if filter_tag %}<span class="chip on"># {{ filter_tag.name }} <a href="{{ url_with(tag='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if filter_friend %}<span class="chip on">Avec {{ filter_friend.name }} <a href="{{ url_with(friend='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
+  {% if filter_gear %}<span class="chip on">Matériel : {{ filter_gear.name }} <a href="{{ url_with(gear='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if filter_rule %}<span class="chip on">Règle #{{ filter_rule.id }} <a href="{{ url_with(rule='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   {% if request.args.get('type') %}<span class="chip on">Type {{ request.args.get('type') }} <a href="{{ url_with(type='') }}" aria-label="Retirer le filtre">✕</a></span>{% endif %}
   <div class="spacer"></div>
@@ -42,6 +43,14 @@
     <select name="friend" onchange="this.form.submit()">
       <option value="">Tout le monde</option>
       {% for fr in friends %}<option value="{{ fr.id }}" {{ 'selected' if filter_friend and filter_friend.id == fr.id }}>{{ fr.name }}</option>{% endfor %}
+    </select>
+  </label>{% endif %}
+  {% if all_gear %}<label>Matériel
+    <select name="gear" onchange="this.form.submit()">
+      <option value="">Tout</option>
+      {% for k, (klabel, _i, _c) in GEAR_KINDS.items() %}{% set items = all_gear|selectattr('kind', 'equalto', k)|list %}{% if items %}
+      <optgroup label="{{ klabel }}">{% for gr in items %}<option value="{{ gr.id }}" {{ 'selected' if filter_gear and filter_gear.id == gr.id }}>{{ gr.name }}</option>{% endfor %}</optgroup>
+      {% endif %}{% endfor %}
     </select>
   </label>{% endif %}
   <label>Statistiques
@@ -113,6 +122,7 @@
       <td class="name">
         <a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name or '—' }}</a>
         <div class="labels">
+          {% for gr in a.gear %}<a class="gear-mini" href="{{ url_for('gear_detail', gear_id=gr.id) }}">{{ gear_avatar(gr, 20) }}</a>{% endfor %}
           {% for fr in a.friends %}<a class="friend-mini" href="{{ url_for('friend_detail', friend_id=fr.id) }}">{{ friend_avatar(fr, 20) }}</a>{% endfor %}
           {% if a.excluded %}<span class="excluded-chip" title="Hors statistiques">exclue · {{ a.exclude_reason or 'à la main' }}</span>{% endif %}
           {% for tg in a.tags %}

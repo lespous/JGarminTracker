@@ -20,7 +20,7 @@ from typing import Callable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import tracks
+from . import gear, tracks
 from .classifier import Classifier
 from .garmin import GarminError, SyncError
 from .models import Activity, ActivityTrack, DailyHealth, SyncRun
@@ -171,6 +171,7 @@ def _upsert_activity(session: Session, raw: dict, clf: Classifier) -> str:
             setattr(act, k, data[k])
         session.add(act)
         clf.apply(act)
+        gear.apply_defaults(session, act)
         return "added"
     changed = act.raw_json != raw_text
     if changed:

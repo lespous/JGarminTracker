@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "_macros.html" import gear_avatar %}
+{% from "_gear_form.html" import gear_fields %}
+{% block title %}Matériel{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Matériel</h1>
+  <span class="muted">Tes vélos, tes chaussures… et les sorties faites avec. Une sortie porte au plus un matériel de chaque type.</span>
+</div>
+
+{% macro gear_card(g, st, w, cost) -%}
+  <a class="gear-card {{ 'retired' if g.retired }} {{ 'warn' if w.warn }}" href="{{ url_for('gear_detail', gear_id=g.id) }}">
+    {{ gear_avatar(g, 64) }}
+    <span class="who"><b>{{ g.name }}</b>
+      <span class="muted small">{{ g.brand ~ ' · ' if g.brand }}{% if g.retired %}retiré le {{ g.retired|day }}{% elif g.since %}depuis le {{ g.since|day }}{% else %}{{ GEAR_KINDS[g.kind][0] }}{% endif %}</span>
+    </span>
+    <span class="gear-stats num"><span>{{ st.totals.distance_m|km(0) }}</span><span>{{ st.totals.duration_s|hmm }}</span><span>{{ st.totals.count }} sortie{{ 's' if st.totals.count > 1 }}</span>{% if cost %}<span>{{ cost|number(2) }} €/km</span>{% endif %}</span>
+    {% if w.max_km %}
+    <span class="wear {{ 'warn' if w.warn }}" role="img" aria-label="Usure {{ (w.ratio * 100)|round|int }} %"><i style="width: {{ [w.ratio * 100, 100]|min }}%"></i></span>
+    <span class="wear-l small"><span>{% if w.worn %}<i class="ph ph-warning" aria-hidden="true"></i> À remplacer{% else %}Usure {{ (w.ratio * 100)|round|int }} %{% endif %}</span><span class="num">{{ w.km|number }} / {{ w.max_km|number }} km</span></span>
+    {% endif %}
+    {% if g.default_sports and not g.retired %}<span class="small muted gear-defaults">Par défaut : {{ g.default_sports|map(attribute='name')|join(', ') }}</span>{% endif %}
+  </a>
+{%- endmacro %}
+
+{% set active = rows|rejectattr('0.retired')|list %}
+{% set retired = rows|selectattr('0.retired')|list %}
+{% if rows %}
+<div class="gear-grid">
+  {% for g, st, w, cost in active %}{{ gear_card(g, st, w, cost) }}{% endfor %}
+</div>
+{% if retired %}
+<details class="panel">
+  <summary>Matériel retiré <small class="muted">{{ retired|length }}</small></summary>
+  <div class="gear-grid">{% for g, st, w, cost in retired %}{{ gear_card(g, st, w, cost) }}{% endfor %}</div>
+</details>
+{% endif %}
+{% else %}
+<section class="panel"><p class="muted">Aucun matériel pour l'instant. Ajoute ton vélo ou tes chaussures ci-dessous, puis affecte-les à tes sorties.</p></section>
+{% endif %}
+
+{% if rows %}
+<section class="panel" id="assign">
+  <h2>Affecter en bloc</h2>
+  <p class="muted small">Toutes les sorties des sports choisis entre deux dates reçoivent ce matériel. Dates vides : sans limite.</p>
+  <form id="assign-form" class="assign-form" method="post" action="{{ url_for('gear_assign') }}">
+    <div class="rule-form">
+      <label>Matériel
+        <select name="gear_id" id="assign-gear">
+          {% for g, st, w, cost in rows %}<option value="{{ g.id }}" data-from="{{ g.since or '' }}" data-to="{{ g.retired or '' }}"
+            data-sports="{{ g.default_sports|map(attribute='id')|join(',') }}" {{ 'selected' if pre and g.id == pre.id }}>{{ g.name }}{{ ' (retiré)' if g.retired }}</option>{% endfor %}
+        </select></label>
+      <label>Du<input type="date" name="from" id="assign-from" value="{{ pre.since or '' if pre }}"></label>
+      <label>Au<input type="date" name="to" id="assign-to" value="{{ pre.retired or '' if pre }}"></label>
+    </div>
+    <fieldset class="sport-picks">
+      <legend>Sports concernés</legend>
+      {% for f in families if f.sports %}
+      <div class="sp-fam"><span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
+        <div class="chips">{% for sp in f.sports %}<label class="pick-chip" style="--c: {{ sp.color }}"><input type="checkbox" name="sport" value="{{ sp.id }}" {{ 'checked' if sp.id in pre_sports }}><i class="ph ph-{{ sp.icon_name }}" aria-hidden="true"></i>{{ sp.name }}</label>{% endfor %}</div>
+      </div>
+      {% endfor %}
+    </fieldset>
+    <label class="check-line"><input type="checkbox" name="replace" checked> Remplacer le matériel du même type déjà posé sur ces sorties</label>
+    <label class="check-line"><input type="checkbox" name="make_default" checked> L'utiliser aussi par défaut pour les prochaines sorties synchronisées de ces sports</label>
+    <div id="assign-preview" class="test" hx-get="{{ url_for('gear_assign_preview') }}" hx-include="#assign-form"
+         hx-trigger="load, input delay:300ms from:#assign-form, change from:#assign-form">
+      <span class="muted small">Calcul…</span>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Ajouter du matériel</h2>
+  <form class="rule-form gear-form" method="post" action="{{ url_for('gear_add') }}" enctype="multipart/form-data">
+    {{ gear_fields() }}
+    <div class="actions"><button class="primary">Ajouter</button></div>
+  </form>
+  <p class="note">La photo est recadrée en carré et réduite (256 px), puis gardée dans ta base locale : elle ne quitte pas ce PC et n'entre jamais dans Git.</p>
+</section>
+
+<script>
+// Changer de matériel : reprend ses dates de service et ses sports par défaut.
+const sel = document.getElementById("assign-gear");
+if (sel) sel.addEventListener("change", () => {
+  const o = sel.selectedOptions[0], ids = o.dataset.sports ? o.dataset.sports.split(",") : [];
+  document.getElementById("assign-from").value = o.dataset.from;
+  document.getElementById("assign-to").value = o.dataset.to;
+  document.querySelectorAll('#assign-form input[name="sport"]').forEach(c => { c.checked = ids.includes(c.value); });
+});
+// Ajout : la couleur suit le type tant qu'on ne l'a pas choisie.
+document.querySelectorAll(".gear-form").forEach(form => {
+  const kind = form.querySelector(".gear-kind"), color = form.querySelector(".gear-color");
+  let touched = false;
+  color.addEventListener("input", () => { touched = true; });
+  kind.addEventListener("change", () => { if (!touched) color.value = kind.selectedOptions[0].dataset.color; });
+});
+</script>
+{% endblock %}

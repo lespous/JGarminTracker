@@ -1,0 +1,35 @@
+{% from "_macros.html" import gear_avatar %}
+{% if not g %}
+  <span class="muted small">Choisis un matériel.</span>
+{% elif not sport_ids %}
+  <span class="muted small">Coche au moins un sport.</span>
+{% elif not acts %}
+  <span class="muted small">Aucune sortie de ces sports {% if start or end %}sur cette période{% endif %}.</span>
+{% else %}
+  {% set kind = GEAR_KINDS[g.kind][0]|lower %}
+  <div class="preview-head">
+    <b>{% if res.changed %}{{ res.changed }} sortie{{ 's' if res.changed > 1 }} recevr{{ 'ont' if res.changed > 1 else 'a' }} « {{ g.name }} »{% else %}Aucune sortie à changer{% endif %}</b>
+    <span class="muted small">{{ acts|length }} sortie{{ 's' if acts|length > 1 }} {{ 'trouvées' if acts|length > 1 else 'trouvée' }}
+      {%- if res.already %} · {{ res.already }} l'ont déjà{% endif %}
+      {%- if res.replaced %} · {{ res.replaced }} remplacent un autre {{ kind }}{% endif %}
+      {%- if res.kept %} · {{ res.kept }} gardent leur {{ kind }} actuel{% endif %}</span>
+    <span class="spacer"></span>
+    <button class="primary" type="submit" {{ 'disabled' if not res.changed and not make_default }}>Affecter</button>
+  </div>
+  <div class="tbl">
+  <table class="preview-tbl">
+    <tbody>
+    {% for a in acts[:8] %}
+      {% set others = a.gear|selectattr('kind', 'equalto', g.kind)|rejectattr('id', 'equalto', g.id)|list %}
+      <tr><td class="num">{{ a.start|day }}</td>
+        <td><span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name }} sicon" style="color: {{ a.sport.color }}" aria-hidden="true"></i>{{ a.name }}</span></td>
+        <td class="r num">{{ a.distance_m|km if a.distance_m else a.duration_s|hms }}</td>
+        <td>{% if g in a.gear %}<span class="gear-pill">{{ gear_avatar(g, 18) }}{{ g.name }}</span>
+          {% elif others and not replace %}<span class="gear-pill">{{ gear_avatar(others[0], 18) }}{{ others[0].name }}</span> <span class="muted small">inchangé</span>
+          {% else %}{% if others %}<span class="gear-pill old">{{ gear_avatar(others[0], 18) }}{{ others[0].name }}</span> → {% endif %}<span class="gear-pill new">{{ gear_avatar(g, 18) }}{{ g.name }}</span>{% endif %}</td></tr>
+    {% endfor %}
+    {% if acts|length > 8 %}<tr><td colspan="4" class="muted small">… et {{ acts|length - 8 }} autres</td></tr>{% endif %}
+    </tbody>
+  </table>
+  </div>
+{% endif %}

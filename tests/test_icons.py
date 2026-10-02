@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import select
 
 from jgarmintracker import db as dbm
+from jgarmintracker import gear
 from jgarmintracker.icons import ICONS, guess_icon, valid
 from jgarmintracker.models import Sport, SportFamily
 from jgarmintracker.upgrades import assign_icons
@@ -24,7 +25,9 @@ def sport(s, family, name):
 def test_every_icon_has_a_css_rule():
     css = (STATIC / "icons.css").read_text(encoding="utf-8")
     declared = set(re.findall(r"\.ph-([a-z0-9-]+):before", css))
-    assert set(ICONS) <= declared and declared - set(ICONS) == {"lock-simple", "download-simple"} and (STATIC / "Phosphor.woff2").stat().st_size > 100_000
+    used = set(ICONS) | set(gear.ICONS) | {icon for _label, icon, _color in gear.KINDS.values()}
+    assert used <= declared and declared - used == {"lock-simple", "download-simple", "warning"}
+    assert (STATIC / "Phosphor.woff2").stat().st_size > 100_000
 
 
 def test_guess_icon():

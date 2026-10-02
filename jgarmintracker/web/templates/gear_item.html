@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import gear_avatar %}
+{% from "_gear_form.html" import gear_fields %}
+{% block title %}{{ g.name }}{% endblock %}
+{% block content %}
+<div class="head person-head">
+  {{ gear_avatar(g, 88) }}
+  <div>
+    <h1>{{ g.name }}</h1>
+    <span class="muted">{{ GEAR_KINDS[g.kind][0] }}{{ ' · ' ~ g.brand if g.brand }}
+      {%- if g.since %} · depuis le {{ g.since|day }}{% endif %}{% if g.retired %} · retiré le {{ g.retired|day }}{% endif %}</span>
+    {% if g.note %}<span class="muted small" style="display:block">{{ g.note }}</span>{% endif %}
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="{{ url_for('activities', gear=g.id) }}">Voir ses sorties dans Activités</a>
+  <a class="btn" href="{{ url_for('gear_page', assign=g.id) }}#assign">Affecter en bloc</a>
+  <a class="btn" href="{{ url_for('gear_page') }}">Tout le matériel</a>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Sorties</small><b>{{ st.totals.count }}</b></div>
+  <div class="kpi"><small>Distance</small><b>{{ st.totals.distance_m|km(0) }}</b></div>
+  <div class="kpi"><small>Temps</small><b>{{ st.totals.duration_s|hmm }}</b></div>
+  <div class="kpi"><small>Dénivelé +</small><b>{{ st.totals.elevation_m|meters }}</b></div>
+  {% if w.max_km %}
+  <div class="kpi {{ 'warn' if w.warn }}"><small>Usure (alerte à {{ w.max_km|number }} km)</small><b>{{ (w.ratio * 100)|round|int }} %</b>
+    <span class="wear {{ 'warn' if w.warn }}"><i style="width: {{ [w.ratio * 100, 100]|min }}%"></i></span>
+    {% if w.worn %}<span class="sub">À remplacer</span>{% else %}<span class="sub">encore {{ (w.max_km - w.km)|number }} km</span>{% endif %}</div>
+  {% endif %}
+  {% if g.price %}<div class="kpi"><small>Coût au km ({{ g.price|number(2) }} €)</small><b>{{ cost|number(2) ~ ' €' if cost else '—' }}</b></div>{% endif %}
+  <div class="kpi"><small>Première · dernière</small><b class="small">{{ st.first.start|day if st.first else '—' }}</b><span class="sub">{{ st.last.start|day if st.last else '' }}</span></div>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Sorties <small>{{ st.activities|length }}</small></h2>
+    {% if st.activities %}
+    <div class="tbl">
+    <table>
+      <tbody>
+      {% for a in st.activities[:50] %}
+        <tr><td class="num">{{ a.start|day }}</td>
+          <td><span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name if a.sport else 'pulse' }} sicon" style="color: {{ a.sport.color if a.sport else '#888' }}" aria-hidden="true"></i>{{ a.sport.label if a.sport else '—' }}</span></td>
+          <td class="name"><a href="{{ url_for('activity_detail', act_id=a.id) }}">{{ a.name }}</a></td>
+          <td class="r num">{{ a.distance_m|km if a.distance_m else a.duration_s|hms }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if st.activities|length > 50 %}<a href="{{ url_for('activities', gear=g.id) }}" class="small">… et {{ st.activities|length - 50 }} autres</a>{% endif %}
+    {% else %}<p class="muted small">Aucune sortie pour l'instant : utilise « Affecter en bloc », ou choisis ce matériel dans la fiche d'une sortie.</p>{% endif %}
+    {% if st.by_sport %}
+    <h2>Par sport</h2>
+    <div class="chips">{% for sp, n, m in st.by_sport %}<span class="sport-chip"><i class="ph ph-{{ sp.icon_name }} sicon" style="color: {{ sp.color }}" aria-hidden="true"></i>{{ sp.label }} · {{ n }} · {{ m|km(0) }}</span>{% endfor %}</div>
+    {% endif %}
+    <p class="note">Les sorties exclues des statistiques ne comptent pas dans ces totaux ni dans l'usure.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Modifier</h2>
+    <form class="rule-form gear-form" method="post" action="{{ url_for('gear_update', gear_id=g.id) }}" enctype="multipart/form-data">
+      {{ gear_fields(g) }}
+      <fieldset class="sport-picks wide">
+        <legend>Par défaut pour ces sports <small>(posé sur les nouvelles sorties synchronisées pendant sa période de service)</small></legend>
+        {% for f in families if f.sports %}
+        <div class="sp-fam"><span class="sm-head"><i class="ph ph-{{ f.icon or 'pulse' }}" aria-hidden="true"></i>{{ f.name }}</span>
+          <div class="chips">{% for sp in f.sports %}<label class="pick-chip" style="--c: {{ sp.color }}"><input type="checkbox" name="default_sport" value="{{ sp.id }}" {{ 'checked' if sp.id in defaults }}><i class="ph ph-{{ sp.icon_name }}" aria-hidden="true"></i>{{ sp.name }}</label>{% endfor %}</div>
+        </div>
+        {% endfor %}
+      </fieldset>
+      <div class="actions">
+        <button class="primary">Enregistrer</button>
+        <a class="btn danger" href="{{ url_for('gear_detail', gear_id=g.id, confirm=1) }}#delete">Supprimer</a>
+      </div>
+    </form>
+    {% if confirm %}
+    <form class="confirm" id="delete" method="post" action="{{ url_for('gear_delete', gear_id=g.id) }}">
+      <span>Supprimer « {{ g.name }} » ? Ses {{ g.activities|length }} sortie(s) restent, seul le lien est supprimé. Pour le garder dans l'historique, indique plutôt une date de retrait.</span>
+      <div class="actions"><a class="btn" href="{{ url_for('gear_detail', gear_id=g.id) }}">Annuler</a><button class="primary">Supprimer</button></div>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
