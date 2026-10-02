@@ -36,6 +36,8 @@ from .. import routes as routes_mod
 from .. import weather as weather_mod
 from .. import segments as segments_mod
 from .. import form as form_mod
+from .. import review as review_mod
+from .. import review_card
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -1230,6 +1232,29 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             chart={"labels": load.labels, "load": load.load, "ctl": load.ctl, "atl": load.atl, "tsb": load.tsb,
                    "acwr": load.acwr, **{k: v for k, v in rec.items() if k != "has_hrv"}},
         )
+
+    # ---------------------------------------------------------------- bilan de l'année
+    def review_year(s) -> int:
+        ys = review_mod.years(s)
+        y = request.args.get("year", type=int) or (request.view_args or {}).get("year")
+        return y if y in ys else (ys[0] if ys else today().year)
+
+    @app.get("/review")
+    def review_page():
+        s = db()
+        ys = review_mod.years(s)
+        year = review_year(s)
+        r = review_mod.review(s, year, today())
+        return render_template("review.html", r=r, years=ys, delta=review_mod.delta, MONTHS_SHORT=units.MONTHS_SHORT)
+
+    @app.get("/review/<int:year>.png")
+    def review_png(year: int):
+        s = db()
+        r = review_mod.review(s, year, today())
+        data = review_card.render(r, settings.active_palette(s))
+        return Response(data, mimetype="image/png",
+                        headers={"Content-Disposition": f'attachment; filename="bilan-{year}.png"'}
+                        if request.args.get("download") else {})
 
     # ---------------------------------------------------------------- progression
     @app.get("/progress")

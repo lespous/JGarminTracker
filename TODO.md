@@ -21,6 +21,8 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
 - [x] **Lien sommeil et performance** (0.15.0) : nuage de points sommeil de la veille / allure.
 - [x] **Lien poids et performance** (0.15.0) : vitesse selon le poids de la dernière pesée, dès 10 pesées
   sur 8 semaines.
+- [x] **Bilan de l'année** (0.16.0) : totaux, mois record, plus longue sortie, matériel le plus utilisé, amis les
+  plus fréquents, calendrier, santé et météo ; image à partager.
 
 ## Plus tard
 
@@ -33,6 +35,4 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
   par jour) ; pour l'instant, la charge est calculée localement d'après la FC.
 
 ### Pratique
-- [ ] **Bilan de l'année** : totaux, mois record, plus longue sortie, matériel le plus utilisé, amis les plus
-  fréquents ; à garder ou partager en image.
 - [ ] **Export CSV** des activités d'une période, pour Excel.

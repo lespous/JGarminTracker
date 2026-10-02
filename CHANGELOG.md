@@ -3,6 +3,18 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.16.0 — 2026-10-02
+
+### Ajouté
+- **Bilan de l'année** (onglet Bilan, une année au choix) : sorties, distance, temps, dénivelé, jours et semaines
+  actifs, meilleure série, comparés à l'année précédente (à la même date pour l'année en cours, avec une
+  projection de fin d'année au rythme actuel) ; calendrier de l'année (un carré par jour, plus foncé selon la
+  charge) ; part de chaque sport avec ses records ; mois par mois et mois record ; records de l'année et records
+  de segments ; matériel le plus utilisé, amis les plus fréquents, parcours les plus faits, lieux ; santé (FC de
+  repos, sommeil, pas) et météo (sortie la plus froide, la plus chaude, la plus ventée, sous la pluie).
+- **Image à partager** : carte PNG 1080 × 1350 du bilan, aux couleurs sombres du thème, créée sur le PC
+  (bouton « Télécharger l'image »).
+
 ## 0.15.0 — 2026-10-02
 
 ### Ajouté

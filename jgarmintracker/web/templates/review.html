@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% from "_macros.html" import friend_avatar, gear_avatar %}
+{% block title %}Bilan {{ r.year }}{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% endblock %}
+{% macro vs(cur, old, fmt=None) -%}
+  {%- set d = delta(cur, old) -%}
+  {%- if d is not none -%}<span class="delta {{ 'up' if d > 0 else 'down' if d < 0 }}" title="Comparé à {{ r.prev_label }}">{{ '+' if d > 0 else '−' if d < 0 else '' }}{{ d|abs|round|int }} % vs {{ r.year - 1 }}</span>
+  {%- elif old == 0 and cur -%}<span class="delta">rien en {{ r.year - 1 }}</span>{%- endif -%}
+{%- endmacro %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1>Bilan {{ r.year }}</h1>
+    <span class="muted">{% if r.partial %}Du 1er janvier au {{ r.end|day }} ({{ r.days }} jours), comparé à {{ r.prev_label }}{% else %}Année complète, comparée à {{ r.prev_label }}{% endif %}</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="chips">{% for y in years[:8] %}<a class="chip {{ 'on' if y == r.year }}" href="{{ url_for('review_page', year=y) }}">{{ y }}</a>{% endfor %}</div>
+</div>
+
+{% if not r.totals.count %}
+<section class="panel"><p class="muted">Aucune sortie en {{ r.year }}.</p></section>
+{% else %}
+<div class="review-top">
+  <div class="kpis">
+    <div class="kpi"><small>Sorties</small><b>{{ r.totals.count }}</b>{{ vs(r.totals.count, r.prev.count) }}</div>
+    <div class="kpi"><small>Distance</small><b>{{ r.totals.distance_m|km(0) }}</b>{{ vs(r.totals.distance_m, r.prev.distance_m) }}</div>
+    <div class="kpi"><small>Temps</small><b>{{ r.totals.duration_s|hmm }}</b>{{ vs(r.totals.duration_s, r.prev.duration_s) }}</div>
+    <div class="kpi"><small>Dénivelé +</small><b>{{ r.totals.elevation_m|meters }}</b>{{ vs(r.totals.elevation_m, r.prev.elevation_m) }}</div>
+    <div class="kpi"><small>Jours actifs</small><b>{{ r.active_days }}</b><span class="sub">{{ (r.active_days / r.days * 100)|round|int }} % des jours</span></div>
+    <div class="kpi"><small>Semaines actives</small><b>{{ r.active_weeks }}</b><span class="sub">meilleure série : {{ r.best_streak }} d'affilée</span></div>
+    {% if r.projection %}
+    <div class="kpi projection"><small>Projection fin {{ r.year }}</small><b>{{ r.projection.distance_m|km(0) }}</b>
+      <span class="sub">au rythme actuel : {{ r.projection.count }} sorties, {{ r.projection.duration_s|hmm }}</span></div>
+    {% endif %}
+  </div>
+  <aside class="panel share">
+    <h2>À partager</h2>
+    <a href="{{ url_for('review_png', year=r.year) }}" target="_blank" rel="noopener"><img src="{{ url_for('review_png', year=r.year) }}" alt="Image du bilan {{ r.year }}" width="216" height="270" loading="lazy"></a>
+    <a class="btn primary" href="{{ url_for('review_png', year=r.year, download=1) }}" download>Télécharger l'image</a>
+    <p class="note">1080 × 1350 px, aux couleurs de ton thème. Créée sur ton PC.</p>
+  </aside>
+</div>
+
+<section class="panel">
+  <h2>Chaque jour de l'année <small>plus foncé = plus de charge</small></h2>
+  <div class="tbl">
+  <div class="cal" style="--weeks: {{ r.calendar|length }}">
+    <div class="cal-months">{% for col in r.calendar %}{% set firsts = col|select|selectattr("day.day", "equalto", 1)|list %}<span>{% if firsts %}{{ MONTHS_SHORT[firsts[0].day.month - 1] }}{% endif %}</span>{% endfor %}</div>
+    <div class="cal-days"><span>lun</span><span></span><span>mer</span><span></span><span>ven</span><span></span><span>dim</span></div>
+    <div class="cal-grid">
+      {% for col in r.calendar %}{% for c in col %}{% if c %}<i class="l{{ c.level }} {{ 'future' if c.future }}" title="{{ c.day|day }}{{ ' · charge ' ~ c.load if c.load else ' · repos' }}"></i>{% else %}<i class="out"></i>{% endif %}{% endfor %}{% endfor %}
+    </div>
+  </div>
+  </div>
+  <p class="note">Une colonne par semaine (lundi en haut). Charge du jour d'après la FC (comme dans Forme), ou d'après la durée pour une sortie sans FC.</p>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Par sport</h2>
+    {% for fl in r.families %}
+    <div class="fam-line">
+      <div class="goal-head"><b><i class="ph ph-{{ fl.family.icon or 'pulse' }} sicon" aria-hidden="true"></i>{{ fl.family.name }}</b>
+        <span class="num small">{{ fl.totals.count }} sorties · {{ fl.totals.distance_m|km(0) }} · {{ fl.totals.duration_s|hmm }}</span></div>
+      <div class="goal-bar"><i style="width: {{ fl.share }}%"></i></div>
+      <span class="small muted">{{ fl.share|round|int }} % du temps
+        {%- if fl.records.longest %} · plus longue : <a href="{{ url_for('activity_detail', act_id=fl.records.longest.id) }}">{{ fl.records.longest.distance_m|km }}</a>{% endif %}
+        {%- if fl.records.best_pace %} · meilleure {{ 'vitesse' if fl.unit == 'kmh' else 'allure' }} : <a href="{{ url_for('activity_detail', act_id=fl.records.best_pace.id) }}">{{ fl.records.best_pace.avg_speed|pace(fl.unit) }}</a>{% endif %}</span>
+    </div>
+    {% endfor %}
+  </section>
+  <section class="panel">
+    <h2>Mois par mois {% if r.best_month %}<small>record : {{ r.best_month.label }} ({{ (r.best_month.hours * 3600)|hmm }})</small>{% endif %}</h2>
+    <div class="chart-box"><canvas id="months" aria-label="Heures et kilomètres par mois"></canvas></div>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Records de l'année</h2>
+  <div class="records">
+    {% if r.longest %}<div class="record"><small>Plus longue sortie</small><b>{{ r.longest.distance_m|km }}</b>
+      <a href="{{ url_for('activity_detail', act_id=r.longest.id) }}">{{ r.longest.name }} · {{ r.longest.start|day }}</a></div>{% endif %}
+    {% if r.longest_time %}<div class="record"><small>Plus longue durée</small><b>{{ r.longest_time.duration_s|hms }}</b>
+      <a href="{{ url_for('activity_detail', act_id=r.longest_time.id) }}">{{ r.longest_time.name }} · {{ r.longest_time.start|day }}</a></div>{% endif %}
+    {% if r.most_climb %}<div class="record"><small>Plus gros dénivelé</small><b>{{ r.most_climb.elevation_gain_m|meters }}</b>
+      <a href="{{ url_for('activity_detail', act_id=r.most_climb.id) }}">{{ r.most_climb.name }} · {{ r.most_climb.start|day }}</a></div>{% endif %}
+    {% for e in r.segment_records %}<div class="record"><small><i class="ph ph-trophy" aria-hidden="true"></i> Record de segment</small><b>{{ e.elapsed_s|hms }}</b>
+      <a href="{{ url_for('segment_detail', segment_id=e.segment_id) }}">{{ e.segment.name }} · {{ e.activity.start|day }}</a></div>{% endfor %}
+  </div>
+</section>
+
+<div class="grid3">
+  <section class="panel">
+    <h2>Matériel</h2>
+    {% for g, km, n in r.gear %}<div class="rank-line"><a href="{{ url_for('gear_detail', gear_id=g.id) }}">{{ gear_avatar(g, 32) }}</a><span><b>{{ g.name }}</b><span class="small muted">{{ km|number }} km · {{ n }} sorties</span></span></div>
+    {% else %}<p class="muted small">Aucun matériel affecté cette année.</p>{% endfor %}
+  </section>
+  <section class="panel">
+    <h2>Avec qui</h2>
+    {% for f, n, km in r.friends %}<div class="rank-line"><a href="{{ url_for('friend_detail', friend_id=f.id) }}">{{ friend_avatar(f, 32) }}</a><span><b>{{ f.name }}</b><span class="small muted">{{ n }} sortie{{ 's' if n > 1 }} · {{ km|number }} km</span></span></div>
+    {% else %}<p class="muted small">Aucune sortie avec un ami cette année.</p>{% endfor %}
+  </section>
+  <section class="panel">
+    <h2>Parcours les plus faits</h2>
+    {% for g, n in r.routes %}<div class="rank-line"><span class="rank-n num">{{ n }}×</span><a href="{{ url_for('route_detail', route_id=g.id) }}">{{ g.name }}</a></div>
+    {% else %}<p class="muted small">Aucun parcours fait deux fois cette année.</p>{% endfor %}
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Santé <small>moyennes de l'année</small></h2>
+    <div class="metrics">
+      {% set h = r.health %}
+      {% if h.rhr %}<div class="metric"><small>FC de repos</small><b>{{ h.rhr|round|int }} bpm</b>
+        <span class="sub small muted">{% if h.rhr_prev %}{{ r.prev_label }} : {{ h.rhr_prev|round|int }} bpm{% endif %}{% if h.rhr_first and h.rhr_last %} · janvier {{ h.rhr_first|round|int }} → récemment {{ h.rhr_last|round|int }}{% endif %}</span></div>{% endif %}
+      {% if h.sleep_h %}<div class="metric"><small>Sommeil par nuit</small><b>{{ (h.sleep_h * 3600)|hmm }}</b>
+        <span class="sub small muted">{% if h.sleep_prev_h %}{{ r.prev_label }} : {{ (h.sleep_prev_h * 3600)|hmm }}{% endif %}</span></div>{% endif %}
+      {% if h.steps %}<div class="metric"><small>Pas par jour</small><b>{{ h.steps|number }}</b></div>{% endif %}
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Météo <small>{{ r.weather.n }} sorties avec météo</small></h2>
+    {% set w = r.weather %}
+    {% if w.n %}
+    <div class="metrics">
+      {% if w.coldest %}<div class="metric"><small>La plus froide</small><b>{{ w.coldest.weather.temp_c|number(1) }} °C</b>
+        <a class="sub small" href="{{ url_for('activity_detail', act_id=w.coldest.id) }}">{{ w.coldest.start|day }}</a></div>{% endif %}
+      {% if w.hottest %}<div class="metric"><small>La plus chaude</small><b>{{ w.hottest.weather.temp_c|number(1) }} °C</b>
+        <a class="sub small" href="{{ url_for('activity_detail', act_id=w.hottest.id) }}">{{ w.hottest.start|day }}</a></div>{% endif %}
+      {% if w.windiest %}<div class="metric"><small>La plus ventée</small><b>{{ w.windiest.weather.wind_kmh|round|int }} km/h</b>
+        <a class="sub small" href="{{ url_for('activity_detail', act_id=w.windiest.id) }}">{{ w.windiest.start|day }}</a></div>{% endif %}
+      <div class="metric"><small>Sous la pluie</small><b>{{ w.rainy }}</b></div>
+      {% if w.avg_temp is not none %}<div class="metric"><small>Température moyenne</small><b>{{ w.avg_temp|number(1) }} °C</b></div>{% endif %}
+    </div>
+    {% else %}<p class="muted small">Pas encore de météo pour ces sorties : elle se récupère petit à petit à chaque synchro.</p>{% endif %}
+  </section>
+</div>
+
+{% if r.places %}
+<section class="panel">
+  <h2>Lieux <small>{{ r.n_places }} lieu{{ 'x' if r.n_places > 1 }} différent{{ 's' if r.n_places > 1 }}</small></h2>
+  <div class="chips">{% for name, n in r.places %}<span class="chip">{{ name }} · {{ n }}</span>{% endfor %}</div>
+</section>
+{% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const m = {{ r.months|tojson }};
+  chart("months", {
+    type: "bar",
+    data: { labels: m.map(x => x.label), datasets: [
+      { label: "Heures", data: m.map(x => x.future ? null : x.hours), backgroundColor: cssVar("--accent"), yAxisID: "y" },
+      { type: "line", label: "Kilomètres", data: m.map(x => x.future ? null : x.km), borderColor: cssVar("--ink"), pointRadius: 3, tension: .3, yAxisID: "y2" },
+    ] },
+  }, { scales: { y: { ticks: { callback: v => fmt.hmm(v) } }, y2: { position: "right", grid: { display: false }, ticks: { color: cssVar("--muted"), callback: v => fmt.num(v) + " km" } } },
+       plugins: { tooltip: { callbacks: { label: c => c.dataset.yAxisID === "y" ? `Temps : ${fmt.hmm(c.parsed.y)}` : `Distance : ${fmt.num(c.parsed.y)} km` } } } });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -133,6 +133,12 @@ aigu / chronique ; récupération (FC de repos, sommeil, Body Battery, VFC si la
 vitesse et le sommeil de la veille ou ton poids (à partir de 10 pesées sur 8 semaines). Pour une charge juste,
 indique ta FC max et ta FC de repos dans ton profil.
 
+## Bilan de l'année
+
+Onglet **Bilan** : l'année choisie en chiffres (comparée à la précédente, projection pour l'année en cours),
+calendrier jour par jour, sports, records, matériel, amis, parcours, lieux, santé et météo, et une image
+1080 × 1350 à télécharger pour la partager.
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)

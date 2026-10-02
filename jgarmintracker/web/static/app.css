@@ -541,3 +541,29 @@ h1 .ph-flag-checkered { color: #C98A00; }
 .link-verdict { margin: 10px 0 0; font-size: .9rem; }
 .weight-wait { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
 .weight-wait p { margin: 0; }
+
+/* Bilan de l'année (0.16.0) */
+.review-top { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .review-top { grid-template-columns: 1fr; } }
+.kpi.projection { border-style: dashed; }
+.share { align-items: center; text-align: center; }
+.share img { border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.18); display: block; }
+.cal { display: grid; grid-template-columns: 30px repeat(var(--weeks), 13px); grid-template-rows: 16px repeat(7, 13px);
+  gap: 3px; width: max-content; font-size: .7rem; color: var(--muted); }
+.cal-months { grid-column: 2 / -1; grid-row: 1; display: grid; grid-template-columns: repeat(var(--weeks), 13px); gap: 3px; }
+.cal-months span { white-space: nowrap; overflow: visible; }
+.cal-days { grid-column: 1; grid-row: 2 / -1; display: grid; grid-template-rows: repeat(7, 13px); gap: 3px; line-height: 13px; }
+.cal-grid { grid-column: 2 / -1; grid-row: 2 / -1; display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px);
+  grid-template-columns: repeat(var(--weeks), 13px); gap: 3px; }
+.cal-grid i { display: block; width: 13px; height: 13px; border-radius: 3px; background: var(--soft); }
+.cal-grid i.l1 { background: color-mix(in oklab, var(--accent) 30%, var(--soft)); }
+.cal-grid i.l2 { background: color-mix(in oklab, var(--accent) 55%, var(--soft)); }
+.cal-grid i.l3 { background: color-mix(in oklab, var(--accent) 80%, var(--soft)); }
+.cal-grid i.l4 { background: var(--accent); }
+.cal-grid i.future { background: transparent; border: 1px dashed var(--line); }
+.cal-grid i.out { background: transparent; }
+.fam-line { display: flex; flex-direction: column; gap: 5px; padding-bottom: 10px; border-bottom: 1px solid var(--soft); }
+.fam-line:last-child { border-bottom: 0; }
+.rank-line { display: flex; align-items: center; gap: 10px; }
+.rank-line > span:not(.rank-n) { display: flex; flex-direction: column; line-height: 1.25; }
+.rank-n { min-width: 34px; color: var(--accent); font-weight: 600; }
