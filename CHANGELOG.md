@@ -3,6 +3,13 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.17.1 — 2026-10-02
+
+### Modifié
+- Paramètres en **onglets**, comme Sports et Tags : Apparence (thème, disposition, palettes, import Labs),
+  Sorties et carte (domicile, limites des vérifications), Santé (poids), Synchronisation. Les liens vers une
+  section (depuis Santé, Carte, Synchronisation…) et les enregistrements ouvrent le bon onglet.
+
 ## 0.17.0 — 2026-10-02
 
 ### Modifié

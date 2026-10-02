@@ -260,6 +260,12 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def today() -> date:
         return date.today()
 
+    def settings_url(section: str, **args) -> str:
+        """Adresse d'une section de Paramètres : son onglet et son ancre."""
+        return url_for("settings_page", tab=nav.SETTINGS_SECTIONS.get(section, "appearance"), **args) + "#" + section
+
+    app.jinja_env.globals["settings_url"] = settings_url
+
     # ---------------------------------------------------------------- tableau de bord
     @app.get("/")
     def dashboard():
@@ -984,12 +990,12 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             flash("Valeurs illisibles"
                   + (f" pour : {', '.join(errors)}" if errors else "")
                   + ". Allure au format 2:30, vitesse en km/h, écart entre 5 et 200 %.", "error")
-            return redirect(url_for("settings_page") + "#checks")
+            return redirect(settings_url("checks"))
         settings.put(s, "check_limits", out)
         settings.put(s, "unusual_pct", pct)
         s.commit()
         flash("Limites des vérifications enregistrées.")
-        return redirect(url_for("settings_page") + "#checks")
+        return redirect(settings_url("checks"))
 
     @app.post("/activities/<int:act_id>/unlock")
     def unlock(act_id: int):
@@ -1733,8 +1739,11 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                 check_rows.append(SimpleNamespace(
                     family=fam, unit=unit, avg=checks.to_display(lim[fam.id]["avg"], unit),
                     max=checks.to_display(lim[fam.id]["max"], unit)))
+        tab = request.args.get("tab")
+        tab = tab if tab in dict((k, v) for k, v, _i in nav.SETTINGS_TABS) else "appearance"
         return render_template(
-            "settings.html", palettes=settings.all_palettes(s), current=settings.get(s, "palette"),
+            "settings.html", tab=tab, TABS=nav.SETTINGS_TABS,
+            palettes=settings.all_palettes(s), current=settings.get(s, "palette"),
             layout=settings.get(s, "layout"), mode=settings.get(s, "mode"), LAYOUTS=settings.LAYOUTS,
             MODES=settings.MODES, history_months=settings.get(s, "history_months"),
             resync_days=settings.get(s, "resync_days"), auto_sync=settings.get(s, "auto_sync"),
@@ -1753,11 +1762,11 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             lat, lon = parse_float(request.form.get("lat")), parse_float(request.form.get("lon"))
             if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180):
                 flash("Clique sur la carte pour choisir le point.", "error")
-                return redirect(url_for("settings_page") + "#home")
+                return redirect(settings_url("home"))
             settings.put(s, "home", [round(lat, 5), round(lon, 5)])
             flash("Domicile enregistré.")
         s.commit()
-        return redirect(url_for("settings_page") + "#home")
+        return redirect(settings_url("home"))
 
     @app.post("/settings/appearance")
     def settings_appearance():
@@ -1789,13 +1798,13 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         months, days = f.get("history_months", type=int), f.get("resync_days", type=int)
         if not months or not 1 <= months <= 120 or not days or not 1 <= days <= 60:
             flash("Historique entre 1 et 120 mois, re-synchronisation entre 1 et 60 jours.", "error")
-            return redirect(url_for("settings_page") + "#sync")
+            return redirect(settings_url("sync"))
         settings.put(s, "history_months", months)
         settings.put(s, "resync_days", days)
         settings.put(s, "auto_sync", f.get("auto_sync") == "on")
         s.commit()
         flash("Réglages de synchro enregistrés.")
-        return redirect(url_for("settings_page") + "#sync")
+        return redirect(settings_url("sync"))
 
     @app.get("/settings/palettes/new")
     @app.get("/settings/palettes/<pal_id>")
@@ -1839,7 +1848,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             flash(f"Palette « {name} » supprimée.")
         else:
             flash("Palette introuvable.", "error")
-        return redirect(url_for("settings_page") + "#palettes")
+        return redirect(settings_url("palettes"))
 
     @app.post("/settings/palettes/import")
     def palette_import():
@@ -1849,12 +1858,12 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         except themes.PaletteError as e:
             s.rollback()
             flash(f"Import impossible : {e}", "error")
-            return redirect(url_for("settings_page") + "#import")
+            return redirect(settings_url("import"))
         s.commit()
         msg = f"{len(done)} palette(s) importée(s) : {', '.join(done)}." if done else "Aucune palette importée."
         if skipped:
             msg += f" Ignorée(s), car déjà fournie(s) : {', '.join(skipped)}."
         flash(msg)
-        return redirect(url_for("settings_page") + "#palettes")
+        return redirect(settings_url("palettes"))
 
     return app

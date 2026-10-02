@@ -29,7 +29,7 @@ def test_every_icon_has_a_css_rule():
     used = (set(ICONS) | set(gear.ICONS) | {icon for _label, icon, _color in gear.KINDS.values()}
             | {icon for _words, _label, icon in weather.SKIES} | {"thermometer"}
             | {i for _t, ci, items in nav.NAV for i in [ci] + [it[2] for it in items]}
-            | {tab[2] for tabs in nav.TABS for tab in tabs} | {"caret-down"})
+            | {tab[2] for tabs in nav.TABS for tab in tabs} | {t[2] for t in nav.SETTINGS_TABS} | {"caret-down"})
     utility = {"lock-simple", "download-simple", "warning", "arrow-up", "flag-checkered"}
     assert used <= declared and declared - used == utility
     assert (STATIC / "Phosphor.woff2").stat().st_size > 100_000

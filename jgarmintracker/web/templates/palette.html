@@ -5,7 +5,7 @@
   <h1>{{ 'Palette « ' ~ pal.name ~ ' »' if pal.id else 'Nouvelle palette' }}</h1>
   {% if not pal.id and pal.base %}<span class="muted">à partir de « {{ pal.base }} »</span>{% endif %}
   <div class="spacer"></div>
-  <a class="btn" href="{{ url_for('settings_page') }}#palettes">Retour aux paramètres</a>
+  <a class="btn" href="{{ settings_url('palettes') }}">Retour aux paramètres</a>
 </div>
 
 <form method="post" action="{{ url_for('palette_save') }}" id="pal-form">

@@ -28,7 +28,7 @@
       <label class="check" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="full"> Relire les {{ plan.months }} derniers mois</label>
     </form>
     <p class="note">Le lien « Synchroniser » de la barre de navigation fait la même chose depuis n'importe quelle page.
-      Historique et nombre de jours : page <a href="{{ url_for('settings_page') }}#sync">Paramètres</a>.</p>
+      Historique et nombre de jours : page <a href="{{ settings_url('sync') }}">Paramètres</a>.</p>
     <div id="sync-status" hx-get="{{ url_for('sync_status') }}" hx-trigger="load" hx-swap="innerHTML"></div>
   </section>
   <section class="panel">

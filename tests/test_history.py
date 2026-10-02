@@ -75,7 +75,7 @@ def test_map_places_and_home(client):
     assert "Lieu inconnu" in html  # les fixtures n'ont pas de locationName
     client.post("/settings/home", data={"lat": "0.33", "lon": "0.44"})
     assert "[0.33, 0.44]" in client.get("/map").get_data(as_text=True)
-    assert "Revenir au calcul automatique" in client.get("/settings").get_data(as_text=True)
+    assert "Revenir au calcul automatique" in client.get("/settings?tab=activities").get_data(as_text=True)
     client.post("/settings/home", data={"reset": "1"})
     with dbm.new_session() as s:
         assert settings.home(s)[1] is False

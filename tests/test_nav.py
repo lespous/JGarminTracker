@@ -44,3 +44,19 @@ def test_menu_render(client):  # noqa: F811
         settings.put(s, "layout", "col_left")
         s.commit()
     assert "layout-col_left" in client.get(f"/activities/{act_id('Vélo dimanche')}").get_data(as_text=True)
+
+
+def test_settings_tabs(client):  # noqa: F811
+    html = client.get("/settings").get_data(as_text=True)  # onglet par défaut : Apparence
+    assert "<h1>Apparence</h1>" in html and 'id="palettes"' in html and 'id="import"' in html and 'id="home"' not in html
+    html = client.get("/settings?tab=activities").get_data(as_text=True)
+    assert 'id="home"' in html and 'id="checks"' in html and 'id="palettes"' not in html
+    assert 'id="weight"' in client.get("/settings?tab=health").get_data(as_text=True)
+    assert 'id="sync"' in client.get("/settings?tab=sync").get_data(as_text=True)
+    assert "<h1>Apparence</h1>" in client.get("/settings?tab=nimporte").get_data(as_text=True)
+    # Les enregistrements reviennent sur le bon onglet, à la bonne section.
+    r = client.post("/settings/sync", data={"history_months": "12", "resync_days": "3"})
+    assert r.headers["Location"].endswith("/settings?tab=sync#sync")
+    r = client.post("/settings/home", data={"reset": "1"})
+    assert r.headers["Location"].endswith("/settings?tab=activities#home")
+    assert "/settings?tab=health#weight" in client.get("/health").get_data(as_text=True)

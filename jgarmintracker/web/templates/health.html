@@ -65,7 +65,7 @@ for (const id of ["p-from", "p-to"]) document.getElementById(id).addEventListene
         <div class="metric"><small>IMC</small><b>{{ ws.bmi|number(1) if ws.bmi else '—' }}</b>
           <span class="muted small">{{ bmi_label(ws.bmi) if ws.bmi else ('taille à indiquer dans le Profil' if not height else '') }}</span></div>
         <div class="metric"><small>Objectif</small><b>{{ (ws.goal|number(1) ~ ' kg') if ws.goal else '—' }}</b>
-          <span class="muted small">{% if ws.to_goal is not none %}{{ 'atteint' if ws.to_goal|abs < 0.3 else ('encore ' ~ (ws.to_goal|abs)|number(1) ~ ' kg ' ~ ('à perdre' if ws.to_goal < 0 else 'à prendre')) }}{% else %}<a href="{{ url_for('settings_page') }}#weight">à fixer dans Paramètres</a>{% endif %}</span></div>
+          <span class="muted small">{% if ws.to_goal is not none %}{{ 'atteint' if ws.to_goal|abs < 0.3 else ('encore ' ~ (ws.to_goal|abs)|number(1) ~ ' kg ' ~ ('à perdre' if ws.to_goal < 0 else 'à prendre')) }}{% else %}<a href="{{ settings_url('weight') }}">à fixer dans Paramètres</a>{% endif %}</span></div>
       </div>
       {% if weights %}
       <div class="tbl">
@@ -83,7 +83,7 @@ for (const id of ["p-from", "p-to"]) document.getElementById(id).addEventListene
         </tbody>
       </table>
       </div>
-      {% else %}<p class="muted small">Aucune pesée pour l'instant : saisis ton poids ci-dessus. Rappel tous les quelques jours réglable dans <a href="{{ url_for('settings_page') }}#weight">Paramètres</a>.</p>{% endif %}
+      {% else %}<p class="muted small">Aucune pesée pour l'instant : saisis ton poids ci-dessus. Rappel tous les quelques jours réglable dans <a href="{{ settings_url('weight') }}">Paramètres</a>.</p>{% endif %}
     </div>
     <div class="fam-block">
       {% if w.weight %}

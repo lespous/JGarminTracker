@@ -151,7 +151,7 @@ def test_change_sport_from_checks(client):
 
 
 def test_settings_limits(client):
-    html = client.get("/settings").get_data(as_text=True)
+    html = client.get("/settings?tab=activities").get_data(as_text=True)
     assert 'value="2:30"' in html and 'value="60"' in html
     with dbm.new_session() as s:
         course = s.scalar(select(Activity).where(Activity.name == "Course du soir 1")).sport.family_id

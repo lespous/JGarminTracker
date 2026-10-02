@@ -47,3 +47,12 @@ def tabs_for(endpoint: str | None) -> tuple[list[tuple[str, str, str]], str] | N
         if any(t[0] == ep for t in tabs):
             return tabs, ep
     return None
+
+
+# Onglets de la page Paramètres (même page, ?tab=…) et onglet de chaque section (ancre).
+SETTINGS_TABS: list[tuple[str, str, str]] = [
+    ("appearance", "Apparence", "palette"), ("activities", "Sorties et carte", "map-trifold"),
+    ("health", "Santé", "heartbeat"), ("sync", "Synchronisation", "arrows-clockwise"),
+]
+SETTINGS_SECTIONS = {"appearance": "appearance", "palettes": "appearance", "import": "appearance",
+                     "home": "activities", "checks": "activities", "weight": "health", "sync": "sync"}

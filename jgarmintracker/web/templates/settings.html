@@ -9,10 +9,15 @@
   <span class="swatch">{% for k in ('bg', 'tile', 'surface', 'fg') %}<i style="background: {{ c[k] }}"></i>{% endfor %}<i class="acc" style="background: {{ c.accent }}"></i></span>
 {%- endmacro %}
 {% block content %}
-<div class="head"><h1>Paramètres</h1></div>
+<nav class="page-tabs" aria-label="Catégories de réglages">
+  {% for key, label, icon in TABS %}<a href="{{ url_for('settings_page', tab=key) }}" class="{{ 'on' if key == tab }}" {% if key == tab %}aria-current="page"{% endif %}><i class="ph ph-{{ icon }}" aria-hidden="true"></i>{{ label }}</a>{% endfor %}
+</nav>
+<div class="head"><h1>{{ (TABS|selectattr(0, 'equalto', tab)|first)[1] }}</h1></div>
+
+{% if tab == 'appearance' %}
 
 <section class="panel" id="appearance">
-  <h2>Apparence</h2>
+  <h2>Thème et disposition</h2>
   <form method="post" action="{{ url_for('settings_appearance') }}" class="fam-block" style="gap:18px">
     <div class="fam-block">
       <h3 class="small muted">DISPOSITION</h3>
@@ -38,7 +43,7 @@
           {{ swatch(p.light) }}{{ swatch(p.dark) }}
           <span class="acts">
             {% if p.id %}<a href="{{ url_for('palette_form', pal_id=p.id) }}">Modifier</a>
-              <a class="danger" href="{{ url_for('settings_page', confirm=p.id) }}#palettes">Supprimer</a>
+              <a class="danger" href="{{ settings_url('palettes', confirm=p.id) }}">Supprimer</a>
             {% else %}<a href="{{ url_for('palette_form') }}?base={{ name|urlencode }}">Partir de celle-ci</a>{% endif %}
           </span>
         </label>
@@ -54,11 +59,23 @@
   {% for name, p in palettes.items() if p.id and confirm == p.id %}
   <form class="confirm" method="post" action="{{ url_for('palette_delete', pal_id=p.id) }}">
     <span>Supprimer la palette « {{ name }} » ?{% if name == current %} Elle est utilisée : l'appli repassera sur « Sarcelle ».{% endif %}</span>
-    <div class="actions"><a class="btn" href="{{ url_for('settings_page') }}#palettes">Annuler</a><button class="primary">Supprimer</button></div>
+    <div class="actions"><a class="btn" href="{{ settings_url('palettes') }}">Annuler</a><button class="primary">Supprimer</button></div>
   </form>
   {% endfor %}
 </section>
 
+<section class="panel" id="import">
+  <h2>Importer des palettes de Labs</h2>
+  <p class="small">Tes palettes personnalisées de Labs sont dans la base MySQL du site (réglage <span class="mono">palettes</span>). Dans phpMyAdmin, lance
+    <span class="mono">SELECT value FROM settings WHERE name = 'palettes';</span>
+    (ajoute le préfixe des tables s'il y en a un, par ex. <span class="mono">sp_settings</span>), copie la valeur et colle-la ci-dessous.</p>
+  <p class="note">Accepte la liste telle que stockée par Labs (<span class="mono">[{"id", "name", "light": {…}, "dark": {…}}]</span>) ou une seule palette. Une palette déjà importée du même nom est mise à jour.</p>
+  <form method="post" action="{{ url_for('palette_import') }}" class="fam-block">
+    <textarea class="json" name="json" required placeholder='[{"id": "ma-palette-1a2b", "name": "Ma palette", "light": {"bg": "#…", …}, "dark": {…}}]' aria-label="JSON des palettes"></textarea>
+    <div><button class="primary">Importer</button></div>
+  </form>
+</section>
+{% elif tab == 'activities' %}
 <section class="panel" id="home">
   <h2>Domicile</h2>
   <p class="small">Sert à centrer la carte de tes parcours.
@@ -94,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => homePicker("home-map", {{ ho
   </form>
   <p class="note">La médiane se calcule sur au moins 5 sorties d'1 km ou plus du même sport.</p>
 </section>
-
+{% elif tab == 'health' %}
 <section class="panel" id="weight">
   <h2>Poids</h2>
   <form method="post" action="{{ url_for('settings_weight') }}" class="rule-form">
@@ -104,21 +121,9 @@ document.addEventListener("DOMContentLoaded", () => homePicker("home-map", {{ ho
   </form>
   <p class="note">Le rappel s'affiche sur le tableau de bord (avec un champ pour saisir le poids) et par un point sur l'onglet Santé quand la dernière pesée date de ce nombre de jours ou plus. 0 = pas de rappel.</p>
 </section>
-
-<section class="panel" id="import">
-  <h2>Importer des palettes de Labs</h2>
-  <p class="small">Tes palettes personnalisées de Labs sont dans la base MySQL du site (réglage <span class="mono">palettes</span>). Dans phpMyAdmin, lance
-    <span class="mono">SELECT value FROM settings WHERE name = 'palettes';</span>
-    (ajoute le préfixe des tables s'il y en a un, par ex. <span class="mono">sp_settings</span>), copie la valeur et colle-la ci-dessous.</p>
-  <p class="note">Accepte la liste telle que stockée par Labs (<span class="mono">[{"id", "name", "light": {…}, "dark": {…}}]</span>) ou une seule palette. Une palette déjà importée du même nom est mise à jour.</p>
-  <form method="post" action="{{ url_for('palette_import') }}" class="fam-block">
-    <textarea class="json" name="json" required placeholder='[{"id": "ma-palette-1a2b", "name": "Ma palette", "light": {"bg": "#…", …}, "dark": {…}}]' aria-label="JSON des palettes"></textarea>
-    <div><button class="primary">Importer</button></div>
-  </form>
-</section>
-
+{% else %}
 <section class="panel" id="sync">
-  <h2>Synchronisation</h2>
+  <h2>Synchro avec Garmin</h2>
   <form method="post" action="{{ url_for('settings_sync') }}" class="rule-form">
     <label>Historique au premier lancement (mois)<input type="number" name="history_months" min="1" max="120" value="{{ history_months }}" required></label>
     <label>Jours de santé re-synchronisés à chaque fois<input type="number" name="resync_days" min="1" max="60" value="{{ resync_days }}" required></label>
@@ -127,4 +132,5 @@ document.addEventListener("DOMContentLoaded", () => homePicker("home-map", {{ ho
   </form>
   <p class="note">L'historique sert aussi à « Relire les N derniers mois ». Garmin complète les nuits et les résumés après coup : 3 jours suffisent en général. La synchro au lancement tourne en arrière-plan ; l'interface est utilisable tout de suite.</p>
 </section>
+{% endif %}
 {% endblock %}

@@ -53,7 +53,7 @@
   <p class="note">{% if routes and view == 'heat' %}Carte de chaleur : chaque parcours est un trait fin et léger ; plus une route est faite souvent, plus elle devient vive. Les coins restés sombres sont ceux que tu n'as jamais explorés. Survole un tracé pour voir la sortie.
     {% elif routes %}Survole un tracé pour voir la sortie, clique pour ouvrir sa fiche. Les zones les plus foncées sont celles où tu passes le plus souvent.{% else %}Aucun parcours avec tracé GPS pour ces filtres. Les tracés sont récupérés à la synchro (page Synchronisation).{% endif %}
     Lieux : noms donnés par Garmin à chaque sortie.
-    {% if home %}Domicile {{ 'posé à la main' if home_manual else 'déduit de tes points de départ' }} (<a href="{{ url_for('settings_page') }}#home">modifier</a>).{% endif %}
+    {% if home %}Domicile {{ 'posé à la main' if home_manual else 'déduit de tes points de départ' }} (<a href="{{ settings_url('home') }}">modifier</a>).{% endif %}
     Fond de carte © contributeurs OpenStreetMap.</p>
 </section>
 <script>
