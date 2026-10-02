@@ -167,6 +167,16 @@ class GarminSource:
         return self.api.get_activity_details(str(garmin_id), maxchart=4000, maxpoly=0)
 
     @_translate
+    def hrv(self, day: date) -> dict | None:
+        """VFC de la nuit terminée le matin de `day` ; {} si la montre ne la mesure pas."""
+        try:
+            return self.api.get_hrv_data(day.isoformat()) or {}
+        except GarminConnectConnectionError as e:
+            if any(code in str(e) for code in ("No data received", "404", "204")):
+                return {}
+            raise
+
+    @_translate
     def weather(self, garmin_id: int) -> dict | None:
         """Météo au départ (°F, mph : converti dans weather.py). Sortie sans météo : None."""
         try:

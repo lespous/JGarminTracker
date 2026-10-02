@@ -4,7 +4,7 @@ slug: jgarmintracker
 summary: Un outil personnel qui récupère les données de ma montre Garmin (activités, sommeil, santé), les garde en local et montre ma progression semaine après semaine.
 year: 2026
 status: active
-version: 0.14.1
+version: 0.15.0
 featured: true
 published: true
 sortOrder: 1
@@ -28,6 +28,7 @@ Les données de santé ne quittent jamais le PC : seuls les jetons de session Ga
 - **Matériel** : vélos et chaussures avec photo, usure et coût au km, affectés en bloc aux sorties d'une période ou posés par défaut selon le sport, avec rappels d'entretien (chaîne, pneus, révision).
 - **Parcours répétés et météo** : les sorties faites sur le même tracé sont reconnues et classées au temps, et chaque sortie garde la météo du départ (allure selon la température et le vent).
 - **Segments** : une portion de parcours choisie sur la carte (une montée, une ligne droite) est chronométrée sur toutes les sorties qui l'empruntent, avec classement, record et profil d'altitude.
+- **Forme** : charge d'entraînement calculée d'après la FC (condition, fatigue, fraîcheur, ratio aigu / chronique), récupération, et ce qui joue sur ma vitesse (sommeil de la veille, poids).
 - **Objectifs** : km, heures, sorties ou dénivelé par semaine, mois ou année, avec avance ou retard sur le rythme.
 - **Amis et profil** : avec qui j'ai fait chaque sortie, et un bilan de carrière (totaux, séries de semaines actives, zones cardio).
 

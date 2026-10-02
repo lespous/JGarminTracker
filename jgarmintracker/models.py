@@ -507,6 +507,13 @@ class DailyHealth(Base):
     stress_avg: Mapped[int | None] = mapped_column(Integer, nullable=True)
     stress_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     vo2max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # 0.15.0 : VFC de la nuit (ms), moyenne 7 nuits, statut Garmin et zone équilibrée de la ligne de base.
+    hrv_night: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hrv_week: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hrv_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    hrv_low: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hrv_high: Mapped[float | None] = mapped_column(Float, nullable=True)
+    raw_hrv: Mapped[str | None] = mapped_column(Text, nullable=True)  # « {} » : demandé, rien reçu
     # JSON brut par source, pour recalculer sans tout re-télécharger.
     raw_summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # FC repos, Body Battery, pas, stress
     raw_sleep: Mapped[str | None] = mapped_column(Text, nullable=True)

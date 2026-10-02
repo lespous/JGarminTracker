@@ -54,6 +54,18 @@ class FakeSource:
         self.details_asked = [*self.details_asked, garmin_id]
         return self.DETAILS.get(garmin_id)
 
+    HRV = True  # False : montre sans VFC (réponses vides)
+    hrv_asked: list[date] = []
+
+    def hrv(self, day: date):
+        """VFC inventée (ms), comme la réponse Garmin get_hrv_data."""
+        self.hrv_asked = [*self.hrv_asked, day]
+        if not self.HRV:
+            return {}
+        v = 40 + day.day % 10
+        return {"hrvSummary": {"calendarDate": day.isoformat(), "lastNightAvg": v, "weeklyAvg": 44, "status": "BALANCED",
+                               "baseline": {"balancedLow": 38, "balancedUpper": 52}}}
+
     weather_before_429: int | None = None
     weather_asked: list[int] = []
 

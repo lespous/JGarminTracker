@@ -7,6 +7,7 @@
       {% elif p.step == 'health' %}Santé, jour par jour : {{ p.done }} / {{ p.total }}{% if p.day %} ({{ p.day|day }}){% endif %}
       {% elif p.step == 'tracks' %}Tracés GPS : {{ p.done }} / {{ p.total }}{% if p.day %} (sortie du {{ p.day|day }}){% endif %}
       {% elif p.step == 'segments' %}Segments, détails des sorties : {{ p.done }} / {{ p.total }}{% if p.day %} (sortie du {{ p.day|day }}){% endif %}
+      {% elif p.step == 'hrv' %}VFC des nuits : {{ p.done }} / {{ p.total }}{% if p.day %} (nuit du {{ p.day|day }}){% endif %}
       {% elif p.step == 'weather' %}Météo des sorties : {{ p.done }} / {{ p.total }}{% if p.day %} (sortie du {{ p.day|day }}){% endif %}
       {% else %}Finalisation…{% endif %}
     </p>

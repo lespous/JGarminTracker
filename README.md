@@ -126,6 +126,13 @@ l'arrivée). Les sorties qui empruntent la portion dans le même sens sont repé
 leurs données point par point sont téléchargées une fois pour les chronométrer : classement, record, profil
 d'altitude, et « Segments traversés » dans la fiche de chaque sortie.
 
+## Forme
+
+Onglet **Forme** : charge d'entraînement calculée d'après la FC (TRIMP), condition, fatigue, fraîcheur et ratio
+aigu / chronique ; récupération (FC de repos, sommeil, Body Battery, VFC si la montre la mesure) ; et lien entre ta
+vitesse et le sommeil de la veille ou ton poids (à partir de 10 pesées sur 8 semaines). Pour une charge juste,
+indique ta FC max et ta FC de repos dans ton profil.
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)

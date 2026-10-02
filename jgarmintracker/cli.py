@@ -104,7 +104,7 @@ def sync(
         tasks: dict[str, int] = {}
 
         def on_progress(p):
-            label = {"activities": "Activités", "health": "Santé (jour par jour)", "tracks": "Tracés GPS", "weather": "Météo des sorties", "segments": "Segments (détails des sorties)"}.get(p.step)
+            label = {"activities": "Activités", "health": "Santé (jour par jour)", "tracks": "Tracés GPS", "weather": "Météo des sorties", "segments": "Segments (détails des sorties)", "hrv": "VFC des nuits"}.get(p.step)
             if not label:
                 return
             if p.step not in tasks:
@@ -154,7 +154,7 @@ def history(
         tasks: dict[str, int] = {}
 
         def on_progress(p):
-            label = {"activities": "Activités", "health": "Santé (jour par jour)", "tracks": "Tracés GPS", "weather": "Météo des sorties", "segments": "Segments (détails des sorties)"}.get(p.step)
+            label = {"activities": "Activités", "health": "Santé (jour par jour)", "tracks": "Tracés GPS", "weather": "Météo des sorties", "segments": "Segments (détails des sorties)", "hrv": "VFC des nuits"}.get(p.step)
             if not label:
                 return
             if p.step not in tasks:

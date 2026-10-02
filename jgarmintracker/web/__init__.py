@@ -35,6 +35,7 @@ from .. import maintenance
 from .. import routes as routes_mod
 from .. import weather as weather_mod
 from .. import segments as segments_mod
+from .. import form as form_mod
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -1204,6 +1205,31 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s.commit()
         flash(f"Segment « {name} » supprimé (les sorties et leurs détails restent).")
         return redirect(url_for("routes_page") + "#segments")
+
+    # ---------------------------------------------------------------- forme
+    FORM_PERIODS = {"90": "3 derniers mois", "180": "6 derniers mois", "365": "12 derniers mois", "730": "2 ans"}
+
+    @app.get("/form")
+    def form_page():
+        s = db()
+        t = today()
+        period = request.args.get("period") if request.args.get("period") in FORM_PERIODS else "180"
+        start = t - timedelta(days=int(period) - 1)
+        load = form_mod.load_series(s, start, t, t)
+        rec = form_mod.recovery_series(s, load.days)
+        fams = form_mod.families_with_pace(s)
+        fam = next((f for f in fams if f.id == request.args.get("family", type=int)), fams[0] if fams else None)
+        sleep = form_mod.sleep_link(s, fam.id) if fam else form_mod.Link()
+        wlink = form_mod.weight_link(s, fam.id) if fam else form_mod.WeightLink(False, 0, 0, form_mod.Link())
+        last_hrv = s.scalar(select(DailyHealth).where(DailyHealth.hrv_night.is_not(None))
+                            .order_by(DailyHealth.day.desc()).limit(1))
+        return render_template(
+            "form.html", load=load, now=load.today, rec=rec, period=period, PERIODS=FORM_PERIODS, fams=fams, fam=fam,
+            sleep=sleep, wlink=wlink, last_hrv=last_hrv, hrv_unavailable=settings.get(s, "hrv_unavailable"),
+            HRV_STATUS=form_mod.HRV_STATUS, WEIGHT_MIN=form_mod.WEIGHT_MIN_ENTRIES, WEIGHT_WEEKS=form_mod.WEIGHT_MIN_WEEKS,
+            chart={"labels": load.labels, "load": load.load, "ctl": load.ctl, "atl": load.atl, "tsb": load.tsb,
+                   "acwr": load.acwr, **{k: v for k, v in rec.items() if k != "has_hrv"}},
+        )
 
     # ---------------------------------------------------------------- progression
     @app.get("/progress")

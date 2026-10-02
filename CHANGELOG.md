@@ -3,6 +3,21 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.15.0 — 2026-10-02
+
+### Ajouté
+- **Onglet Forme** :
+  - **Charge d'entraînement** calculée sur le PC d'après la FC de chaque sortie (TRIMP de Banister) : charge des
+    7 derniers jours, condition (42 jours), fatigue (7 jours), fraîcheur (condition − fatigue), sur 3 mois à 2 ans.
+  - **Ratio aigu / chronique** avec sa zone idéale (0,8 à 1,3) et un avertissement au-dessus ; pas de ratio pendant
+    une reprise après une coupure.
+  - **Récupération** : FC de repos, sommeil et Body Battery (moyennes 7 jours) sur le même axe de temps.
+  - **VFC de la nuit** (variabilité cardiaque) et statut Garmin, si la montre la mesure : nouvelles nuits à chaque
+    synchro, l'année passée petit à petit ; après 14 nuits vides d'affilée, l'historique n'est plus demandé.
+  - **Sommeil → vitesse** : chaque sortie comparée à ta vitesse habituelle pour le même sport (±60 jours), selon
+    le sommeil de la nuit précédente (nuage de points, moyennes par tranche, force du lien).
+  - **Poids → vitesse** : même analyse selon le poids de la dernière pesée, dès 10 pesées sur 8 semaines.
+
 ## 0.14.1 — 2026-10-02
 
 ### Corrigé

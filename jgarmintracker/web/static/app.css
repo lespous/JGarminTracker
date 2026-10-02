@@ -529,3 +529,15 @@ tr.best-row .ph-trophy { color: var(--warn); }
 .map-box.picking, .map-box.picking .leaflet-interactive { cursor: crosshair; }
 .record-banner > .ph { color: var(--warn); }
 h1 .ph-flag-checkered { color: #C98A00; }
+
+/* Forme (0.15.0) */
+.kpi.ratio-ok b { color: var(--in); }
+.kpi.ratio-low b { color: var(--muted); }
+.kpi.ratio-warn { border-color: var(--warn); background: var(--warn-soft); }
+.kpi.ratio-warn b { color: var(--warn); }
+.kpi.ratio-bad { border-color: var(--out); background: var(--err-soft); }
+.kpi.ratio-bad b { color: var(--out); }
+#links h3 { margin-top: 6px; }
+.link-verdict { margin: 10px 0 0; font-size: .9rem; }
+.weight-wait { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+.weight-wait p { margin: 0; }

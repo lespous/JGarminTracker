@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Forme{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+{% endblock %}
+{% macro link_section(title, link, x_label, x_unit, kind) -%}
+  {% if link.n >= 10 %}
+  <div class="grid2">
+    <div class="chart-box"><canvas id="{{ kind }}-scatter" aria-label="{{ title }} : nuage de points"></canvas></div>
+    <div>
+      <div class="tbl"><table class="zones">
+        <thead><tr><th>{{ x_label }}</th><th class="r">Sorties</th><th class="r">Vitesse vs habitude</th></tr></thead>
+        <tbody>{% for b in link.bins %}<tr><td>{{ b.label }}</td><td class="r num">{{ b.n or '—' }}</td>
+          <td class="r num {{ 'pos' if b.avg and b.avg > 0 else 'neg' if b.avg and b.avg < 0 }}">{{ ('+' if b.avg > 0 else '') ~ b.avg|number(1) ~ ' %' if b.avg is not none else '—' }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="link-verdict"><b>{{ link.strength|capitalize }}</b> sur {{ link.n }} sorties
+        {%- if link.r is not none %} (corrélation {{ link.r|number(2) }}){% endif %}.
+        {% if link.slope is not none and link.r and link.r|abs >= 0.1 %}En moyenne, {{ '+' if link.slope > 0 else '−' }}1 {{ x_unit }} = {{ (link.slope|abs)|number(1) }} % {{ 'plus vite' if link.slope > 0 else 'plus lentement' }}.{% endif %}</p>
+    </div>
+  </div>
+  {% else %}
+  <p class="muted small">Pas assez de sorties avec cette donnée ({{ link.n }} sur 10 nécessaires).</p>
+  {% endif %}
+{%- endmacro %}
+{% block content %}
+<div class="head">
+  <h1>Forme</h1>
+  <span class="muted">Charge d'entraînement, récupération et ce qui influence ta vitesse</span>
+  <div class="spacer"></div>
+  <div class="chips">{% for k, v in PERIODS.items() %}<a class="chip {{ 'on' if k == period }}" href="{{ url_with(period=k) }}">{{ v }}</a>{% endfor %}</div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Charge des 7 derniers jours</small><b>{{ now.week|number }}</b><span class="sub">TRIMP, d'après la FC</span></div>
+  <div class="kpi ratio-{{ now.ratio_css }}"><small>Ratio aigu / chronique</small><b>{{ now.ratio|number(2) if now.ratio is not none else '—' }}</b><span class="sub">{{ now.ratio_label }}</span></div>
+  <div class="kpi"><small>Condition (42 j)</small><b>{{ now.ctl|number }}</b><span class="sub">ce que tu supportes</span></div>
+  <div class="kpi"><small>Fatigue (7 j)</small><b>{{ now.atl|number }}</b><span class="sub">charge récente</span></div>
+  <div class="kpi"><small>Fraîcheur</small><b class="{{ 'pos' if now.tsb and now.tsb > 5 else 'neg' if now.tsb and now.tsb < -10 }}">{{ ('+' if now.tsb and now.tsb > 0 else '') ~ (now.tsb|number) }}</b><span class="sub">{{ now.tsb_label }}</span></div>
+</div>
+
+<section class="panel">
+  <h2>Charge et forme <small>{{ load.labels[0] }} – {{ load.labels[-1] }}</small></h2>
+  <div class="chart-box lg"><canvas id="load" aria-label="Charge quotidienne, condition, fatigue et fraîcheur"></canvas></div>
+  <p class="note">Barres grises : charge de chaque jour (échelle propre, en fond). Condition : moyenne sur 42 jours (monte quand tu t'entraînes régulièrement). Fatigue : moyenne sur 7 jours. Fraîcheur = condition − fatigue (axe de droite) : négative après une période chargée, positive après du repos.
+    Calcul : TRIMP (durée × intensité cardiaque) avec FC de repos {{ load.params.rest|round|int }} bpm et FC max {{ load.params.max|round|int }} bpm ({{ load.params.max_source }}{% if load.params.max_source != 'profil' %}, <a href="{{ url_for('profile_page') }}">à préciser dans ton profil</a>{% endif %}).
+    {{ load.counted }} sortie{{ 's' if load.counted > 1 }} comptée{{ 's' if load.counted > 1 }}{% if load.missing %}, {{ load.missing }} sans FC ignorée{{ 's' if load.missing > 1 }}{% endif %}.</p>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Ratio aigu / chronique</h2>
+    <div class="chart-box"><canvas id="acwr" aria-label="Ratio aigu sur chronique, zone idéale 0,8 à 1,3"></canvas></div>
+    <p class="note">Charge moyenne des 7 derniers jours divisée par celle des 28 derniers. Bande verte : 0,8 à 1,3, la zone où la charge augmente sans à-coup. Au-dessus de 1,5, le risque de blessure augmente nettement. Pas de ratio pendant une reprise (moins de 6 jours d'entraînement sur les 28 derniers) : la base serait trop faible pour comparer. Plafonné à 3.</p>
+  </section>
+  <section class="panel">
+    <h2>Récupération <small>moyennes sur 7 jours</small></h2>
+    <div class="chart-box"><canvas id="recovery" aria-label="FC de repos, sommeil et Body Battery"></canvas></div>
+    <p class="note">FC de repos (bpm, plus bas = mieux récupéré), sommeil (heures) et Body Battery maximal (0 à 100), chacun en moyenne sur 7 jours. Une FC de repos qui monte pendant que la fatigue grimpe est un signal pour lever le pied.</p>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Variabilité cardiaque (VFC) <small>la nuit</small></h2>
+  {% if rec.has_hrv %}
+  <div class="chart-box"><canvas id="hrv" aria-label="VFC de la nuit et zone équilibrée"></canvas></div>
+  <p class="note">VFC moyenne de la nuit (ms) et ta zone « équilibrée » selon Garmin.{% if last_hrv %} Dernière nuit mesurée : {{ last_hrv.day|day }}, {{ last_hrv.hrv_night|round|int }} ms{% if last_hrv.hrv_status %}, {{ HRV_STATUS.get(last_hrv.hrv_status, last_hrv.hrv_status|lower) }}{% endif %}.{% endif %} Plus haute que d'habitude = bien récupéré ; nettement plus basse = fatigue, maladie ou stress.</p>
+  {% elif hrv_unavailable %}
+  <p class="muted small">Ta montre ne semble pas mesurer la VFC : Garmin n'en renvoie aucune pour tes dernières nuits. Les nouvelles nuits restent demandées à chaque synchro ; la courbe apparaîtra si une valeur arrive (nouvelle montre par exemple).</p>
+  {% else %}
+  <p class="muted small">Pas encore de VFC : elle est récupérée chez Garmin à la synchro, nuit par nuit (l'année passée petit à petit).</p>
+  {% endif %}
+</section>
+
+<section class="panel" id="links">
+  <div class="head">
+    <h2>Ce qui joue sur ta vitesse</h2>
+    <div class="spacer"></div>
+    <div class="chips">{% for f in fams %}<a class="chip {{ 'on' if fam and f.id == fam.id }}" href="{{ url_with(family=f.id) }}#links"><i class="ph ph-{{ f.icon or 'pulse' }} sicon" aria-hidden="true"></i>{{ f.name }}</a>{% endfor %}</div>
+  </div>
+  <p class="note">Chaque sortie est comparée à ta vitesse habituelle pour le même sport à la même époque (médiane des sorties à ±60 jours) : +3 % veut dire 3 % plus vite que d'habitude. Cela gomme les progrès sur l'année et la différence entre sports. Un lien n'est pas une cause : à lire comme une tendance.</p>
+
+  <h3>Sommeil de la nuit précédente</h3>
+  {{ link_section("Sommeil", sleep, "Nuit précédente", "heure de sommeil", "sleep") }}
+
+  <h3>Poids</h3>
+  {% if wlink.ready %}
+    {{ link_section("Poids", wlink.link, "Poids (dernière pesée)", "kg", "weight") }}
+  {% else %}
+  <div class="weight-wait">
+    <div class="goal-bar" role="img" aria-label="{{ wlink.entries }} pesées sur {{ WEIGHT_MIN }}"><i style="width: {{ [wlink.entries / WEIGHT_MIN * 100, 100]|min }}%"></i></div>
+    <p class="small">{{ wlink.entries }} pesée{{ 's' if wlink.entries > 1 }} sur {{ WEIGHT_MIN }} nécessaires, réparties sur au moins {{ WEIGHT_WEEKS }} semaines{% if wlink.weeks %} (aujourd'hui {{ wlink.weeks|round|int }}){% endif %}. Ce lien apparaîtra tout seul ensuite.
+      <a href="{{ url_for('health') }}#weight">Noter une pesée</a></p>
+  </div>
+  {% endif %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const c = {{ chart|tojson }};
+  const few = { x: { ticks: { maxTicksLimit: 8 } } };
+  chart("load", {
+    type: "bar",
+    data: { labels: c.labels, datasets: [
+      { label: "Charge du jour", data: c.load, backgroundColor: cssVar("--line"), borderWidth: 0, yAxisID: "yb", order: 3 },
+      { type: "line", label: "Condition", data: c.ctl, borderColor: cssVar("--accent"), pointRadius: 0, borderWidth: 2.5, tension: .3, order: 1 },
+      { type: "line", label: "Fatigue", data: c.atl, borderColor: cssVar("--out"), pointRadius: 0, borderWidth: 1.5, tension: .3, order: 2 },
+      { type: "line", label: "Fraîcheur", data: c.tsb, borderColor: cssVar("--in"), borderDash: [5, 4], pointRadius: 0, borderWidth: 1.5, tension: .3, yAxisID: "y2", order: 0 },
+    ] },
+  }, { scales: { ...few, y: { beginAtZero: true }, y2: { position: "right", grid: { display: false }, ticks: { color: cssVar("--muted") } },
+                 yb: { display: false, beginAtZero: true } },
+       plugins: { tooltip: { callbacks: { label: x => `${x.dataset.label} : ${fmt.num(x.parsed.y)}` } } } });
+
+  const band = (v) => c.labels.map(() => v);
+  chart("acwr", {
+    type: "line",
+    data: { labels: c.labels, datasets: [
+      { label: "Ratio", data: c.acwr, borderColor: cssVar("--ink"), pointRadius: 0, borderWidth: 2, tension: .3 },
+      { label: "1,3", data: band(1.3), borderColor: "transparent", pointRadius: 0, fill: "+1", backgroundColor: "rgba(45,122,76,.14)" },
+      { label: "0,8", data: band(0.8), borderColor: "transparent", pointRadius: 0 },
+    ] },
+  }, { scales: { ...few, y: { min: 0, suggestedMax: 2, max: 3 } },
+       plugins: { legend: { display: false }, tooltip: { filter: i => i.datasetIndex === 0, callbacks: { label: x => "Ratio : " + fmt.num(x.parsed.y, 2) } } } });
+
+  chart("recovery", {
+    type: "line",
+    data: { labels: c.labels, datasets: [
+      { label: "FC de repos", data: c.rhr7, borderColor: cssVar("--out"), pointRadius: 0, borderWidth: 2, tension: .3, spanGaps: true },
+      { label: "Sommeil (h)", data: c.sleep7, borderColor: cssVar("--accent"), pointRadius: 0, borderWidth: 2, tension: .3, yAxisID: "y2", spanGaps: true },
+      { label: "Body Battery max", data: c.bb, borderColor: cssVar("--in"), pointRadius: 0, borderWidth: 1, tension: .3, yAxisID: "y3", spanGaps: true },
+    ] },
+  }, { scales: { ...few, y: { ticks: { callback: v => v + " bpm" } }, y2: { position: "right", grid: { display: false }, ticks: { color: cssVar("--muted"), callback: v => fmt.hmm(v) } },
+                 y3: { display: false, min: 0, max: 100 } },
+       plugins: { tooltip: { callbacks: { label: x => x.dataset.yAxisID === "y2" ? `Sommeil : ${fmt.hmm(x.parsed.y)}` : `${x.dataset.label} : ${fmt.num(x.parsed.y)}` } } } });
+
+  {% if rec.has_hrv %}
+  chart("hrv", {
+    type: "line",
+    data: { labels: c.labels, datasets: [
+      { label: "VFC de la nuit", data: c.hrv, borderColor: cssVar("--accent"), pointRadius: 2, borderWidth: 1.5, spanGaps: true },
+      { label: "Zone haute", data: c.hrv_high, borderColor: "transparent", pointRadius: 0, fill: "+1", backgroundColor: "rgba(45,122,76,.14)", spanGaps: true },
+      { label: "Zone basse", data: c.hrv_low, borderColor: "transparent", pointRadius: 0, spanGaps: true },
+    ] },
+  }, { scales: { ...few, y: { ticks: { callback: v => v + " ms" } } }, plugins: { legend: { display: false } } });
+  {% endif %}
+
+  const scatter = (id, pts, xlabel, xfmt) => chart(id, {
+    type: "scatter",
+    data: { datasets: [{ data: pts, backgroundColor: cssVar("--accent"), pointRadius: 3.5 }] },
+  }, { interaction: { mode: "nearest", intersect: true },
+       scales: { x: { type: "linear", title: { display: true, text: xlabel, color: cssVar("--muted") }, ticks: { callback: xfmt } },
+                 y: { ticks: { callback: v => (v > 0 ? "+" : "") + v + " %" } } },
+       plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => `${x.raw.date} · ${x.raw.name} : ${xfmt(x.raw.x)}, ${(x.raw.y > 0 ? "+" : "") + fmt.num(x.raw.y, 1)} %` } } },
+       onClick: (_e, items, ch) => { if (items.length) location.href = "{{ url_for('activity_detail', act_id=0) }}".replace("/0", "/" + ch.data.datasets[0].data[items[0].index].id); } });
+  {% if sleep.n >= 10 %}scatter("sleep-scatter", {{ sleep.points|tojson }}, "Sommeil de la nuit précédente", v => fmt.hmm(v));{% endif %}
+  {% if wlink.ready and wlink.link.n >= 10 %}scatter("weight-scatter", {{ wlink.link.points|tojson }}, "Poids (kg)", v => fmt.num(v, 1) + " kg");{% endif %}
+});
+</script>
+{% endblock %}

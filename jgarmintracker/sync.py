@@ -256,6 +256,50 @@ def fetch_weather(session: Session, source, todo: list[Activity], notify, pause:
     return got
 
 
+HRV_BACKFILL_DAYS = 365
+HRV_GIVE_UP = 14  # nuits vides d'affilée (les plus récentes) : la montre ne mesure pas la VFC
+
+
+def fetch_hrv(session: Session, source, today: date, notify, pause: float = 0) -> int:
+    """VFC des nuits pas encore demandées : l'année passée, plus récentes d'abord. Si les 14 nuits les plus récentes
+    sont vides, on arrête l'historique (montre sans VFC) et on ne demande plus que les 3 dernières nuits."""
+    from . import form, settings
+
+    if not hasattr(source, "hrv"):
+        return 0
+    unavailable = settings.get(session, "hrv_unavailable")
+    window = 3 if unavailable else HRV_BACKFILL_DAYS
+    rows = session.scalars(select(DailyHealth).where(DailyHealth.day > today - timedelta(days=window),
+                                                     DailyHealth.raw_hrv.is_(None))
+                           .order_by(DailyHealth.day.desc())).all()
+    known = session.scalar(select(func.count()).select_from(DailyHealth).where(DailyHealth.hrv_night.is_not(None)))
+    got = empty = 0
+    for i, row in enumerate(rows, 1):
+        notify(Progress("hrv", i - 1, len(rows), row.day))
+        try:
+            raw = source.hrv(row.day)
+        except SyncError:
+            break  # facultatif : reprise à la prochaine synchro
+        for k, v in form.parse_hrv(raw).items():
+            setattr(row, k, v)
+        if row.hrv_night is not None:
+            got += 1
+            empty = 0
+            if unavailable:
+                settings.put(session, "hrv_unavailable", False)  # la montre s'est mise à la mesurer
+                unavailable = False
+        else:
+            empty += 1
+        session.commit()
+        if not unavailable and not got and not known and empty >= HRV_GIVE_UP:
+            settings.put(session, "hrv_unavailable", True)
+            session.commit()
+            break
+        if pause and i < len(rows):
+            time.sleep(pause)
+    return got
+
+
 def plan(session: Session, today: date, full: bool, days: int, history_days: int) -> tuple[date, date]:
     """Dates de départ (activités, santé). Premier lancement ou --full : tout l'historique demandé."""
     first = today - timedelta(days=history_days - 1)
@@ -315,6 +359,7 @@ def sync(session: Session, source, *, today: date | None = None, full: bool = Fa
 
         # Météo au départ, en dernier : l'historique se complète petit à petit, plus récentes d'abord.
         fetch_weather(session, source, weather.missing(session), notify, pause)
+        fetch_hrv(session, source, today, notify, pause)
 
         # Segments : nouvelles sorties qui les empruntent (et téléchargements restés en attente).
         if session.scalar(select(func.count(Segment.id))):

@@ -15,6 +15,12 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
 - [x] **Météo de la sortie** (0.13.0) : température et vent au départ (fournis par Garmin avec l'activité).
 - [x] **Segments** (0.14.0) : portion d'un parcours, définie sur la carte, chronométrée sur toutes les sorties
   qui l'empruntent (classement, record, profil d'altitude).
+- [x] **Charge d'entraînement et récupération** (0.15.0) : charge sur 7 jours face à celle sur 28 jours, mise en face de
+  la FC au repos, de la Body Battery et du sommeil.
+- [x] **VFC de la nuit** (0.15.0) : VFC et son statut Garmin (équilibrée, basse…), si la montre la mesure.
+- [x] **Lien sommeil et performance** (0.15.0) : nuage de points sommeil de la veille / allure.
+- [x] **Lien poids et performance** (0.15.0) : vitesse selon le poids de la dernière pesée, dès 10 pesées
+  sur 8 semaines.
 
 ## Plus tard
 
@@ -23,10 +29,8 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
   Garmin de plus par sortie.
 
 ### Santé
-- [ ] **Charge d'entraînement et récupération** : charge sur 7 jours face à celle sur 28 jours, mise en face de
-  la FC au repos, de la Body Battery et du sommeil.
-- [ ] **VFC et statut d'entraînement Garmin** : VFC de la nuit, statut « productif / maintien / surmenage ».
-- [ ] **Lien sommeil et performance** : nuage de points sommeil de la veille / allure.
+- [ ] **Statut d'entraînement Garmin** : « productif / maintien / surmenage » tel que calculé par Garmin (un appel
+  par jour) ; pour l'instant, la charge est calculée localement d'après la FC.
 
 ### Pratique
 - [ ] **Bilan de l'année** : totaux, mois record, plus longue sortie, matériel le plus utilisé, amis les plus
