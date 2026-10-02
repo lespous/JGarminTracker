@@ -121,6 +121,19 @@ def test_segment_pages(client):  # noqa: F811
         assert "Ligne droite" in client.get("/routes").get_data(as_text=True)
         r = client.post("/segments/create", data={"activity_id": ids[0], "start_idx": 10, "end_idx": 10}, follow_redirects=True)
         assert "Choisis un départ" in r.get_data(as_text=True)
+        # Analyse en cours (tâche de fond) : la page affiche l'avancement, le fragment se met à jour.
+        from jgarmintracker.sync import Progress
+
+        job = client.application.extensions["sync_job"]
+        job.thread = type("Alive", (), {"is_alive": lambda self: True})()
+        job.progress = Progress("segments", 3, 10)
+        try:
+            page = client.get(f"/segments/{seg_id}").get_data(as_text=True)
+            assert "Téléchargement des détails" in page and "3 / 10" in page
+            assert "3 / 10" in client.get(f"/segments/{seg_id}/progress").get_data(as_text=True)
+        finally:
+            job.thread = None
+        assert client.get(f"/segments/{seg_id}/progress").headers.get("HX-Refresh") == "true"
         client.post(f"/segments/{seg_id}/rename", data={"name": "Faux plat"})
         assert "Faux plat" in client.get(f"/segments/{seg_id}").get_data(as_text=True)
         assert "Supprimer le segment" in client.get(f"/segments/{seg_id}?confirm=1").get_data(as_text=True)

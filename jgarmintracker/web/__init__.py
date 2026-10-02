@@ -1169,7 +1169,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                  "best": [e.elapsed_s == best for e in chrono]}
         return render_template("segment.html", seg=seg, ranked=ranked, prof=prof, unit=unit, chart=chart,
                                points=tracks.loads(seg.points_json), confirm=request.args.get("confirm"),
-                               running=job.running, pending=segments_mod.missing_count(s, seg) if not job.running else 0)
+                               job=job, running=job.running,
+                               pending=segments_mod.missing_count(s, seg) if not job.running else 0)
 
     @app.get("/segments/<int:segment_id>/progress")
     def segment_progress(segment_id: int):
