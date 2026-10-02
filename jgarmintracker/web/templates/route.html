@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_weather.html" import weather_chip %}
+{% from "_segments.html" import segment_picker %}
 {% block title %}{{ r.group.name }}{% endblock %}
 {% block head %}
 <script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
@@ -38,7 +39,8 @@
   </section>
   <section class="panel">
     <h2>Tracé <small>sortie de référence</small></h2>
-    {% if points %}<div id="route-map" class="map-box" role="img" aria-label="Carte du parcours"></div>{% else %}<p class="muted small">Tracé indisponible.</p>{% endif %}
+    {% if points %}<div id="route-map" class="map-box" role="img" aria-label="Carte du parcours"></div>
+    {{ segment_picker(r.group.rep) }}{% else %}<p class="muted small">Tracé indisponible.</p>{% endif %}
   </section>
 </div>
 
@@ -83,7 +85,8 @@ document.addEventListener("DOMContentLoaded", () => {
       pointRadius: c.best.map(b => b ? 6 : 3), pointBackgroundColor: c.best.map(b => b ? cssVar("--in") : {{ color|tojson }}) }] },
   }, { plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => fmt.hms(x.parsed.y) } } },
        scales: { y: { ticks: { callback: v => fmt.hmm(v / 3600) } } } });
-  {% if points %}trackMap("route-map", {{ points|tojson }}, {{ color|tojson }});{% endif %}
+  {% if points %}const pts = {{ points|tojson }};
+  segmentPicker(trackMap("route-map", pts, {{ color|tojson }}), pts, "seg-picker");{% endif %}
 });
 </script>
 {% endblock %}

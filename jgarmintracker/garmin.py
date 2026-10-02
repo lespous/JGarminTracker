@@ -162,6 +162,11 @@ class GarminSource:
         return self.api.get_activity_details(str(garmin_id), maxchart=1, maxpoly=MAX_POINTS)
 
     @_translate
+    def details(self, garmin_id: int) -> dict | None:
+        """Données point par point (temps, position, distance, FC, altitude), pour chronométrer les segments."""
+        return self.api.get_activity_details(str(garmin_id), maxchart=4000, maxpoly=0)
+
+    @_translate
     def weather(self, garmin_id: int) -> dict | None:
         """Météo au départ (°F, mph : converti dans weather.py). Sortie sans météo : None."""
         try:

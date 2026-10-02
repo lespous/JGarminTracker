@@ -403,6 +403,62 @@ class RouteGroup(Base):
                                                       order_by="Activity.start")
 
 
+class ActivityStream(Base):
+    """Données point par point d'une activité (0.14.0), téléchargées à la demande pour chronométrer les segments.
+
+    samples_json : [[secondes depuis le départ, lat, lon, distance m, FC, altitude m], …] (FC / altitude : null
+    si absentes). n = 0 : demandé, rien reçu.
+    """
+
+    __tablename__ = "activity_streams"
+
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activities.id"), primary_key=True)
+    samples_json: Mapped[str] = mapped_column(Text, default="[]")
+    n: Mapped[int] = mapped_column(Integer, default=0)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class Segment(Base):
+    """Portion de parcours chronométrée sur toutes les sorties qui l'empruntent dans le même sens (0.14.0)."""
+
+    __tablename__ = "segments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    family_id: Mapped[int | None] = mapped_column(ForeignKey("sport_families.id"), nullable=True)
+    points_json: Mapped[str] = mapped_column(Text, default="[]")  # [[lat, lon], …] dans le sens du segment
+    distance_m: Mapped[float] = mapped_column(Float, default=0)
+    source_activity_id: Mapped[int | None] = mapped_column(ForeignKey("activities.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    family: Mapped[SportFamily | None] = relationship()
+    efforts: Mapped[list[SegmentEffort]] = relationship(back_populates="segment", cascade="all, delete-orphan",
+                                                        order_by="SegmentEffort.elapsed_s")
+
+
+class SegmentEffort(Base):
+    """Passage d'une sortie sur un segment : le meilleur si elle l'emprunte plusieurs fois."""
+
+    __tablename__ = "segment_efforts"
+    __table_args__ = (UniqueConstraint("segment_id", "activity_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    segment_id: Mapped[int] = mapped_column(ForeignKey("segments.id"), index=True)
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activities.id"), index=True)
+    elapsed_s: Mapped[float] = mapped_column(Float)
+    distance_m: Mapped[float] = mapped_column(Float)
+    start_offset_s: Mapped[float] = mapped_column(Float, default=0)  # depuis le départ de la sortie
+    avg_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    segment: Mapped[Segment] = relationship(back_populates="efforts")
+    activity: Mapped[Activity] = relationship()
+
+    @property
+    def speed(self) -> float | None:
+        return self.distance_m / self.elapsed_s if self.elapsed_s else None
+
+
 class ActivityTrack(Base):
     """Tracé GPS simplifié d'une activité (0.3.0). Table à part : la liste des activités reste légère.
 

@@ -13,6 +13,8 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
 - [x] **Parcours répétés** (0.13.0) : reconnaître les sorties faites sur le même tracé et comparer les temps (meilleur
   temps, évolution, dernière fois).
 - [x] **Météo de la sortie** (0.13.0) : température et vent au départ (fournis par Garmin avec l'activité).
+- [x] **Segments** (0.14.0) : portion d'un parcours, définie sur la carte, chronométrée sur toutes les sorties
+  qui l'empruntent (classement, record, profil d'altitude).
 
 ## Plus tard
 

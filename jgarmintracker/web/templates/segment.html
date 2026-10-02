@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% from "_weather.html" import weather_chip %}
+{% from "_segments.html" import effort_speed %}
+{% block title %}{{ seg.name }}{% endblock %}
+{% block head %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
+<script src="{{ url_for('static', filename='leaflet.js') }}" defer></script>
+<script src="{{ url_for('static', filename='maps.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1><i class="ph ph-flag-checkered" aria-hidden="true"></i> {{ seg.name }}</h1>
+    <span class="muted">Segment · {{ seg.distance_m|km }}{% if seg.family %} · {{ seg.family.name }}{% endif %} · {{ ranked|length }} passage{{ 's' if ranked|length > 1 }}</span>
+  </div>
+  <div class="spacer"></div>
+  <form method="post" action="{{ url_for('segment_refresh', segment_id=seg.id) }}"><button {{ 'disabled' if running }} title="Chercher les nouvelles sorties qui l'empruntent et télécharger ce qui manque">Réanalyser</button></form>
+  <a class="btn" href="{{ url_for('routes_page') }}#segments">Tous les segments</a>
+</div>
+
+{% if running %}
+<div id="seg-progress" hx-get="{{ url_for('segment_progress', segment_id=seg.id) }}" hx-trigger="load delay:2s, every 2s" hx-swap="innerHTML">
+  {% include "_segment_progress.html" %}
+</div>
+{% elif pending %}
+<div class="flash">{{ pending }} sortie{{ 's' if pending > 1 }} qui emprunte{{ 'nt' if pending > 1 }} ce segment n'{{ 'ont' if pending > 1 else 'a' }} pas encore de données détaillées (limite Garmin ou synchro interrompue). « Réanalyser » les télécharge, la prochaine synchro aussi.</div>
+{% endif %}
+
+{% set best = ranked[0][1] if ranked else none %}
+<div class="kpis">
+  <div class="kpi"><small>Distance</small><b>{{ seg.distance_m|km }}</b></div>
+  {% if prof %}
+  <div class="kpi"><small>Dénivelé + / −</small><b>{{ prof.gain|meters }}</b><span class="sub">− {{ prof.loss|meters }}</span></div>
+  <div class="kpi"><small>Pente moyenne · max</small><b>{{ prof.grade|number(1) }} %</b><span class="sub">max {{ prof.max_grade|number(1) if prof.max_grade is not none else '—' }} % (sur 100 m)</span></div>
+  {% endif %}
+  <div class="kpi"><small>Record</small><b>{{ best.elapsed_s|hms if best else '—' }}</b>{% if best %}<span class="sub">{{ best.activity.start|day }} · {{ effort_speed(best, unit) }}</span>{% endif %}</div>
+  {% if ranked|length > 1 %}{% set times = ranked|map(attribute='1.elapsed_s')|list %}
+  <div class="kpi"><small>Temps moyen</small><b>{{ (times|sum / times|length)|hms }}</b></div>{% endif %}
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>Tracé du segment <small>départ en vert, arrivée en rouge</small></h2>
+    <div id="seg-map" class="map-box" role="img" aria-label="Carte du segment"></div>
+  </section>
+  <section class="panel">
+    <h2>Profil d'altitude</h2>
+    {% if prof %}<div class="chart-box"><canvas id="profile" aria-label="Profil d'altitude du segment"></canvas></div>
+    {% else %}<p class="muted small">Le profil apparaît dès qu'un passage a ses données détaillées.</p>{% endif %}
+  </section>
+</div>
+
+{% if ranked %}
+  <section class="panel">
+    <h2>Temps de chaque passage <small>du plus ancien au plus récent</small></h2>
+    <div class="chart-box" style="height: 220px"><canvas id="times" aria-label="Temps de chaque passage sur le segment"></canvas></div>
+    <p class="note">Plus bas = plus rapide. Point vert : record. Temps chronométré entre les points de la sortie les plus proches du départ et de l'arrivée du segment (pauses comprises).</p>
+  </section>
+  <section class="panel">
+    <h2>Classement <small>meilleur temps d'abord</small></h2>
+    <div class="tbl">
+    <table>
+      <thead><tr><th class="r">Rang</th><th>Date</th><th></th><th>Sortie</th><th class="r">Temps</th><th class="r">Écart</th><th class="r">{{ 'Vitesse' if unit in ('kmh', 'none') else 'Allure' }}</th><th class="r">FC</th></tr></thead>
+      <tbody>
+      {% for rank, e in ranked %}
+        <tr class="{{ 'best-row' if rank == 1 }}">
+          <td class="r num">{% if rank == 1 %}<i class="ph ph-trophy" aria-hidden="true"></i> {% endif %}{{ rank }}</td>
+          <td class="num">{{ e.activity.start|day }}</td>
+          <td class="wx-cell">{{ weather_chip(e.activity.weather) }}</td>
+          <td class="name"><a href="{{ url_for('activity_detail', act_id=e.activity_id) }}#segments">{{ e.activity.name }}</a></td>
+          <td class="r num">{{ e.elapsed_s|hms }}</td>
+          <td class="r num muted">{{ '+' ~ (e.elapsed_s - best.elapsed_s)|hms if rank > 1 else '—' }}</td>
+          <td class="r num">{{ effort_speed(e, unit) }}</td>
+          <td class="r num">{{ e.avg_hr|round|int if e.avg_hr else '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+{% elif not running %}
+<section class="panel"><p class="muted">Aucun passage chronométré pour l'instant.</p></section>
+{% endif %}
+
+<section class="panel">
+  <h2>Modifier</h2>
+  <form class="filters" method="post" action="{{ url_for('segment_rename', segment_id=seg.id) }}">
+    <label>Nom<input name="name" value="{{ seg.name }}" maxlength="120" size="36" required></label>
+    <button class="primary">Renommer</button>
+    <a class="btn danger" href="{{ url_for('segment_detail', segment_id=seg.id, confirm=1) }}#delete">Supprimer</a>
+  </form>
+  {% if confirm %}
+  <form class="confirm" id="delete" method="post" action="{{ url_for('segment_delete', segment_id=seg.id) }}">
+    <span>Supprimer le segment « {{ seg.name }} » et ses {{ ranked|length }} temps ? Les sorties et leurs données détaillées restent.</span>
+    <div class="actions"><a class="btn" href="{{ url_for('segment_detail', segment_id=seg.id) }}">Annuler</a><button class="primary">Supprimer</button></div>
+  </form>
+  {% endif %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  trackMap("seg-map", {{ points|tojson }}, "#FFB000");
+  {% if prof %}
+  const p = {{ {'km': prof.km, 'ele': prof.ele}|tojson }};
+  chart("profile", {
+    type: "line",
+    data: { labels: p.km.map(k => fmt.num(k, 2)), datasets: [{ label: "Altitude", data: p.ele, borderColor: cssVar("--accent"),
+      backgroundColor: cssVar("--accent-soft"), fill: true, pointRadius: 0, tension: .2 }] },
+  }, { plugins: { legend: { display: false }, tooltip: { callbacks: { title: i => "km " + i[0].label, label: c => fmt.num(c.parsed.y) + " m" } } },
+       scales: { x: { ticks: { maxTicksLimit: 8, callback: function (v) { return this.getLabelForValue(v) + " km"; } } },
+                 y: { ticks: { callback: v => v + " m" } } } });
+  {% endif %}
+  {% if ranked %}
+  const c = {{ chart|tojson }};
+  chart("times", {
+    type: "line",
+    data: { labels: c.labels, datasets: [{ label: "Temps", data: c.secs, borderColor: "#FFB000", tension: .2,
+      pointRadius: c.best.map(b => b ? 6 : 3), pointBackgroundColor: c.best.map(b => b ? cssVar("--in") : "#FFB000") }] },
+  }, { plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => fmt.hms(x.parsed.y) } } },
+       scales: { y: { ticks: { callback: v => fmt.hms(v) } } } });
+  {% endif %}
+});
+</script>
+{% endblock %}

@@ -27,7 +27,7 @@ def test_every_icon_has_a_css_rule():
     declared = set(re.findall(r"\.ph-([a-z0-9-]+):before", css))
     used = (set(ICONS) | set(gear.ICONS) | {icon for _label, icon, _color in gear.KINDS.values()}
             | {icon for _words, _label, icon in weather.SKIES} | {"thermometer"})
-    utility = {"lock-simple", "download-simple", "warning", "arrow-up"}
+    utility = {"lock-simple", "download-simple", "warning", "arrow-up", "flag-checkered"}
     assert used <= declared and declared - used == utility
     assert (STATIC / "Phosphor.woff2").stat().st_size > 100_000
 

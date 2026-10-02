@@ -1,0 +1,23 @@
+{# Panneau « Créer un segment » sous la carte d'une sortie (act) ; maps.js segmentPicker l'anime. #}
+{% macro segment_picker(act, picker_id='seg-picker') -%}
+  <details class="seg-picker" id="{{ picker_id }}">
+    <summary><i class="ph ph-flag-checkered" aria-hidden="true"></i> Créer un segment sur ce tracé</summary>
+    <form method="post" action="{{ url_for('segment_create') }}" class="seg-form">
+      <p class="seg-status small">Clique sur le tracé à l'endroit où commence le segment.</p>
+      <input type="hidden" name="activity_id" value="{{ act.id }}">
+      <input type="hidden" name="start_idx"><input type="hidden" name="end_idx">
+      <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+      <div class="filters">
+        <label>Nom du segment<input name="name" maxlength="120" placeholder="ex. Montée du terril" size="30"></label>
+        <button type="button" class="seg-reset">Recommencer</button>
+        <button type="submit" class="primary" disabled>Créer et analyser</button>
+      </div>
+      <p class="note">Toutes les sorties de la même famille qui empruntent cette portion dans le même sens seront chronométrées. Leurs données détaillées (temps point par point) sont téléchargées une fois chez Garmin.</p>
+    </form>
+  </details>
+{%- endmacro %}
+
+{# Temps d'un passage : « 3min12s », allure ou vitesse selon le sport. #}
+{% macro effort_speed(e, unit) -%}
+  {{ e.speed|pace(unit if unit != 'none' else 'kmh') }}
+{%- endmacro %}

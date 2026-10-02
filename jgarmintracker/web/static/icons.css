@@ -80,3 +80,5 @@
 .ph-cloud:before { content: "\e1aa"; }
 .ph-thermometer:before { content: "\e5c6"; }
 .ph-arrow-up:before { content: "\e08e"; }
+/* Segments (0.14.0) */
+.ph-flag-checkered:before { content: "\ea38"; }

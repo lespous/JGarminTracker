@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import friend_avatar, gear_avatar %}
 {% from "_weather.html" import weather_panel %}
+{% from "_segments.html" import segment_picker, effort_speed %}
 {% block title %}{{ a.name }}{% endblock %}
 {% block head %}{% if points %}
 <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}">
@@ -85,13 +86,41 @@
 <section class="panel">
   <h2>Parcours <small>{{ points|length }} points · départ en vert, arrivée en rouge</small></h2>
   <div id="track-map" class="map-box" role="img" aria-label="Carte du parcours"></div>
+  {{ segment_picker(a) }}
   <p class="note">Fond de carte © contributeurs OpenStreetMap, chargé depuis internet. Le tracé, lui, vient de ta base locale.</p>
 </section>
 <script>
-document.addEventListener("DOMContentLoaded", () => trackMap("track-map", {{ points|tojson }}, {{ (a.sport.color if a.sport else '#2A6B62')|tojson }}));
+document.addEventListener("DOMContentLoaded", () => {
+  const pts = {{ points|tojson }};
+  segmentPicker(trackMap("track-map", pts, {{ (a.sport.color if a.sport else '#2A6B62')|tojson }}), pts, "seg-picker");
+});
 </script>
 {% elif a.track %}
 <p class="note">Pas de tracé GPS pour cette activité (en salle, ou GPS coupé).</p>
+{% endif %}
+
+{% if efforts %}
+<section class="panel" id="segments">
+  <h2>Segments traversés <small>{{ efforts|length }}</small></h2>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Segment</th><th class="r">Distance</th><th class="r">Temps</th><th class="r">Vitesse / allure</th><th class="r">FC moy.</th><th class="r">Rang</th><th class="r">Record</th></tr></thead>
+    <tbody>
+    {% for x in efforts %}
+      <tr class="{{ 'best-row' if x.rank == 1 and x.total > 1 }}">
+        <td class="name"><a href="{{ url_for('segment_detail', segment_id=x.segment.id) }}">{{ x.segment.name }}</a></td>
+        <td class="r num">{{ x.segment.distance_m|km }}</td>
+        <td class="r num">{{ x.effort.elapsed_s|hms }}</td>
+        <td class="r num">{{ effort_speed(x.effort, unit) }}</td>
+        <td class="r num">{{ x.effort.avg_hr|round|int if x.effort.avg_hr else '—' }}</td>
+        <td class="r num">{% if x.rank == 1 and x.total > 1 %}<i class="ph ph-trophy" aria-hidden="true"></i> {% endif %}{{ x.rank or '—' }} / {{ x.total }}</td>
+        <td class="r num muted">{{ x.best.elapsed_s|hms if x.best else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
 {% endif %}
 
 {% set zones = a.hr_zones %}

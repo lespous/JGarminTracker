@@ -34,6 +34,7 @@ from .. import goals as goals_mod
 from .. import maintenance
 from .. import routes as routes_mod
 from .. import weather as weather_mod
+from .. import segments as segments_mod
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -46,6 +47,8 @@ from ..models import (
     Goal,
     Profile,
     RouteGroup,
+    Segment,
+    SegmentEffort,
     Sport,
     SportFamily,
     SportRule,
@@ -146,32 +149,37 @@ class SyncJob:
     def running(self) -> bool:
         return bool(self.thread and self.thread.is_alive())
 
-    def start(self, make_source, full: bool = False, inline: bool = False, history: dict | None = None) -> bool:
-        """history = {start, end, activities, health} : récupération d'une période passée (page Historique)."""
+    def start(self, make_source, full: bool = False, inline: bool = False, history: dict | None = None,
+              segment_ids: list[int] | None = None) -> bool:
+        """history = {start, end, activities, health} : récupération d'une période passée (page Historique).
+        segment_ids : analyse de segments (téléchargement des données point par point des sorties concernées)."""
         with self.lock:
             if self.running:
                 return False
             self.progress, self.started = Progress("connect"), datetime.now()
-            self.thread = threading.Thread(target=self._run, args=(make_source, full, history), daemon=True)
+            args = (make_source, full, history, segment_ids)
+            self.thread = threading.Thread(target=self._run, args=args, daemon=True)
             if inline:
-                self._run(make_source, full, history)
+                self._run(*args)
                 self.thread = None
             else:
                 self.thread.start()
             return True
 
-    def _run(self, make_source, full: bool, history: dict | None = None):
+    def _run(self, make_source, full: bool, history: dict | None = None, segment_ids: list[int] | None = None):
         from ..garmin import SyncError
 
         with dbm.new_session() as s:
             try:
                 source = make_source()
             except SyncError as e:
-                mode = "history" if history else "full" if full else "incremental"
+                mode = "segments" if segment_ids else "history" if history else "full" if full else "incremental"
                 s.add(SyncRun(mode=mode, status="error", message=str(e), finished_at=datetime.now()))
                 s.commit()
                 return
-            if history:
+            if segment_ids:
+                segments_mod.analyse(s, source, segment_ids, self._on_progress)
+            elif history:
                 sync_history(s, source, progress=self._on_progress, **history)
             else:
                 run_sync(s, source, full=full, progress=self._on_progress, **sync_options(s))
@@ -260,7 +268,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         return render_template(
             "dashboard.html", wc=week_compare(s, t), volume=weekly_volume(s, t, 12, metric), metric=metric,
             health=health_series(s, t, 30), hs=health_summary(s, t, 7), today=t, last_weight=weight.latest(s),
-            goals=goals_mod.all_progress(s, t),
+            goals=goals_mod.all_progress(s, t), seg_records=segments_mod.recent_records(s, datetime.now()),
             recent=s.scalars(select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
                              .where(Activity.excluded.is_(False)).order_by(Activity.start.desc()).limit(6)).all(),
         )
@@ -346,6 +354,16 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                 out.append((kind, label, items, current))
         return out
 
+    def activity_efforts(s, act: Activity) -> list:
+        """Segments traversés par la sortie : (segment, passage, rang, nombre de passages, record)."""
+        out = []
+        for e in s.scalars(select(SegmentEffort).where(SegmentEffort.activity_id == act.id)):
+            ranked = segments_mod.ranked(e.segment)
+            rank = next((r for r, x in ranked if x.id == e.id), None)
+            out.append(SimpleNamespace(segment=e.segment, effort=e, rank=rank, total=len(ranked),
+                                       best=ranked[0][1] if ranked else None))
+        return sorted(out, key=lambda x: x.effort.start_offset_s)
+
     @app.get("/activities/<int:act_id>")
     def activity_detail(act_id: int):
         s = db()
@@ -362,6 +380,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         return render_template("activity.html", a=act, families=load_families(s), splits=splits, points=points,
                                all_friends=s.scalars(select(Friend).order_by(Friend.first_name)).all(),
                                gear_choices=gear_choices(s, act), back_url=back_url, route=route,
+                               efforts=activity_efforts(s, act),
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
     # ---------------------------------------------------------------- carte de tous les parcours
@@ -1078,7 +1097,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             rows.sort(key=lambda r: r.last.activity.start, reverse=True)
         else:
             rows.sort(key=lambda r: (-r.count, r.group.name))
-        return render_template("routes.html", rows=rows, families=families, fam=fam, order=order)
+        segs = [(seg, segments_mod.ranked(seg)) for seg in s.scalars(select(Segment).order_by(Segment.name))]
+        return render_template("routes.html", rows=rows, families=families, fam=fam, order=order, segs=segs)
 
     @app.get("/routes/<int:route_id>")
     def route_detail(route_id: int):
@@ -1111,6 +1131,78 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s.commit()
         flash(f"Parcours recalculés : {res['routes']} parcours répétés, {res['activities']} sorties regroupées.")
         return redirect(url_for("routes_page"))
+
+    # ---------------------------------------------------------------- segments
+    def start_segment_job(seg_ids: list[int]) -> bool:
+        return job.start(app.config["SYNC_SOURCE"], inline=app.config["SYNC_INLINE"], segment_ids=seg_ids)
+
+    @app.post("/segments/create")
+    def segment_create():
+        s = db()
+        act = s.get(Activity, request.form.get("activity_id", type=int) or 0) or abort(404)
+        try:
+            seg = segments_mod.create(s, act, request.form.get("start_idx", type=int, default=-1),
+                                      request.form.get("end_idx", type=int, default=-1), request.form.get("name", ""))
+        except ValueError as e:
+            flash(str(e), "error")
+            return back()
+        s.commit()
+        if start_segment_job([seg.id]):
+            flash(f"Segment « {seg.name} » créé. Recherche des sorties qui l'empruntent et téléchargement de leurs détails…")
+        else:
+            flash(f"Segment « {seg.name} » créé. Une synchro est en cours : relance l'analyse quand elle sera finie.")
+        return redirect(url_for("segment_detail", segment_id=seg.id))
+
+    @app.get("/segments/<int:segment_id>")
+    def segment_detail(segment_id: int):
+        s = db()
+        seg = s.get(Segment, segment_id) or abort(404)
+        ranked = segments_mod.ranked(seg)
+        prof = segments_mod.profile(s, seg)
+        unit = "none"
+        if seg.family:
+            units_ = [sp.pace_unit for sp in seg.family.sports if sp.pace_unit != "none"]
+            unit = max(set(units_), key=units_.count) if units_ else "none"
+        chrono = sorted((e for _r, e in ranked), key=lambda e: e.activity.start)
+        best = ranked[0][1].elapsed_s if ranked else None
+        chart = {"labels": [units.day(e.activity.start) for e in chrono], "secs": [e.elapsed_s for e in chrono],
+                 "best": [e.elapsed_s == best for e in chrono]}
+        return render_template("segment.html", seg=seg, ranked=ranked, prof=prof, unit=unit, chart=chart,
+                               points=tracks.loads(seg.points_json), confirm=request.args.get("confirm"),
+                               running=job.running, pending=segments_mod.missing_count(s, seg) if not job.running else 0)
+
+    @app.get("/segments/<int:segment_id>/progress")
+    def segment_progress(segment_id: int):
+        if not job.running:
+            return Response(status=204, headers={"HX-Refresh": "true"})
+        return render_template("_segment_progress.html", job=job, segment_id=segment_id)
+
+    @app.post("/segments/<int:segment_id>/refresh")
+    def segment_refresh(segment_id: int):
+        seg = db().get(Segment, segment_id) or abort(404)
+        if not start_segment_job([seg.id]):
+            flash("Une synchro est déjà en cours : réessaie quand elle sera finie.", "error")
+        return redirect(url_for("segment_detail", segment_id=seg.id))
+
+    @app.post("/segments/<int:segment_id>/rename")
+    def segment_rename(segment_id: int):
+        s = db()
+        seg = s.get(Segment, segment_id) or abort(404)
+        if name := request.form.get("name", "").strip()[:120]:
+            seg.name = name
+            s.commit()
+            flash(f"Segment renommé « {name} ».")
+        return redirect(url_for("segment_detail", segment_id=seg.id))
+
+    @app.post("/segments/<int:segment_id>/delete")
+    def segment_delete(segment_id: int):
+        s = db()
+        seg = s.get(Segment, segment_id) or abort(404)
+        name = seg.name
+        s.delete(seg)
+        s.commit()
+        flash(f"Segment « {name} » supprimé (les sorties et leurs détails restent).")
+        return redirect(url_for("routes_page") + "#segments")
 
     # ---------------------------------------------------------------- progression
     @app.get("/progress")

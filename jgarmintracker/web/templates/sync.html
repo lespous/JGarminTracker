@@ -50,7 +50,7 @@
       <tr>
         <td class="num">{{ r.started_at.strftime('%d/%m/%Y %H:%M') }}</td>
         <td class="num">{{ ((r.finished_at - r.started_at).total_seconds())|hms if r.finished_at else '…' }}</td>
-        <td>{{ {'full': 'complète', 'history': 'historique'}.get(r.mode, 'incrémentale') }}</td>
+        <td>{{ {'full': 'complète', 'history': 'historique', 'segments': 'segments'}.get(r.mode, 'incrémentale') }}</td>
         <td class="status-{{ r.status }}">{{ {'ok': 'terminée', 'error': 'erreur', 'running': 'en cours'}[r.status] }}</td>
         <td class="r num">{{ r.activities_added }}</td><td class="r num">{{ r.activities_updated }}</td>
         <td class="r num">{{ r.days_added }}</td><td class="r num">{{ r.days_updated }}</td><td class="r num">{{ r.tracks_added }}</td>

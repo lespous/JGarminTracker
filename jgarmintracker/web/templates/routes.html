@@ -15,6 +15,29 @@
   </div>
 </div>
 
+<section class="panel" id="segments">
+  <h2>Segments <small>{{ segs|length }}</small></h2>
+  {% if segs %}
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Segment</th><th>Sports</th><th class="r">Distance</th><th class="r">Passages</th><th class="r">Record</th><th>Le</th></tr></thead>
+    <tbody>
+    {% for seg, ranked in segs %}
+      <tr><td class="name"><a href="{{ url_for('segment_detail', segment_id=seg.id) }}">{{ seg.name }}</a></td>
+        <td class="small">{% if seg.family %}<i class="ph ph-{{ seg.family.icon or 'pulse' }} sicon" aria-hidden="true"></i>{{ seg.family.name }}{% endif %}</td>
+        <td class="r num">{{ seg.distance_m|km }}</td>
+        <td class="r num">{{ ranked|length }}</td>
+        <td class="r num">{{ ranked[0][1].elapsed_s|hms if ranked else '—' }}</td>
+        <td class="num">{{ ranked[0][1].activity.start|day if ranked else '' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted small">Aucun segment. Ouvre un parcours ou une sortie, puis « Créer un segment sur ce tracé » sous la carte : clique sur le départ puis sur l'arrivée de la portion à chronométrer (une montée, une ligne droite…).</p>
+  {% endif %}
+</section>
+
 {% if rows %}
 <div class="route-grid">
   {% for r in rows %}
@@ -37,6 +60,8 @@
 {% else %}
 <section class="panel"><p class="muted">Aucun parcours fait au moins deux fois pour l'instant. Les parcours se repèrent à partir des tracés GPS récupérés à la synchro.</p></section>
 {% endif %}
+
+
 
 <section class="panel">
   <p class="note">Même parcours : même famille de sports, distance à 5 % près, départ et arrivée à moins de 300 m, et au moins 80 % du tracé en commun dans le même sens. Le calcul se refait après chaque synchro qui apporte de nouveaux tracés. Les sorties exclues des statistiques ne comptent pas.</p>

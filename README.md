@@ -119,6 +119,13 @@ des tracés (calcul local), avec classement des passages et courbe des temps. Ch
 au départ (Garmin, station la plus proche, convertie en °C et km/h), visible dans sa fiche, dans la liste et dans
 Progression (allure selon la température et le vent).
 
+## Segments
+
+Sous la carte d'une sortie ou d'un parcours : « Créer un segment sur ce tracé » (clic sur le départ puis sur
+l'arrivée). Les sorties qui empruntent la portion dans le même sens sont repérées avec les tracés locaux, puis
+leurs données point par point sont téléchargées une fois pour les chronométrer : classement, record, profil
+d'altitude, et « Segments traversés » dans la fiche de chaque sortie.
+
 ## Données
 
 Tout est stocké en unités SI (secondes, mètres, m/s) ; la conversion (km, min/km, km/h, min/100 m, durées « 3 h 56 »)

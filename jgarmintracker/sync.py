@@ -20,10 +20,10 @@ from typing import Callable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import gear, routes, tracks, weather
+from . import gear, routes, segments, tracks, weather
 from .classifier import Classifier
 from .garmin import GarminError, SyncError
-from .models import Activity, ActivityTrack, DailyHealth, SyncRun
+from .models import Activity, ActivityTrack, DailyHealth, Segment, SyncRun
 
 DEFAULT_HISTORY_DAYS = 365
 RESYNC_DAYS = 3  # Garmin complète les nuits et les résumés après coup
@@ -315,6 +315,11 @@ def sync(session: Session, source, *, today: date | None = None, full: bool = Fa
 
         # Météo au départ, en dernier : l'historique se complète petit à petit, plus récentes d'abord.
         fetch_weather(session, source, weather.missing(session), notify, pause)
+
+        # Segments : nouvelles sorties qui les empruntent (et téléchargements restés en attente).
+        if session.scalar(select(func.count(Segment.id))):
+            segments.refresh(session, source, notify=notify)
+            session.commit()
         run.status = "ok"
         notify(Progress("done", len(span), len(span)))
     except SyncError as e:
@@ -400,4 +405,5 @@ def estimate_seconds(days: int, activities: int = 0) -> int:
 
 
 def last_run(session: Session) -> SyncRun | None:
-    return session.scalar(select(SyncRun).order_by(SyncRun.id.desc()).limit(1))
+    """Dernière synchro (les analyses de segments, lancées à part, ne comptent pas)."""
+    return session.scalar(select(SyncRun).where(SyncRun.mode != "segments").order_by(SyncRun.id.desc()).limit(1))

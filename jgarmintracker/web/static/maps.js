@@ -79,6 +79,55 @@ function homePicker(id, home, fallback) {
   return map;
 }
 
+// Création d'un segment sur la carte d'une sortie : clic sur le départ, puis sur l'arrivée (plus loin dans le sens
+// de la sortie). Actif seulement quand le panneau <details id="pickerId"> est ouvert ; remplit son formulaire.
+function segmentPicker(map, points, pickerId) {
+  const box = document.getElementById(pickerId);
+  if (!map || !box || points.length < 2) return;
+  const form = box.querySelector("form"), status = box.querySelector(".seg-status"), btn = form.querySelector("button[type=submit]");
+  const cum = [0];
+  for (let k = 1; k < points.length; k++) cum.push(cum[k - 1] + map.distance(points[k - 1], points[k]));
+  const fmtKm = (m) => (m / 1000).toLocaleString("fr-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " km";
+  let start = null, end = null, layers = [];
+
+  const nearest = (latlng, from) => {
+    let best = -1, bestD = Infinity;
+    for (let k = from; k < points.length; k++) {
+      const d = map.distance(latlng, points[k]);
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    return [best, bestD];
+  };
+  const clear = () => { layers.forEach(l => l.remove()); layers = []; };
+  const draw = () => {
+    clear();
+    if (start !== null) layers.push(L.circleMarker(points[start], { radius: 8, color: "#fff", weight: 3, fillColor: "#2D7A4C", fillOpacity: 1 }).addTo(map));
+    if (end !== null) {
+      layers.push(L.polyline(points.slice(start, end + 1), { color: "#FFB000", weight: 7, opacity: .95 }).addTo(map));
+      layers.push(L.circleMarker(points[end], { radius: 8, color: "#fff", weight: 3, fillColor: "#A8413A", fillOpacity: 1 }).addTo(map));
+    }
+    form.start_idx.value = start ?? "";
+    form.end_idx.value = end ?? "";
+    btn.disabled = end === null;
+    status.textContent = start === null ? "Clique sur le tracé à l'endroit où commence le segment."
+      : end === null ? `Départ au km ${fmtKm(cum[start]).replace(" km", "")}. Clique maintenant sur l'arrivée, plus loin dans le sens de la sortie.`
+      : `Segment de ${fmtKm(cum[end] - cum[start])}, du km ${fmtKm(cum[start]).replace(" km", "")} au km ${fmtKm(cum[end]).replace(" km", "")}. Donne-lui un nom et enregistre.`;
+  };
+  map.on("click", (e) => {
+    if (!box.open) return;
+    const picking = start === null || end !== null ? "start" : "end";
+    const [idx, d] = nearest(e.latlng, picking === "start" ? 0 : start + 1);
+    if (idx < 0 || d > 150) { status.textContent = "Clique plus près du tracé (à moins de 150 m)."; return; }
+    if (picking === "start") { start = idx; end = null; } else { end = idx; }
+    draw();
+  });
+  box.querySelector(".seg-reset").addEventListener("click", () => { start = end = null; draw(); });
+  box.addEventListener("toggle", () => {
+    map.getContainer().classList.toggle("picking", box.open);
+    if (!box.open) { start = end = null; clear(); } else draw();
+  });
+}
+
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }

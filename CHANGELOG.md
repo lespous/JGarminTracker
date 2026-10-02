@@ -3,6 +3,21 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.14.0 — 2026-10-02
+
+### Ajouté
+- **Segments** : sous la carte d'une sortie ou d'un parcours, « Créer un segment sur ce tracé » ; un clic sur le
+  départ, un clic sur l'arrivée, un nom. Toutes les sorties de la même famille qui empruntent la portion dans le
+  même sens sont retrouvées à partir des tracés (sans appel Garmin), puis chronométrées d'après leurs données
+  point par point (temps, position, distance, FC, altitude), téléchargées une fois et seulement pour ces sorties.
+- Page d'un segment : record, temps moyen, profil d'altitude (dénivelé, pente moyenne et maximale sur 100 m),
+  carte, courbe des temps et classement de tous les passages (écart au record, allure, FC, météo). Renommer,
+  supprimer, réanalyser. Liste des segments dans l'onglet Parcours.
+- Fiche d'une sortie : « Segments traversés » avec le temps, le rang et le record de chacun.
+- Tableau de bord : bandeau « Nouveau record sur … » pendant 7 jours après un record battu.
+- La synchro chronomètre les nouvelles sorties sur les segments existants ; une analyse lancée depuis un segment
+  apparaît dans le journal des synchros (type « segments »).
+
 ## 0.13.0 — 2026-10-02
 
 ### Ajouté

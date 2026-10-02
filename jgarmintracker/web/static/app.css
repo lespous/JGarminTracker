@@ -518,3 +518,14 @@ td.when .hour { display: inline-flex; align-items: center; }
 .pb { color: var(--in); font-weight: 600; }
 tr.best-row td { font-weight: 600; }
 tr.best-row .ph-trophy { color: var(--warn); }
+
+/* Segments (0.14.0) */
+.seg-picker { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; }
+.seg-picker[open] { border-color: #FFB000; background: color-mix(in oklab, #FFB000 6%, var(--surface)); }
+.seg-picker > summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.seg-picker > summary .ph { color: #C98A00; font-size: 1.1rem; }
+.seg-form { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.seg-status { margin: 0; font-weight: 500; }
+.map-box.picking, .map-box.picking .leaflet-interactive { cursor: crosshair; }
+.record-banner > .ph { color: var(--warn); }
+h1 .ph-flag-checkered { color: #C98A00; }

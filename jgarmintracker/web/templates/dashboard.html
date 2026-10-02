@@ -25,6 +25,15 @@
 </form>
 {% endif %}
 
+{% for r in seg_records %}
+<div class="weigh-banner record-banner">
+  <i class="ph ph-trophy" aria-hidden="true"></i>
+  <span><b>Nouveau record sur « {{ r.segment.name }} »</b>
+    <span class="muted small">{{ r.effort.elapsed_s|hms }} le {{ r.effort.activity.start|day }} ({{ r.effort.activity.name }}), {{ r.gain_s|hms }} de mieux que l'ancien record.</span></span>
+  <a class="btn" href="{{ url_for('segment_detail', segment_id=r.segment.id) }}">Voir le classement</a>
+</div>
+{% endfor %}
+
 {% for st in maintenance_due %}
 <form class="weigh-banner service-banner" method="post" action="{{ url_for('gear_task_done', task_id=st.task.id) }}">
   <i class="ph ph-wrench" aria-hidden="true"></i>

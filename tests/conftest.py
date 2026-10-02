@@ -47,6 +47,13 @@ class FakeSource:
         self.tracks_asked.append(garmin_id)
         return self.tracks.get(str(garmin_id))
 
+    DETAILS: dict[int, dict] = {}  # données point par point inventées, posées par les tests des segments
+    details_asked: list[int] = []
+
+    def details(self, garmin_id: int):
+        self.details_asked = [*self.details_asked, garmin_id]
+        return self.DETAILS.get(garmin_id)
+
     weather_before_429: int | None = None
     weather_asked: list[int] = []
 

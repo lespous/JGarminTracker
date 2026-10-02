@@ -1,0 +1,10 @@
+{% set p = job.progress %}
+<div class="flash">
+  <p class="status-running">
+    {% if not p or p.step == 'connect' %}Reprise de la session Garmin…
+    {% elif p.step == 'segments' %}Téléchargement des détails des sorties qui empruntent ce segment : {{ p.done }} / {{ p.total }}{% if p.day %} (sortie du {{ p.day|day }}){% endif %}
+    {% else %}Synchro en cours… l'analyse du segment se fera à la fin.{% endif %}
+  </p>
+  {% if p and p.total %}<div class="progress-bar"><i style="width: {{ (p.done / p.total * 100)|round|int }}%"></i></div>{% endif %}
+  <p class="muted small">La page se met à jour toute seule à la fin. Tu peux la quitter : l'analyse continue tant que le serveur tourne.</p>
+</div>
