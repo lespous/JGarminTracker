@@ -19,6 +19,7 @@
     <span class="wear {{ 'warn' if w.warn }}" role="img" aria-label="Usure {{ (w.ratio * 100)|round|int }} %"><i style="width: {{ [w.ratio * 100, 100]|min }}%"></i></span>
     <span class="wear-l small"><span>{% if w.worn %}<i class="ph ph-warning" aria-hidden="true"></i> À remplacer{% else %}Usure {{ (w.ratio * 100)|round|int }} %{% endif %}</span><span class="num">{{ w.km|number }} / {{ w.max_km|number }} km</span></span>
     {% endif %}
+    {% for t in tasks.get(g.id, []) %}<span class="task-alert small {{ 'due' if t.due }}"><i class="ph ph-wrench" aria-hidden="true"></i> {{ t.task.name }} : {{ t.text }}</span>{% endfor %}
     {% if g.default_sports and not g.retired %}<span class="small muted gear-defaults">Par défaut : {{ g.default_sports|map(attribute='name')|join(', ') }}</span>{% endif %}
   </a>
 {%- endmacro %}

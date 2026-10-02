@@ -30,6 +30,8 @@ from ..classifier import (
 )
 from .. import checks, icons, photos, settings, themes, tracks, weight
 from .. import gear as gear_mod
+from .. import goals as goals_mod
+from .. import maintenance
 from ..models import (
     PACE_UNITS,
     Activity,
@@ -37,6 +39,9 @@ from ..models import (
     DailyHealth,
     Friend,
     Gear,
+    GearService,
+    GearTask,
+    Goal,
     Profile,
     Sport,
     SportFamily,
@@ -207,6 +212,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0), ICONS=icons.ICONS,
         initials=photos.initials, hue=photos.hue,
         GEAR_KINDS=gear_mod.KINDS, GEAR_ICONS=gear_mod.ICONS, gear_icon=gear_mod.icon_of,
+        GOAL_METRICS=goals_mod.METRICS, GOAL_PERIODS=goals_mod.PERIODS, goal_fmt=goals_mod.fmt, goal_title=goals_mod.title,
+        TASK_SUGGESTIONS=maintenance.SUGGESTIONS,
     )
 
     @app.teardown_appcontext
@@ -230,6 +237,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "checks_count": checks.count_issues(s) if request.endpoint not in ("sync_chip", "static") else 0,
             "me": s.get(Profile, 1),
             "weight_due": weight.reminder(s, today()) if request.endpoint not in ("sync_chip", "static") else None,
+            "maintenance_due": maintenance.due(s, today()) if request.endpoint not in ("sync_chip", "static") else [],
             "theme_css": themes.theme_css(settings.active_palette(s), mode),
         }
 
@@ -249,6 +257,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         return render_template(
             "dashboard.html", wc=week_compare(s, t), volume=weekly_volume(s, t, 12, metric), metric=metric,
             health=health_series(s, t, 30), hs=health_summary(s, t, 7), today=t, last_weight=weight.latest(s),
+            goals=goals_mod.all_progress(s, t),
             recent=s.scalars(select(Activity).options(joinedload(Activity.sport).joinedload(Sport.family))
                              .where(Activity.excluded.is_(False)).order_by(Activity.start.desc()).limit(6)).all(),
         )
@@ -351,8 +360,9 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
     def map_page():
         s = db()
         label, sport_ids, _unit, sel = resolve_selection(s, request.args.get("sport"))
+        view = "heat" if request.args.get("view") == "heat" else "routes"
         months = request.args.get("months", type=int)
-        months = months if months in (1, 3, 6, 12, 24, 0) else 12
+        months = months if months in (1, 3, 6, 12, 24, 0) else 0 if view == "heat" else 12  # chaleur : tout par défaut
         stmt = (select(Activity, ActivityTrack.points_json)
                 .join(ActivityTrack, ActivityTrack.activity_id == Activity.id)
                 .options(joinedload(Activity.sport).joinedload(Sport.family))
@@ -376,7 +386,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         places = Counter(r["place"] for r in routes).most_common()
         home, manual = settings.home(s)
         return render_template("map.html", routes=routes, legend=legend, families=load_families(s), sel=sel,
-                               label=label, months=months, places=places, home=home, home_manual=manual,
+                               label=label, months=months, places=places, home=home, home_manual=manual, view=view,
                                total_km=sum(a.distance_m or 0 for a, _ in rows))
 
     @app.get("/activities/<int:act_id>/sport")
@@ -651,7 +661,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         s = db()
         rows = gear_rows(s)
         pre = s.get(Gear, request.args.get("assign", type=int) or 0) or next((r[0] for r in rows if not r[0].retired), None)
-        return render_template("gear.html", rows=rows, families=load_families(s), pre=pre,
+        tasks = {r[0].id: [st for st in maintenance.gear_status(s, r[0], today()) if st.due or st.soon] for r in rows}
+        return render_template("gear.html", rows=rows, families=load_families(s), pre=pre, tasks=tasks,
                                pre_sports={sp.id for sp in pre.default_sports} if pre else set())
 
     @app.post("/gear/add")
@@ -676,7 +687,9 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         st = friend_stats(g)
         return render_template("gear_item.html", g=g, st=st, w=gear_mod.wear(g, st.totals.distance_m),
                                cost=gear_mod.cost_per_km(g, st.totals.distance_m), families=load_families(s),
-                               defaults={sp.id for sp in g.default_sports}, confirm=request.args.get("confirm"))
+                               defaults={sp.id for sp in g.default_sports}, confirm=request.args.get("confirm"),
+                               tasks=maintenance.gear_status(s, g, today()), today=today(),
+                               task_confirm=request.args.get("task_confirm", type=int))
 
     @app.post("/gear/<int:gear_id>/update")
     def gear_update(gear_id: int):
@@ -754,6 +767,99 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         names = ", ".join(g.name for g in act.gear)
         flash(f"Matériel : {names}." if names else "Aucun matériel pour cette sortie.")
         return redirect(url_for("activity_detail", act_id=act.id) + "#gear")
+
+    # ---------------------------------------------------------------- entretien du matériel
+    @app.post("/gear/<int:gear_id>/tasks/add")
+    def gear_task_add(gear_id: int):
+        s = db()
+        g = s.get(Gear, gear_id) or abort(404)
+        name = request.form.get("name", "").strip()[:80]
+        every_km = parse_float(request.form.get("every_km"))
+        months = parse_float(request.form.get("every_months"))
+        every_km = every_km if every_km and every_km > 0 else None
+        months = round(months) if months and months >= 1 else None
+        if not name or not (every_km or months):
+            flash("Donne un nom à l'entretien et au moins un intervalle (km ou mois).", "error")
+            return redirect(url_for("gear_detail", gear_id=g.id) + "#maintenance")
+        g.tasks.append(GearTask(name=name, every_km=every_km, every_months=months))
+        s.commit()
+        flash(f"Entretien « {name} » ajouté à {g.name}.")
+        return redirect(url_for("gear_detail", gear_id=g.id) + "#maintenance")
+
+    @app.post("/gear/tasks/<int:task_id>/done")
+    def gear_task_done(task_id: int):
+        s = db()
+        task = s.get(GearTask, task_id) or abort(404)
+        day = parse_date(request.form.get("day")) or today()
+        cost = parse_float(request.form.get("cost"))
+        maintenance.mark_done(s, task, min(day, today()), cost if cost and cost > 0 else None,
+                              request.form.get("note", "").strip())
+        s.commit()
+        flash(f"« {task.name} » de {task.gear.name} noté comme fait le {units.day(min(day, today()))}.")
+        return redirect(request.form.get("next") or url_for("gear_detail", gear_id=task.gear_id) + "#maintenance")
+
+    @app.post("/gear/tasks/<int:task_id>/delete")
+    def gear_task_delete(task_id: int):
+        s = db()
+        task = s.get(GearTask, task_id) or abort(404)
+        gear_id, name = task.gear_id, task.name
+        maintenance.delete_task(s, task)
+        s.commit()
+        flash(f"Entretien « {name} » supprimé (le journal garde ceux déjà faits).")
+        return redirect(url_for("gear_detail", gear_id=gear_id) + "#maintenance")
+
+    @app.post("/gear/services/<int:service_id>/delete")
+    def gear_service_delete(service_id: int):
+        s = db()
+        svc = s.get(GearService, service_id) or abort(404)
+        gear_id = svc.gear_id
+        s.delete(svc)
+        s.commit()
+        flash("Entretien retiré du journal.")
+        return redirect(url_for("gear_detail", gear_id=gear_id) + "#maintenance")
+
+    # ---------------------------------------------------------------- objectifs
+    def goal_from_form(goal: Goal, f) -> bool:
+        target = parse_float(f.get("target"))
+        if f.get("metric") not in goals_mod.METRICS or f.get("period") not in goals_mod.PERIODS or not target or target <= 0:
+            return False
+        scope = f.get("scope", "")
+        goal.metric, goal.period, goal.target = f.get("metric"), f.get("period"), target
+        goal.scope = scope if scope[:1] in ("f", "s") and scope[1:].isdigit() else ""
+        return True
+
+    @app.post("/goals/add")
+    def goal_add():
+        s = db()
+        goal = Goal(position=(s.scalar(select(func.max(Goal.position))) or 0) + 1)
+        if not goal_from_form(goal, request.form):
+            flash("Objectif incomplet : choisis la mesure, la période et une cible plus grande que 0.", "error")
+        else:
+            s.add(goal)
+            s.commit()
+            label, _ = goals_mod.scope_of(s, goal.scope)
+            flash(f"Objectif ajouté : {goals_mod.title(goal, label)}.")
+        return redirect((request.form.get("next") or url_for("progress")) + "#goals")
+
+    @app.post("/goals/<int:goal_id>/update")
+    def goal_update(goal_id: int):
+        s = db()
+        goal = s.get(Goal, goal_id) or abort(404)
+        if goal_from_form(goal, request.form):
+            s.commit()
+            flash("Objectif modifié.")
+        else:
+            flash("Cible invalide : indique un nombre plus grand que 0.", "error")
+        return redirect((request.form.get("next") or url_for("progress")) + "#goals")
+
+    @app.post("/goals/<int:goal_id>/delete")
+    def goal_delete(goal_id: int):
+        s = db()
+        goal = s.get(Goal, goal_id) or abort(404)
+        s.delete(goal)
+        s.commit()
+        flash("Objectif supprimé.")
+        return redirect((request.form.get("next") or url_for("progress")) + "#goals")
 
     # ---------------------------------------------------------------- vérifications et exclusions
     @app.post("/activities/bulk/exclude")
@@ -971,7 +1077,8 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             "progress.html", families=families, sel=sel, label=label, unit=unit, acts=acts,
             volume=volume_series(acts, start, end), pace=pace, trend=trend, rec=records(acts, unit), tot=totals(acts),
             prev=prev, prev_start=prev_start, prev_end=prev_end, start=start, end=end, today=t,
-            period=period, PERIODS=PERIODS,
+            period=period, PERIODS=PERIODS, goals=goals_mod.all_progress(s, t),
+            goal_edit=request.args.get("goal_edit", type=int), goal_confirm=request.args.get("goal_confirm", type=int),
         )
 
     # ---------------------------------------------------------------- santé

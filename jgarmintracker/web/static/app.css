@@ -455,3 +455,37 @@ label.sm-tile { cursor: pointer; position: relative; }
 .gear-form .wide, .gear-form > .actions { grid-column: 1 / -1; }
 .gear-form input[type=color] { height: 32px; padding: 2px; width: 100%; }
 .gear-kind-row { display: flex; flex-direction: column; gap: 6px; }
+
+/* Objectifs, carte de chaleur, entretien (0.12.0) */
+.goal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.goal-wrap { display: flex; flex-direction: column; gap: 8px; }
+.goal { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); }
+.goal-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.goal-bar { position: relative; height: 10px; border-radius: 5px; background: var(--soft); }
+.goal-bar > i { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
+.goal.done .goal-bar > i { background: var(--in); }
+.goal.behind .goal-bar > i { background: color-mix(in oklab, var(--warn) 75%, var(--accent)); }
+.pace-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.goal-status b { font-weight: 600; }
+.goal.done .goal-status b { color: var(--in); }
+.goal.behind .goal-status b { color: var(--warn); }
+.goal.ahead .goal-status b { color: var(--accent); }
+.goal-history { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.hdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--soft); border: 1px solid var(--line); }
+.hdot.hit { background: var(--in); border-color: var(--in); }
+.map-box.heat { background: #16181d; }
+.map-box.heat .leaflet-tile-pane { filter: grayscale(1) brightness(.42) contrast(1.15); }
+.task-alert { display: flex; align-items: center; gap: 6px; color: var(--warn); }
+.task-alert.due { font-weight: 600; }
+.gear-card:has(.task-alert.due) { border-color: var(--warn); }
+table.tasks td { vertical-align: middle; }
+table.tasks tr.due td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.task-state { min-width: 170px; }
+.task-state .wear { margin-bottom: 4px; }
+tr.due .task-state .small { color: var(--warn); font-weight: 600; }
+.task-done { display: flex; gap: 6px; align-items: center; }
+.task-done input.amount { width: 70px; }
+.service-banner > .ph { color: var(--warn); }
+.tbl .x { border: 0; background: none; padding: 0 6px; color: var(--muted); font-size: 1rem; line-height: 1; }
+.tbl .x:hover { color: var(--out); }

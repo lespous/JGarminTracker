@@ -195,9 +195,66 @@ class Gear(Base):
 
     activities: Mapped[list[Activity]] = relationship(secondary=activity_gear, back_populates="gear")
     default_sports: Mapped[list[Sport]] = relationship(secondary=gear_default_sports)
+    tasks: Mapped[list[GearTask]] = relationship(back_populates="gear", cascade="all, delete-orphan",
+                                                 order_by="GearTask.name")
+    services: Mapped[list[GearService]] = relationship(back_populates="gear", cascade="all, delete-orphan",
+                                                       order_by="GearService.day.desc()")
 
     def in_service(self, day: date) -> bool:
         return (self.since is None or self.since <= day) and (self.retired is None or day <= self.retired)
+
+
+class GearTask(Base):
+    """Entretien récurrent d'un matériel (0.12.0) : tous les N km et/ou tous les N mois, le premier atteint."""
+
+    __tablename__ = "gear_tasks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    gear_id: Mapped[int] = mapped_column(ForeignKey("gear.id"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    every_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    every_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    gear: Mapped[Gear] = relationship(back_populates="tasks")
+    services: Mapped[list[GearService]] = relationship(back_populates="task", order_by="GearService.day.desc()")
+
+
+class GearService(Base):
+    """Entretien fait (journal). task_id vide : entretien ponctuel, ou tâche supprimée depuis."""
+
+    __tablename__ = "gear_services"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    gear_id: Mapped[int] = mapped_column(ForeignKey("gear.id"), index=True)
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("gear_tasks.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String(80))  # copié de la tâche : le journal survit à sa suppression
+    day: Mapped[date] = mapped_column(Date)
+    km: Mapped[float | None] = mapped_column(Float, nullable=True)  # km du matériel ce jour-là
+    cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    gear: Mapped[Gear] = relationship(back_populates="services")
+    task: Mapped[GearTask | None] = relationship(back_populates="services")
+
+
+class Goal(Base):
+    """Objectif récurrent (0.12.0) : par ex. 1 500 km de vélo par année, 3 sorties par semaine.
+
+    target en unité d'affichage (goals.METRICS) : km, heures, sorties ou mètres. scope : « » (tout), « fN » (famille),
+    « sN » (sport), comme le filtre des sports.
+    """
+
+    __tablename__ = "goals"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    metric: Mapped[str] = mapped_column(String(12))  # distance | duration | count | elevation
+    target: Mapped[float] = mapped_column(Float)
+    period: Mapped[str] = mapped_column(String(6))  # week | month | year
+    scope: Mapped[str] = mapped_column(String(12), default="")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 
 class Profile(Base):

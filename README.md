@@ -104,6 +104,13 @@ alerte d'usure en km, prix pour le coût au km). Une sortie porte au plus un mat
 « Affecter en bloc » pose un matériel sur toutes les sorties de certains sports entre deux dates, avec un aperçu
 des sorties touchées ; un matériel peut aussi être le défaut d'un sport, posé alors sur les nouvelles sorties
 synchronisées pendant sa période de service. Choix par sortie dans sa fiche, filtre dans Activités.
+Entretien : tâches récurrentes (tous les N km et/ou N mois) avec rappel sur le tableau de bord et journal.
+
+## Objectifs et carte de chaleur
+
+Page **Progression**, section Objectifs : distance, durée, sorties ou dénivelé par semaine, mois ou année, pour tous
+les sports, une famille ou un sport ; progression et rythme sur le tableau de bord. Page **Carte**, bouton
+« Chaleur » : tous les parcours superposés, les routes les plus faites ressortent.
 
 ## Données
 

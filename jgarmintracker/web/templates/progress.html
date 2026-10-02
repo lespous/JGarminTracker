@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_goals.html" import goal_card %}
 {% block title %}Progression · {{ label }}{% endblock %}
 {% block head %}
 <script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
@@ -126,6 +127,62 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 {% endif %}
+
+{% macro goal_fields(g=None) -%}
+  <label>Mesure
+    <select name="metric">{% for k, (l, u) in GOAL_METRICS.items() %}<option value="{{ k }}" {{ 'selected' if g and g.metric == k }}>{{ l }} ({{ u }})</option>{% endfor %}</select></label>
+  <label>Cible<input name="target" inputmode="decimal" class="amount" required value="{{ g.target|number(1)|replace(',0', '') if g }}" placeholder="ex. 1500"></label>
+  <label>Période
+    <select name="period">{% for k, (l, _now) in GOAL_PERIODS.items() %}<option value="{{ k }}" {{ 'selected' if (g and g.period == k) or (not g and k == 'year') }}>{{ l }}</option>{% endfor %}</select></label>
+  <label>Sports
+    <select name="scope">
+      <option value="">Tous les sports</option>
+      {% for f in families %}<optgroup label="{{ f.name }}">
+        <option value="f{{ f.id }}" {{ 'selected' if g and g.scope == 'f' ~ f.id }}>Toute la famille {{ f.name }}</option>
+        {% for sp in f.sports %}<option value="s{{ sp.id }}" {{ 'selected' if g and g.scope == 's' ~ sp.id }}>{{ sp.name }}</option>{% endfor %}
+      </optgroup>{% endfor %}
+    </select></label>
+  <input type="hidden" name="next" value="{{ url_with(goal_edit='', goal_confirm='') }}">
+{%- endmacro %}
+
+<section class="panel" id="goals">
+  <h2>Objectifs <small>période en cours, quel que soit le filtre ci-dessus</small></h2>
+  {% if goals %}
+  <div class="goal-grid">
+    {% for p in goals %}
+    <div class="goal-wrap">
+      {{ goal_card(p, history=True) }}
+      <div class="actions" style="justify-content:flex-start">
+        <a class="btn" href="{{ url_with(goal_edit=p.goal.id, goal_confirm='') }}#goals">Modifier</a>
+        <a class="btn danger" href="{{ url_with(goal_confirm=p.goal.id, goal_edit='') }}#goals">Supprimer</a>
+      </div>
+      {% if goal_edit == p.goal.id %}
+      <form class="rule-form" method="post" action="{{ url_for('goal_update', goal_id=p.goal.id) }}">
+        {{ goal_fields(p.goal) }}
+        <div class="actions"><a class="btn" href="{{ url_with(goal_edit='') }}#goals">Annuler</a><button class="primary">Enregistrer</button></div>
+      </form>
+      {% endif %}
+      {% if goal_confirm == p.goal.id %}
+      <form class="confirm" method="post" action="{{ url_for('goal_delete', goal_id=p.goal.id) }}">
+        <input type="hidden" name="next" value="{{ url_with(goal_confirm='') }}">
+        <span>Supprimer l'objectif « {{ goal_title(p.goal, p.scope_label) }} » ? Les activités ne changent pas.</span>
+        <div class="actions"><a class="btn" href="{{ url_with(goal_confirm='') }}#goals">Annuler</a><button class="primary">Supprimer</button></div>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted small">Aucun objectif pour l'instant. Par exemple : 1 500 km de vélo par année, 3 sorties par semaine, 10 h de course par mois.</p>
+  {% endif %}
+  <h2>Ajouter un objectif</h2>
+  <form class="rule-form" method="post" action="{{ url_for('goal_add') }}">
+    {{ goal_fields() }}
+    <div class="actions"><button class="primary">Ajouter</button></div>
+  </form>
+  <p class="note">Semaines du lundi au dimanche, mois et années civils. Le repère vertical sur la barre montre où il faudrait en être aujourd'hui pour atteindre l'objectif à rythme régulier. Les sorties exclues des statistiques ne comptent pas.</p>
+</section>
+
 <script>
 // Modifier une date passe en « Dates choisies ».
 for (const id of ["p-from", "p-to"]) {

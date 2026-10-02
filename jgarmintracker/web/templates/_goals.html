@@ -1,0 +1,25 @@
+{# Carte d'un objectif : barre de la période en cours avec le repère du rythme régulier. #}
+{% macro goal_card(p, history=False) -%}
+  {%- set g = p.goal -%}
+  <div class="goal {{ 'done' if p.done else 'behind' if p.gap < 0 else 'ahead' }}">
+    <div class="goal-head">
+      <b>{{ goal_title(g, p.scope_label) }}</b>
+      <span class="num">{{ p.text(p.value) }} <span class="muted">/ {{ p.text(g.target) }}</span></span>
+    </div>
+    <div class="goal-bar" role="img" aria-label="{{ (p.ratio * 100)|round|int }} % de l'objectif {{ GOAL_PERIODS[g.period][1] }}">
+      <i style="width: {{ [p.ratio * 100, 100]|min }}%"></i>
+      {% if not p.done %}<span class="pace-mark" style="left: {{ [p.expected_ratio * 100, 100]|min }}%" title="Rythme régulier : {{ p.text(p.expected) }} aujourd'hui"></span>{% endif %}
+    </div>
+    <span class="small goal-status">
+      {% if p.done %}<b>Atteint</b> {{ GOAL_PERIODS[g.period][1] }}{% if p.value > g.target %} · {{ p.text(p.value - g.target) }} de plus{% endif %}
+      {% elif p.gap >= 0 %}<b>En avance</b> de {{ p.text(p.gap) }} sur le rythme · reste {{ p.text(p.remaining) }}
+      {% else %}<b>En retard</b> de {{ p.text(-p.gap) }} sur le rythme · reste {{ p.text(p.remaining) }}{% endif %}
+      {%- if p.per_week %}, soit {{ p.text(p.per_week) }} par semaine{% endif %}
+      <span class="muted">· {{ p.days_left }} jour{{ 's' if p.days_left > 1 }} restant{{ 's' if p.days_left > 1 }}</span>
+    </span>
+    {% if history and p.history %}
+    <span class="goal-history small muted">Périodes précédentes : {{ p.hits }}/{{ p.history|length }} atteintes
+      {% for h in p.history %}<i class="hdot {{ 'hit' if h.hit }}" title="{{ h.start|day }} – {{ h.end|day }} : {{ p.text(h.value) }}"></i>{% endfor %}</span>
+    {% endif %}
+  </div>
+{%- endmacro %}

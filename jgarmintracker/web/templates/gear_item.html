@@ -31,6 +31,74 @@
   <div class="kpi"><small>Première · dernière</small><b class="small">{{ st.first.start|day if st.first else '—' }}</b><span class="sub">{{ st.last.start|day if st.last else '' }}</span></div>
 </div>
 
+<section class="panel" id="maintenance">
+  <h2>Entretien</h2>
+  {% if tasks %}
+  <div class="tbl">
+  <table class="tasks">
+    <thead><tr><th>Entretien</th><th>Intervalle</th><th>Depuis</th><th>État</th><th>Fait le</th><th></th></tr></thead>
+    <tbody>
+    {% for t in tasks %}
+      <tr class="{{ 'due' if t.due else 'soon' if t.soon }}">
+        <td><b>{{ t.task.name }}</b></td>
+        <td class="small">{{ ['tous les ' ~ (t.task.every_km|number) ~ ' km' if t.task.every_km, 'tous les ' ~ t.task.every_months ~ ' mois' if t.task.every_months]|select|join(' ou ') }}</td>
+        <td class="small num">{{ t.since|day }}<br><span class="muted">{{ t.km|number }} km{% if t.last %} · dernier fait{% elif g.since and t.since == g.since %} · mise en service{% endif %}</span></td>
+        <td class="task-state">
+          <span class="wear {{ 'warn' if t.due or t.soon }}"><i style="width: {{ [(t.ratio or 0) * 100, 100]|min }}%"></i></span>
+          <span class="small">{% if t.due %}<i class="ph ph-warning" aria-hidden="true"></i> {% endif %}{{ t.text }}</span>
+        </td>
+        <td>
+          <form class="task-done" method="post" action="{{ url_for('gear_task_done', task_id=t.task.id) }}">
+            <input type="date" name="day" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" aria-label="Date de l'entretien">
+            <input name="cost" inputmode="decimal" class="amount" placeholder="€" aria-label="Coût en euros (facultatif)">
+            <button class="{{ 'primary' if t.due else '' }}">Fait</button>
+          </form>
+        </td>
+        <td><a class="btn danger" href="{{ url_for('gear_detail', gear_id=g.id, task_confirm=t.task.id) }}#maintenance" title="Supprimer cet entretien">Supprimer</a></td>
+      </tr>
+      {% if task_confirm == t.task.id %}
+      <tr><td colspan="6">
+        <form class="confirm" method="post" action="{{ url_for('gear_task_delete', task_id=t.task.id) }}">
+          <span>Supprimer l'entretien « {{ t.task.name }} » ? Les entretiens déjà notés restent dans le journal.</span>
+          <div class="actions"><a class="btn" href="{{ url_for('gear_detail', gear_id=g.id) }}#maintenance">Annuler</a><button class="primary">Supprimer</button></div>
+        </form>
+      </td></tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted small">Aucun entretien suivi. Ajoute par exemple la chaîne tous les 3 000 km ou une révision chaque année : un rappel apparaîtra sur le tableau de bord quand il sera dû.</p>
+  {% endif %}
+
+  <form class="rule-form" method="post" action="{{ url_for('gear_task_add', gear_id=g.id) }}" id="task-form">
+    <label>Nouvel entretien<input name="name" list="task-names" required maxlength="80" placeholder="ex. Chaîne" id="task-name"></label>
+    <datalist id="task-names">{% for name, km, months in TASK_SUGGESTIONS.get(g.kind, []) %}<option value="{{ name }}" data-km="{{ km or '' }}" data-months="{{ months or '' }}">{% endfor %}</datalist>
+    <label>Tous les … km<input name="every_km" inputmode="decimal" class="amount" id="task-km" placeholder="ex. 3000"></label>
+    <label>et/ou tous les … mois<input name="every_months" inputmode="numeric" class="amount" id="task-months" placeholder="ex. 12"></label>
+    <div class="actions"><button class="primary">Ajouter</button></div>
+  </form>
+  <p class="note">Le rappel part du dernier entretien noté, sinon de la mise en service. Avec les deux intervalles, le premier atteint déclenche le rappel.</p>
+
+  {% if g.services %}
+  <h2>Journal <small>{{ g.services|length }} entretien{{ 's' if g.services|length > 1 }}{% set total = g.services|map(attribute='cost')|select|sum %}{% if total %} · {{ total|number(2) }} €{% endif %}</small></h2>
+  <div class="tbl">
+  <table>
+    <tbody>
+    {% for svc in g.services %}
+      <tr><td class="num">{{ svc.day|day }}</td><td>{{ svc.name }}</td>
+        <td class="r num">{{ svc.km|number ~ ' km' if svc.km is not none }}</td>
+        <td class="r num">{{ svc.cost|number(2) ~ ' €' if svc.cost }}</td>
+        <td class="muted small">{{ svc.note }}</td>
+        <td><form class="inline" method="post" action="{{ url_for('gear_service_delete', service_id=svc.id) }}"><button class="x" title="Retirer du journal" aria-label="Retirer {{ svc.name }} du {{ svc.day|day }} du journal">×</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+
 <div class="grid2">
   <section class="panel">
     <h2>Sorties <small>{{ st.activities|length }}</small></h2>
@@ -74,4 +142,17 @@
     {% endif %}
   </section>
 </div>
+
+
+
+<script>
+// Une suggestion choisie remplit ses intervalles habituels (modifiables).
+const taskName = document.getElementById("task-name");
+taskName.addEventListener("change", () => {
+  const o = [...document.querySelectorAll("#task-names option")].find(x => x.value === taskName.value);
+  if (!o) return;
+  if (!document.getElementById("task-km").value) document.getElementById("task-km").value = o.dataset.km;
+  if (!document.getElementById("task-months").value) document.getElementById("task-months").value = o.dataset.months;
+});
+</script>
 {% endblock %}

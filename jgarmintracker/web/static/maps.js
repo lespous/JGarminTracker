@@ -31,18 +31,24 @@ function homeMarker(map, home) {
 
 // Carte de tous les parcours. Vue de départ : autour du domicile (s'il est connu), sinon tous les parcours.
 // Le menu « Lieu » (select#place) recentre sur un lieu Garmin, sur le domicile ou sur l'ensemble.
-function routesMap(id, routes, home) {
+// heat = true : carte de chaleur, chaque tracé en trait fin semi-transparent d'une même couleur sur un fond
+// assombri ; les routes souvent faites s'additionnent et deviennent vives.
+const HEAT = { color: "#FF6A1F", weight: 2, opacity: .1 };
+
+function routesMap(id, routes, home, heat = false) {
   const map = baseMap(id);
+  if (heat) document.getElementById(id).classList.add("heat");
   if (home) homeMarker(map, home);
   if (!routes.length) { map.setView(home || [50.5, 4.5], home ? 12 : 7); return map; }
   const all = [], byPlace = {};
   for (const r of routes) {
     (byPlace[r.place] ||= []).push(...r.points);
-    const line = L.polyline(r.points, { color: r.color, weight: 3, opacity: .55 }).addTo(map);
+    const rest = heat ? HEAT : { color: r.color, weight: 3, opacity: .55 };
+    const line = L.polyline(r.points, rest).addTo(map);
     const tip = `<b>${escapeHtml(r.name)}</b><br>${r.date} · ${escapeHtml(r.sport)}${r.km ? " · " + r.km : ""}`;
     line.bindTooltip(tip, { sticky: true });
-    line.on("mouseover", () => line.setStyle({ weight: 6, opacity: 1 }).bringToFront());
-    line.on("mouseout", () => line.setStyle({ weight: 3, opacity: .55 }));
+    line.on("mouseover", () => line.setStyle({ color: heat ? "#FFD23F" : r.color, weight: 6, opacity: 1 }).bringToFront());
+    line.on("mouseout", () => line.setStyle(rest));
     line.on("click", () => { location.href = r.url; });
     all.push(...r.points);
   }

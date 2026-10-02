@@ -4,7 +4,7 @@ slug: jgarmintracker
 summary: Un outil personnel qui récupère les données de ma montre Garmin (activités, sommeil, santé), les garde en local et montre ma progression semaine après semaine.
 year: 2026
 status: active
-version: 0.11.1
+version: 0.12.0
 featured: true
 published: true
 sortOrder: 1
@@ -23,9 +23,10 @@ Les données de santé ne quittent jamais le PC : seuls les jetons de session Ga
 - **Sports classés par des règles** : chaque activité reçoit un sport d'après son type Garmin ou son nom (« Trail des crêtes » va dans Trail). Corriger un sport peut créer une règle, appliquée aux synchros suivantes. Familles, couleurs et icônes réglables.
 - **Progression** : volume par semaine et par sport, allure ou vitesse de chaque sortie avec sa tendance, records (plus longue sortie, meilleurs 1 km, 5 km et 40 km mesurés par la montre), sur la période de mon choix et comparés à la période précédente.
 - **Santé** : FC au repos avec moyenne glissante, sommeil par phase, plage de Body Battery, stress, pas, VO2max, et suivi du poids avec rappel de pesée, IMC et objectif.
-- **Cartes** : parcours de chaque sortie sur fond OpenStreetMap, carte de tous mes parcours centrée sur la maison, et export GPX pour refaire un parcours.
+- **Cartes** : parcours de chaque sortie sur fond OpenStreetMap, carte de tous mes parcours centrée sur la maison (et en carte de chaleur), et export GPX pour refaire un parcours.
 - **Vérifications** : repère les sorties suspectes (allure impossible, pointe de GPS, montre prêtée à quelqu'un de plus rapide) pour les exclure des statistiques sans les supprimer.
-- **Matériel** : vélos et chaussures avec photo, usure et coût au km, affectés en bloc aux sorties d'une période ou posés par défaut selon le sport.
+- **Matériel** : vélos et chaussures avec photo, usure et coût au km, affectés en bloc aux sorties d'une période ou posés par défaut selon le sport, avec rappels d'entretien (chaîne, pneus, révision).
+- **Objectifs** : km, heures, sorties ou dénivelé par semaine, mois ou année, avec avance ou retard sur le rythme.
 - **Amis et profil** : avec qui j'ai fait chaque sortie, et un bilan de carrière (totaux, séries de semaines actives, zones cardio).
 
 Tout tourne en local, avec une interface web pour consulter et corriger (thèmes et palettes partagés avec ce site), et une ligne de commande pour synchroniser et résumer.

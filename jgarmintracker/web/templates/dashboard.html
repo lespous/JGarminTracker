@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_goals.html" import goal_card %}
 {% block title %}Tableau de bord{% endblock %}
 {% block head %}
 <script src="{{ url_for('static', filename='chart.umd.min.js') }}" defer></script>
@@ -24,6 +25,17 @@
 </form>
 {% endif %}
 
+{% for st in maintenance_due %}
+<form class="weigh-banner service-banner" method="post" action="{{ url_for('gear_task_done', task_id=st.task.id) }}">
+  <i class="ph ph-wrench" aria-hidden="true"></i>
+  <span><b>{{ st.task.name }} · {{ st.task.gear.name }}</b>
+    <span class="muted small">Entretien à faire : {{ st.text }}{% if st.last %} (dernier le {{ st.last.day|day }}){% endif %}.</span></span>
+  <input type="hidden" name="next" value="{{ url_for('dashboard') }}">
+  <button class="primary">Fait aujourd'hui</button>
+  <a class="small" href="{{ url_for('gear_detail', gear_id=st.task.gear_id) }}#maintenance">Autre date…</a>
+</form>
+{% endfor %}
+
 <div class="kpis">
   <div class="kpi"><small>Activités</small><b>{{ wc.current.count }}</b>
     <span class="delta {{ 'up' if wc.current.count > wc.previous.count else 'down' if wc.current.count < wc.previous.count }}">sem. préc. {{ wc.previous.count }}</span></div>
@@ -38,6 +50,13 @@
   <a class="kpi" href="{{ url_for('health') }}"><small>Sommeil · moy. 7 j</small><b>{{ (hs.sleep_h * 3600)|hmm if hs.sleep_h else '—' }}</b>
     <span class="delta {{ 'up' if hs.sleep_h and hs.sleep_h_prev and hs.sleep_h > hs.sleep_h_prev else 'down' if hs.sleep_h and hs.sleep_h_prev and hs.sleep_h < hs.sleep_h_prev }}">7 j préc. {{ (hs.sleep_h_prev * 3600)|hmm if hs.sleep_h_prev else '—' }}</span></a>
 </div>
+
+{% if goals %}
+<section class="panel">
+  <div class="head"><h2>Objectifs</h2><div class="spacer"></div><a class="small" href="{{ url_for('progress') }}#goals">Gérer</a></div>
+  <div class="goal-grid">{% for p in goals %}{{ goal_card(p) }}{% endfor %}</div>
+</section>
+{% endif %}
 
 <div class="grid2">
   <section class="panel">

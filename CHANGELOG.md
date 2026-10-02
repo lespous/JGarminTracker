@@ -3,6 +3,22 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.12.0 — 2026-10-02
+
+### Ajouté
+- **Objectifs** (page Progression, section Objectifs) : distance, durée, nombre de sorties ou dénivelé, pour tous
+  les sports, une famille ou un sport, par semaine, par mois ou par année. Barre de la période en cours avec le
+  repère du rythme régulier, avance ou retard, reste à faire par semaine, et périodes précédentes atteintes ou non.
+  Les objectifs s'affichent aussi sur le tableau de bord.
+- **Carte de chaleur** (page Carte, bouton « Chaleur ») : tous les parcours en traits fins et légers sur un fond
+  assombri ; les routes souvent faites deviennent vives, les coins jamais explorés restent sombres. Tout
+  l'historique par défaut.
+- **Entretien du matériel** (fiche d'un matériel) : entretiens récurrents tous les N km et/ou N mois (le premier
+  atteint), suggestions par type (chaîne, pneus, plaquettes…), bouton « Fait » avec date et coût, journal des
+  entretiens. Un entretien dû s'affiche en bandeau sur le tableau de bord (« Fait aujourd'hui »), par une
+  pastille sur l'onglet Matériel et sur la carte du matériel.
+- `TODO.md` : idées de fonctionnalités, à cocher une fois livrées.
+
 ## 0.11.1 — 2026-10-02
 
 ### Modifié
