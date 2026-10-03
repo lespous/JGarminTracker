@@ -3,6 +3,14 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.18.1 — 2026-10-03
+
+### Ajouté
+- Lecture d'une sortie : **Suivre le point** (activé par défaut) : au lancement, la carte zoome sur le point,
+  puis le recadre dès qu'il approche du bord, même si on a zoomé ou déplacé la carte.
+- **Plein écran** : la carte occupe tout l'écran, commandes, infos du point et profil d'altitude en surimpression
+  en bas ; Échap ou le même bouton pour sortir.
+
 ## 0.18.0 — 2026-10-03
 
 ### Ajouté

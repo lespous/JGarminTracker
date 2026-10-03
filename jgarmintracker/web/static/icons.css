@@ -99,3 +99,6 @@
 /* Lecture d'une sortie (0.18.0) */
 .ph-play:before { content: "\e3d0"; }
 .ph-pause:before { content: "\e39e"; }
+.ph-crosshair:before { content: "\e1d6"; }
+.ph-corners-out:before { content: "\e1d0"; }
+.ph-corners-in:before { content: "\e1ce"; }

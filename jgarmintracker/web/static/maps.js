@@ -64,19 +64,51 @@ function replayPlayer(map, points, cfg) {
     return `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")} ${per === 100 ? "/100 m" : "/km"}`;
   };
   const speedLabel = cfg.unit === "kmh" ? "Vitesse" : "Allure";
-  let S = null, detailed = false, pos = 0, playing = false, mult = 100, last = null, runner = null, loading = false;
+  let S = null, detailed = false, pos = 0, playing = false, mult = 100, last = null, runner = null, loading = false, follow = true;
+  const FOLLOW_ZOOM = 15;  // au lancement de la lecture : zoom minimal autour du point
 
   box.innerHTML = `<div class="rp-controls">
       <button type="button" class="rp-play primary" aria-label="Rejouer la sortie"><i class="ph ph-play" aria-hidden="true"></i></button>
       <input type="range" class="rp-scrub" min="0" max="1000" value="0" disabled aria-label="Position dans la sortie">
       <div class="rp-speeds" role="group" aria-label="Vitesse de lecture">${[30, 100, 300, 1000].map(m => `<button type="button" data-m="${m}" aria-pressed="${m === mult}">×${m}</button>`).join("")}</div>
       <span class="rp-clock num">Rejouer la sortie</span>
+      <button type="button" class="rp-follow" aria-pressed="true" title="La carte suit le point pendant la lecture"><i class="ph ph-crosshair" aria-hidden="true"></i>Suivre</button>
+      <button type="button" class="rp-full" title="Plein écran (Échap pour sortir)" aria-label="Plein écran"><i class="ph ph-corners-out" aria-hidden="true"></i></button>
     </div>
     <p class="rp-note note" hidden></p>
     <div class="rp-stats" hidden></div>
     <svg class="rp-profile" viewBox="0 0 720 110" hidden role="slider" tabindex="0" aria-label="Profil d'altitude : position de lecture"></svg>`;
   const $ = (sel) => box.querySelector(sel);
   const btn = $(".rp-play"), scrub = $(".rp-scrub"), clock = $(".rp-clock"), stats = $(".rp-stats"), prof = $(".rp-profile"), note = $(".rp-note");
+
+  // Plein écran : la carte et le lecteur passent dans un même conteneur ; en plein écran, le lecteur se pose en
+  // surimpression sur la carte. API Fullscreen si le navigateur l'accepte, sinon simple calque fixe (Échap pour sortir).
+  const stage = document.createElement("div");
+  stage.className = "rp-stage";
+  const mapEl = map.getContainer();
+  mapEl.parentNode.insertBefore(stage, mapEl);
+  stage.append(mapEl, box);
+  const fullBtn = $(".rp-full"), followBtn = $(".rp-follow");
+  function setFull(on) {
+    stage.classList.toggle("is-full", on);
+    fullBtn.innerHTML = `<i class="ph ph-${on ? "corners-in" : "corners-out"}" aria-hidden="true"></i>`;
+    fullBtn.setAttribute("aria-label", on ? "Quitter le plein écran" : "Plein écran");
+    if (on && stage.requestFullscreen && !document.fullscreenElement) stage.requestFullscreen().catch(() => {});
+    if (!on && document.fullscreenElement === stage) document.exitFullscreen().catch(() => {});
+    setTimeout(() => { map.invalidateSize(); if (runner && follow) map.panTo(runner.getLatLng(), { animate: false }); }, 60);
+  }
+  fullBtn.addEventListener("click", () => setFull(!stage.classList.contains("is-full")));
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && stage.classList.contains("is-full")) setFull(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && stage.classList.contains("is-full") && !document.fullscreenElement) setFull(false); });
+  followBtn.addEventListener("click", () => {
+    follow = !follow;
+    followBtn.setAttribute("aria-pressed", String(follow));
+    if (follow && runner) keepInView(runner.getLatLng(), true);
+  });
+  // Suivre le point : recadrer dès qu'il approche du bord (un quart de la carte), sans animation pendant la lecture.
+  function keepInView(ll, force = false) {
+    if (force || !map.getBounds().pad(-0.25).contains(ll)) map.panTo(ll, { animate: !playing });
+  }
 
   function fromTrack() {  // sans détails : vitesse constante sur la durée de la sortie
     const out = [[0, points[0][0], points[0][1], 0, null, null]];
@@ -126,6 +158,7 @@ function replayPlayer(map, points, cfg) {
     scrub.value = Math.round(pos / T * 1000);
     if (!runner) runner = L.circleMarker([p[1], p[2]], { radius: 8, color: "#fff", weight: 3, fillColor: cfg.accent || "#6b4fc1", fillOpacity: 1 }).addTo(map);
     runner.setLatLng([p[1], p[2]]);
+    if (follow) keepInView(runner.getLatLng());
     const grade = detailed ? gradeAt(i) : null;
     const cells = [
       ["Position", `${nf(p[1], 5)}, ${nf(p[2], 5)}`],
@@ -181,6 +214,10 @@ function replayPlayer(map, points, cfg) {
     if (!(await load())) return;
     if (pos >= S[S.length - 1][0]) pos = 0;
     playing = !playing; last = null;
+    if (playing && follow) {  // zoomer sur le point au lancement
+      const { p } = at(pos);
+      if (map.getZoom() < FOLLOW_ZOOM) map.setView([p[1], p[2]], FOLLOW_ZOOM, { animate: false });
+    }
     render();
     if (playing) requestAnimationFrame(tick);
   });

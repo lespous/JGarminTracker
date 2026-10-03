@@ -617,3 +617,23 @@ h1 .ph-flag-checkered { color: #C98A00; }
 .rp-cursor { stroke: var(--ink); stroke-width: 1.5; }
 .rp-dot { fill: var(--accent); stroke: #fff; stroke-width: 2; }
 .rp-axis text { font: 500 11px var(--mono); fill: var(--muted); }
+
+/* Lecture : suivre le point, plein écran (0.18.1) */
+.rp-follow { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; }
+.rp-follow[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.rp-full { display: inline-grid; place-items: center; width: 34px; height: 32px; padding: 0; font-size: 1.1rem; }
+.rp-stage { display: flex; flex-direction: column; gap: 10px; }
+.rp-stage.is-full { position: fixed; inset: 0; z-index: 3000; background: var(--bg); gap: 0; }
+.rp-stage.is-full > .map-box { flex: 1; height: auto !important; border: 0; border-radius: 0; }
+.rp-stage.is-full > .replay { position: absolute; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 1000;
+  padding: 12px 14px; gap: 8px; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, .25);
+  background: color-mix(in oklab, var(--surface) 86%, transparent); backdrop-filter: blur(6px); }
+.rp-stage.is-full .rp-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.rp-stage.is-full .rp-stats .metric { background: color-mix(in oklab, var(--soft) 80%, transparent); }
+.rp-stage.is-full .rp-profile { max-height: 90px; }
+@media (min-width: 900px) {
+  .rp-stage.is-full > .replay { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 16px; }
+  .rp-stage.is-full .rp-controls, .rp-stage.is-full .rp-note { grid-column: 1 / -1; }
+  .rp-stage.is-full .rp-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rp-stage.is-full .rp-profile { max-height: none; }
+}
