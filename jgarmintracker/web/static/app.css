@@ -650,3 +650,4 @@ h1 .ph-flag-checkered { color: #C98A00; }
 .fly-exag input { width: 90px; padding: 0; border: 0; background: none; accent-color: var(--accent); }
 .fly-exag span { min-width: 32px; color: var(--ink); }
 .maplibregl-ctrl-attrib { font-size: .7rem; }
+.rp-play > i, .rp-full > i, .rp-follow > i { pointer-events: none; }  /* le clic va toujours au bouton */

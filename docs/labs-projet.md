@@ -4,7 +4,7 @@ slug: jgarmintracker
 summary: Un outil personnel qui récupère les données de ma montre Garmin (activités, sommeil, santé), les garde en local et montre ma progression semaine après semaine.
 year: 2026
 status: active
-version: 0.19.0
+version: 0.19.1
 featured: true
 published: true
 sortOrder: 1

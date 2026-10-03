@@ -180,8 +180,13 @@ function replayPlayer(map, points, cfg) {
       if (p[5] != null) { dot.setAttribute("cx", x); dot.setAttribute("cy", prof._y(p[5])); }
       prof.setAttribute("aria-valuenow", Math.round(p[3]));
     }
-    btn.innerHTML = `<i class="ph ph-${playing ? "pause" : "play"}" aria-hidden="true"></i>`;
-    btn.setAttribute("aria-label", playing ? "Pause" : "Lecture");
+    // Icône réécrite seulement quand l'état change : la remplacer à chaque image (60 fois par seconde) faisait
+    // disparaître l'élément sous la souris entre l'appui et le relâchement, et le clic « pause » ne partait pas.
+    if (btn.dataset.state !== String(playing)) {
+      btn.dataset.state = String(playing);
+      btn.innerHTML = `<i class="ph ph-${playing ? "pause" : "play"}" aria-hidden="true"></i>`;
+      btn.setAttribute("aria-label", playing ? "Pause" : "Lecture");
+    }
   }
   async function load() {
     if (S || loading) return !!S;

@@ -3,6 +3,13 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.19.1 — 2026-10-03
+
+### Corrigé
+- Lecture d'une sortie (carte 2D et survol 3D) : le bouton pause ne réagissait pas pendant la lecture. Son icône
+  était réécrite à chaque image ; l'élément cliqué disparaissait entre l'appui et le relâchement. L'icône ne
+  change plus que lorsque l'état change, et ne capte plus les clics.
+
 ## 0.19.0 — 2026-10-03
 
 ### Ajouté
