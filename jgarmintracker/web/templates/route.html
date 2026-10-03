@@ -19,6 +19,7 @@
     <span class="muted">{% if r.sport %}<i class="ph ph-{{ r.sport.icon_name }} sicon" style="color: {{ color }}" aria-hidden="true"></i>{{ r.sport.label }} · {% endif %}{{ r.group.rep.distance_m|km if r.group.rep }} · {{ r.count }} passages</span>
   </div>
   <div class="spacer"></div>
+  {% if points %}<a class="btn" href="{{ url_for('activity_flyover', act_id=r.group.rep.id) }}"><i class="ph ph-mountains" aria-hidden="true"></i> Survol 3D</a>{% endif %}
   <a class="btn" href="{{ url_for('routes_page') }}">Tous les parcours</a>
 </div>
 

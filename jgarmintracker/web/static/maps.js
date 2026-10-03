@@ -51,6 +51,7 @@ function directionCues(map, points, color, ends = 100) {
 // Lecteur sous la carte : lecture / pause, barre de position, vitesse ×30 à ×1000, infos du point et profil
 // d'altitude. Au premier « lecture », les données point par point sont demandées au serveur (téléchargées une
 // fois chez Garmin) ; sans elles, le tracé est rejoué à vitesse constante (position et distance seulement).
+// cfg.view : ce qui affiche le point (carte 2D Leaflet par défaut, survol 3D dans flyover.js).
 function replayPlayer(map, points, cfg) {
   const box = document.getElementById(cfg.box);
   if (!map || !box || points.length < 2) return;
@@ -64,8 +65,8 @@ function replayPlayer(map, points, cfg) {
     return `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")} ${per === 100 ? "/100 m" : "/km"}`;
   };
   const speedLabel = cfg.unit === "kmh" ? "Vitesse" : "Allure";
-  let S = null, detailed = false, pos = 0, playing = false, mult = 100, last = null, runner = null, loading = false, follow = true;
-  const FOLLOW_ZOOM = 15;  // au lancement de la lecture : zoom minimal autour du point
+  const view = cfg.view || leafletView(map, cfg);
+  let S = null, detailed = false, pos = 0, playing = false, mult = cfg.mult || 100, last = null, loading = false, follow = true;
 
   box.innerHTML = `<div class="rp-controls">
       <button type="button" class="rp-play primary" aria-label="Rejouer la sortie"><i class="ph ph-play" aria-hidden="true"></i></button>
@@ -73,6 +74,7 @@ function replayPlayer(map, points, cfg) {
       <div class="rp-speeds" role="group" aria-label="Vitesse de lecture">${[30, 100, 300, 1000].map(m => `<button type="button" data-m="${m}" aria-pressed="${m === mult}">×${m}</button>`).join("")}</div>
       <span class="rp-clock num">Rejouer la sortie</span>
       <button type="button" class="rp-follow" aria-pressed="true" title="La carte suit le point pendant la lecture"><i class="ph ph-crosshair" aria-hidden="true"></i>Suivre</button>
+      ${cfg.extraControls || ""}
       <button type="button" class="rp-full" title="Plein écran (Échap pour sortir)" aria-label="Plein écran"><i class="ph ph-corners-out" aria-hidden="true"></i></button>
     </div>
     <p class="rp-note note" hidden></p>
@@ -85,7 +87,7 @@ function replayPlayer(map, points, cfg) {
   // surimpression sur la carte. API Fullscreen si le navigateur l'accepte, sinon simple calque fixe (Échap pour sortir).
   const stage = document.createElement("div");
   stage.className = "rp-stage";
-  const mapEl = map.getContainer();
+  const mapEl = view.container();
   mapEl.parentNode.insertBefore(stage, mapEl);
   stage.append(mapEl, box);
   const fullBtn = $(".rp-full"), followBtn = $(".rp-follow");
@@ -95,7 +97,7 @@ function replayPlayer(map, points, cfg) {
     fullBtn.setAttribute("aria-label", on ? "Quitter le plein écran" : "Plein écran");
     if (on && stage.requestFullscreen && !document.fullscreenElement) stage.requestFullscreen().catch(() => {});
     if (!on && document.fullscreenElement === stage) document.exitFullscreen().catch(() => {});
-    setTimeout(() => { map.invalidateSize(); if (runner && follow) map.panTo(runner.getLatLng(), { animate: false }); }, 60);
+    setTimeout(() => view.resize(follow), 60);
   }
   fullBtn.addEventListener("click", () => setFull(!stage.classList.contains("is-full")));
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && stage.classList.contains("is-full")) setFull(false); });
@@ -103,16 +105,13 @@ function replayPlayer(map, points, cfg) {
   followBtn.addEventListener("click", () => {
     follow = !follow;
     followBtn.setAttribute("aria-pressed", String(follow));
-    if (follow && runner) keepInView(runner.getLatLng(), true);
+    if (follow) view.refollow();
   });
-  // Suivre le point : recadrer dès qu'il approche du bord (un quart de la carte), sans animation pendant la lecture.
-  function keepInView(ll, force = false) {
-    if (force || !map.getBounds().pad(-0.25).contains(ll)) map.panTo(ll, { animate: !playing });
-  }
+  if (cfg.onReady) cfg.onReady(box);
 
   function fromTrack() {  // sans détails : vitesse constante sur la durée de la sortie
     const out = [[0, points[0][0], points[0][1], 0, null, null]];
-    for (let k = 1; k < points.length; k++) out.push([0, points[k][0], points[k][1], out[k - 1][3] + map.distance(points[k - 1], points[k]), null, null]);
+    for (let k = 1; k < points.length; k++) out.push([0, points[k][0], points[k][1], out[k - 1][3] + view.distance(points[k - 1], points[k]), null, null]);
     const total = out[out.length - 1][3], dur = cfg.duration || total / 3;
     out.forEach(p => { p[0] = p[3] / total * dur; });
     return out;
@@ -123,6 +122,11 @@ function replayPlayer(map, points, cfg) {
     const a = S[i - 1], b = S[i], f = (t - a[0]) / ((b[0] - a[0]) || 1);
     const mix = (k) => a[k] == null || b[k] == null ? (a[k] ?? b[k]) : a[k] + (b[k] - a[k]) * f;
     return { i, p: [t, mix(1), mix(2), mix(3), mix(4), mix(5)] };
+  }
+  function ahead(i, d) {  // point ~60 m plus loin : direction de la sortie (caméra du survol 3D)
+    let k = i;
+    while (k < S.length - 1 && S[k][3] - d < 60) k++;
+    return S[k];
   }
   function speedAt(t) {
     const a = at(Math.max(0, t - 15)).p, b = at(Math.min(S[S.length - 1][0], t + 15)).p;
@@ -156,9 +160,7 @@ function replayPlayer(map, points, cfg) {
     const T = S[S.length - 1][0], { i, p } = at(pos);
     clock.textContent = `${hms(pos)} / ${hms(T)}`;
     scrub.value = Math.round(pos / T * 1000);
-    if (!runner) runner = L.circleMarker([p[1], p[2]], { radius: 8, color: "#fff", weight: 3, fillColor: cfg.accent || "#6b4fc1", fillOpacity: 1 }).addTo(map);
-    runner.setLatLng([p[1], p[2]]);
-    if (follow) keepInView(runner.getLatLng());
+    view.show(p, { playing, follow, ahead: ahead(i, p[3]), progress: p[3] / S[S.length - 1][3] });
     const grade = detailed ? gradeAt(i) : null;
     const cells = [
       ["Position", `${nf(p[1], 5)}, ${nf(p[2], 5)}`],
@@ -214,10 +216,7 @@ function replayPlayer(map, points, cfg) {
     if (!(await load())) return;
     if (pos >= S[S.length - 1][0]) pos = 0;
     playing = !playing; last = null;
-    if (playing && follow) {  // zoomer sur le point au lancement
-      const { p } = at(pos);
-      if (map.getZoom() < FOLLOW_ZOOM) map.setView([p[1], p[2]], FOLLOW_ZOOM, { animate: false });
-    }
+    if (playing && follow) view.start(at(pos).p);  // zoomer sur le point au lancement
     render();
     if (playing) requestAnimationFrame(tick);
   });
@@ -239,6 +238,25 @@ function replayPlayer(map, points, cfg) {
     e.preventDefault(); playing = false;
     pos = Math.min(S[S.length - 1][0], Math.max(0, pos + (e.key === "ArrowRight" ? 30 : -30))); render();
   });
+}
+
+// Affichage du point sur une carte Leaflet : point violet ; « suivre » recadre dès qu'il approche du bord
+// (un quart de la carte), sans animation pendant la lecture ; au lancement, zoom 15 au minimum.
+function leafletView(map, cfg) {
+  let runner = null;
+  return {
+    container: () => map.getContainer(),
+    distance: (a, b) => map.distance(a, b),
+    show(p, { playing, follow }) {
+      const ll = [p[1], p[2]];
+      if (!runner) runner = L.circleMarker(ll, { radius: 8, color: "#fff", weight: 3, fillColor: cfg.accent || "#6b4fc1", fillOpacity: 1 }).addTo(map);
+      runner.setLatLng(ll);
+      if (follow && !map.getBounds().pad(-0.25).contains(ll)) map.panTo(ll, { animate: !playing });
+    },
+    start(p) { if (map.getZoom() < 15) map.setView([p[1], p[2]], 15, { animate: false }); },
+    refollow() { if (runner) map.panTo(runner.getLatLng()); },
+    resize(follow) { map.invalidateSize(); if (runner && follow) map.panTo(runner.getLatLng(), { animate: false }); },
+  };
 }
 
 function homeMarker(map, home) {

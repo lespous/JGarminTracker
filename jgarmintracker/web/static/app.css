@@ -637,3 +637,16 @@ h1 .ph-flag-checkered { color: #C98A00; }
   .rp-stage.is-full .rp-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .rp-stage.is-full .rp-profile { max-height: none; }
 }
+
+/* Survol 3D (0.19.0) */
+.fly-map { height: min(70vh, 720px); border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.rp-stage.is-full > .fly-map { height: auto; flex: 1; border: 0; border-radius: 0; }
+.fly-base { display: flex; }
+.fly-base button { font-size: .8rem; padding: 4px 10px; border-radius: 0; }
+.fly-base button:first-child { border-radius: 6px 0 0 6px; }
+.fly-base button:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+.fly-base button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; position: relative; }
+.fly-exag { flex-direction: row; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted); }
+.fly-exag input { width: 90px; padding: 0; border: 0; background: none; accent-color: var(--accent); }
+.fly-exag span { min-width: 32px; color: var(--ink); }
+.maplibregl-ctrl-attrib { font-size: .7rem; }

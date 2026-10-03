@@ -394,6 +394,17 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                                efforts=activity_efforts(s, act),
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
+    @app.get("/activities/<int:act_id>/flyover")
+    def activity_flyover(act_id: int):
+        """Survol 3D de la sortie (MapLibre, relief Terrarium) avec le même lecteur que la carte 2D."""
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        points = tracks.loads(act.track.points_json) if act.track and act.track.n_points else []
+        ref = request.referrer or ""
+        back_url = ref if urlparse(ref).netloc == request.host and "/flyover" not in ref else url_for("activity_detail", act_id=act.id)
+        return render_template("flyover.html", a=act, points=points, back_url=back_url,
+                               unit=act.sport.pace_unit if act.sport else "none")
+
     @app.get("/activities/<int:act_id>/stream.json")
     def activity_stream(act_id: int):
         """Données point par point pour rejouer la sortie : en base, sinon téléchargées une fois chez Garmin.

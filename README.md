@@ -126,6 +126,13 @@ l'arrivée). Les sorties qui empruntent la portion dans le même sens sont repé
 leurs données point par point sont téléchargées une fois pour les chronométrer : classement, record, profil
 d'altitude, et « Segments traversés » dans la fiche de chaque sortie.
 
+## Rejouer et survoler une sortie
+
+Sous la carte d'une sortie ou d'un parcours, un lecteur fait avancer un point au vrai rythme de la sortie (données
+point par point téléchargées une fois chez Garmin), avec altitude, pente, allure et FC à chaque instant, et un
+plein écran. Le bouton « Survol 3D » rejoue la sortie sur une carte en relief (MapLibre GL ; relief Mapzen / AWS
+Terrain Tiles, sans clé ; fond OpenStreetMap ou satellite Esri), caméra derrière le point.
+
 ## Forme
 
 Onglet **Forme** : charge d'entraînement calculée d'après la FC (TRIMP), condition, fatigue, fraîcheur et ratio

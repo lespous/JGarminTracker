@@ -23,6 +23,8 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
   sur 8 semaines.
 - [x] **Bilan de l'année** (0.16.0) : totaux, mois record, plus longue sortie, matériel le plus utilisé, amis les
   plus fréquents, calendrier, santé et météo ; image à partager.
+- [x] **Rejouer une sortie** (0.18.0) et **survol 3D** (0.19.0) : point qui avance au vrai rythme, infos en pause,
+  plein écran, carte en relief caméra derrière le point.
 
 ## Plus tard
 
@@ -35,4 +37,6 @@ Idées de fonctionnalités. Cocher la case (`- [x]`) quand c'est livré, avec la
   par jour) ; pour l'instant, la charge est calculée localement d'après la FC.
 
 ### Pratique
+- [ ] **Export vidéo du survol 3D** (WebM) pour le partager.
+- [ ] **Vue Street View / Mapillary** synchronisée avec le lecteur (photos du lieu, clé API, coordonnées envoyées au service).
 - [ ] **Export CSV** des activités d'une période, pour Excel.

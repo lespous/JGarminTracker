@@ -3,6 +3,19 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.19.0 — 2026-10-03
+
+### Ajouté
+- **Survol 3D** d'une sortie (bouton « Survol 3D » sur la fiche d'une sortie et d'un parcours) : carte en relief
+  (MapLibre GL, copié dans l'appli ; relief Mapzen / AWS Terrain Tiles, sans compte ni clé), fond plan
+  OpenStreetMap ou satellite (Esri), relief accentué réglable (×1 à ×3, ×1,8 par défaut). La caméra suit le point
+  en regardant dans le sens de la sortie ; même lecteur que la carte 2D (vitesse, pause, infos du point, profil,
+  plein écran) ; tracé déjà parcouru en couleur d'accent.
+
+### Modifié
+- Le lecteur de sortie ne dépend plus de Leaflet : la carte 2D et le survol 3D l'utilisent chacun avec leur
+  affichage du point.
+
 ## 0.18.1 — 2026-10-03
 
 ### Ajouté

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Survol 3D · {{ a.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='maplibre-gl.css') }}">
+<script src="{{ url_for('static', filename='maplibre-gl.js') }}" defer></script>
+<script src="{{ url_for('static', filename='maps.js') }}" defer></script>
+<script src="{{ url_for('static', filename='flyover.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1><i class="ph ph-mountains" aria-hidden="true"></i> Survol 3D · {{ a.name or 'Activité' }}</h1>
+    <span class="muted">{{ a.start|weekday_day }} {{ a.start.year }} · {{ a.distance_m|km if a.distance_m else '' }}{% if a.elevation_gain_m %} · D+ {{ a.elevation_gain_m|meters }}{% endif %}</span>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn" href="{{ back_url }}">Retour</a>
+</div>
+
+{% if points %}
+<section class="panel fly-panel">
+  <div id="fly-map" class="fly-map" role="img" aria-label="Survol 3D du parcours"></div>
+  <div id="replay" class="replay"></div>
+  <p class="note">Lecture : la caméra suit le point en regardant dans le sens de la sortie (désactive « Suivre » pour tourner et zoomer librement ; clic droit ou Ctrl + glisser pour incliner). Départ et 100 premiers m en vert, arrivée et 100 derniers m en rouge.
+    Relief : Mapzen / AWS Terrain Tiles (~30 m de précision), accentué ×1,8 par défaut. Fonds : © contributeurs OpenStreetMap, imagerie © Esri. Tuiles chargées depuis internet ; le tracé vient de ta base locale.</p>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  flyover("fly-map", {{ points|tojson }}, { box: "replay", url: {{ url_for('activity_stream', act_id=a.id)|tojson }}, unit: {{ unit|tojson }},
+    duration: {{ (a.elapsed_s or a.duration_s or 0)|tojson }}, color: {{ (a.sport.color if a.sport else '#E4572E')|tojson }} });
+});
+</script>
+{% else %}
+<section class="panel"><p class="muted">Pas de tracé GPS pour cette sortie : rien à survoler.</p></section>
+{% endif %}
+{% endblock %}

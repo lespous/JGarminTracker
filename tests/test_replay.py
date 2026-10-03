@@ -48,6 +48,24 @@ def test_stream_garmin_error(client, monkeypatch):  # noqa: F811
         assert s.get(ActivityStream, run) is None  # rien de gardé : on réessaiera
 
 
+def test_flyover_page(client):  # noqa: F811
+    from pathlib import Path
+
+    run = act_id("Vélo dimanche")
+    detail = client.get(f"/activities/{run}").get_data(as_text=True)
+    assert f"/activities/{run}/flyover" in detail and "Survol 3D" in detail
+    html = client.get(f"/activities/{run}/flyover", headers={"Referer": f"http://localhost/activities/{run}"}).get_data(as_text=True)
+    assert "maplibre-gl.js" in html and 'flyover("fly-map"' in html and f"/activities/{run}/stream.json" in html
+    assert f'href="http://localhost/activities/{run}"' in html  # Retour : la page d'où l'on vient
+    assert 'class="nav-link on"' in html and 'href="/activities" class="nav-link on"' in html
+    static = Path(__file__).resolve().parent.parent / "jgarmintracker" / "web" / "static"
+    assert (static / "maplibre-gl.js").stat().st_size > 500_000 and (static / "maplibre-gl.css").exists()
+    indoor = act_id("Renfo maison")  # pas de tracé
+    assert "Survol 3D" not in client.get(f"/activities/{indoor}").get_data(as_text=True)
+    assert "rien à survoler" in client.get(f"/activities/{indoor}/flyover").get_data(as_text=True)
+    assert client.get("/activities/999999/flyover").status_code == 404
+
+
 def test_route_page_has_player(client):  # noqa: F811
     from .test_routes_weather import add, loop
     from jgarmintracker import routes

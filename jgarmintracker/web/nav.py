@@ -27,7 +27,7 @@ TABS: list[list[tuple[str, str, str]]] = [
 ]
 
 # Pages de détail -> page de leur liste (pour l'onglet et l'entrée du menu en surbrillance).
-DETAILS = {"activity_detail": "activities", "palette_form": "settings_page", "friend_detail": "friends_page",
+DETAILS = {"activity_detail": "activities", "activity_flyover": "activities", "palette_form": "settings_page", "friend_detail": "friends_page",
            "gear_detail": "gear_page", "route_detail": "routes_page", "segment_detail": "routes_page"}
 
 
