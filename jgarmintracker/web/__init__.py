@@ -394,6 +394,25 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
                                efforts=activity_efforts(s, act),
                                tags=s.scalars(select(Tag).order_by(Tag.name)).all())
 
+    @app.get("/activities/<int:act_id>/stream.json")
+    def activity_stream(act_id: int):
+        """Données point par point pour rejouer la sortie : en base, sinon téléchargées une fois chez Garmin.
+        [[secondes, lat, lon, distance m, FC, altitude], …] ; liste vide si Garmin n'en a pas."""
+        from ..garmin import SyncError
+
+        s = db()
+        act = s.get(Activity, act_id) or abort(404)
+        samples = segments_mod.load_stream(s, act.id)
+        if samples is None:
+            try:
+                source = app.config["SYNC_SOURCE"]()
+                details = source.details(act.garmin_id) if hasattr(source, "details") else None
+            except SyncError as e:
+                return {"error": str(e), "samples": []}, 503
+            samples = segments_mod.save_stream(s, act, details)
+            s.commit()
+        return {"samples": samples}
+
     # ---------------------------------------------------------------- carte de tous les parcours
     @app.get("/map")
     def map_page():

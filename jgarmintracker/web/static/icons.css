@@ -96,3 +96,6 @@
 .ph-caret-down:before { content: "\e136"; }
 .ph-clock-counter-clockwise:before { content: "\e1a0"; }
 .ph-palette:before { content: "\e6c8"; }
+/* Lecture d'une sortie (0.18.0) */
+.ph-play:before { content: "\e3d0"; }
+.ph-pause:before { content: "\e39e"; }

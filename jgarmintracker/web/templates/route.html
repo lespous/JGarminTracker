@@ -40,6 +40,7 @@
   <section class="panel">
     <h2>Tracé <small>sortie de référence</small></h2>
     {% if points %}<div id="route-map" class="map-box" role="img" aria-label="Carte du parcours"></div>
+    <div id="replay" class="replay"></div>
     {{ segment_picker(r.group.rep) }}{% else %}<p class="muted small">Tracé indisponible.</p>{% endif %}
   </section>
 </div>
@@ -86,7 +87,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }, { plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => fmt.hms(x.parsed.y) } } },
        scales: { y: { ticks: { callback: v => fmt.hmm(v / 3600) } } } });
   {% if points %}const pts = {{ points|tojson }};
-  segmentPicker(trackMap("route-map", pts, {{ color|tojson }}), pts, "seg-picker");{% endif %}
+  const map = trackMap("route-map", pts, {{ color|tojson }});
+  segmentPicker(map, pts, "seg-picker");
+  replayPlayer(map, pts, { box: "replay", url: {{ url_for('activity_stream', act_id=r.group.rep.id)|tojson }}, unit: {{ unit|tojson }},
+                           duration: {{ (r.group.rep.elapsed_s or r.group.rep.duration_s or 0)|tojson }}, accent: cssVar("--accent") });{% endif %}
 });
 </script>
 {% endblock %}

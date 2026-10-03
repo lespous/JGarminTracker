@@ -84,15 +84,19 @@
 
 {% if points %}
 <section class="panel">
-  <h2>Parcours <small>{{ points|length }} points · départ en vert, arrivée en rouge</small></h2>
+  <h2>Parcours <small>{{ points|length }} points · départ et 100 premiers m en vert, arrivée et 100 derniers m en rouge, une flèche par km</small></h2>
   <div id="track-map" class="map-box" role="img" aria-label="Carte du parcours"></div>
+  <div id="replay" class="replay"></div>
   {{ segment_picker(a) }}
   <p class="note">Fond de carte © contributeurs OpenStreetMap, chargé depuis internet. Le tracé, lui, vient de ta base locale.</p>
 </section>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const pts = {{ points|tojson }};
-  segmentPicker(trackMap("track-map", pts, {{ (a.sport.color if a.sport else '#2A6B62')|tojson }}), pts, "seg-picker");
+  const map = trackMap("track-map", pts, {{ (a.sport.color if a.sport else '#2A6B62')|tojson }});
+  segmentPicker(map, pts, "seg-picker");
+  replayPlayer(map, pts, { box: "replay", url: {{ url_for('activity_stream', act_id=a.id)|tojson }}, unit: {{ unit|tojson }},
+                           duration: {{ (a.elapsed_s or a.duration_s or 0)|tojson }}, accent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() });
 });
 </script>
 {% elif a.track %}

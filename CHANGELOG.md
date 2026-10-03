@@ -3,6 +3,18 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.18.0 — 2026-10-03
+
+### Ajouté
+- **Rejouer une sortie** (fiche d'une sortie et fiche d'un parcours) : bouton lecture sous la carte, un point
+  avance sur le tracé au vrai rythme de la sortie (arrêts et montées compris) ; pause, barre de position, vitesse
+  ×30 à ×1000. À chaque instant : coordonnées GPS, altitude, pente, distance, temps, allure ou vitesse, FC, et un
+  profil d'altitude dont le curseur suit le point (cliquer ou glisser sur le profil pour s'y déplacer).
+  Les données point par point sont téléchargées chez Garmin au premier « lecture » puis gardées en base ; sans
+  elles, la sortie est rejouée à vitesse constante (position et distance seulement).
+- **Sens du parcours** sur toutes les cartes de tracé : 100 premiers mètres à la couleur du départ (vert),
+  100 derniers à celle de l'arrivée (rouge), et une flèche par km.
+
 ## 0.17.1 — 2026-10-02
 
 ### Modifié
