@@ -207,23 +207,27 @@ function replayPlayer(map, points, cfg) {
     drawProfile();
     return true;
   }
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Une seule boucle d'animation à la fois (pause puis lecture très vite en lançait une deuxième : vitesse doublée).
+  // La vitesse choisie est toujours respectée, y compris si Windows demande de réduire les animations.
+  let frame = null;
   function tick(now) {
+    frame = null;
     if (!playing) return;
     const T = S[S.length - 1][0];
-    if (last !== null) pos = Math.min(T, pos + (now - last) / 1000 * (reduced ? Math.max(mult, 300) : mult));
+    if (last !== null) pos = Math.min(T, pos + (now - last) / 1000 * mult);
     last = now;
     if (pos >= T) playing = false;
     render();
-    if (playing) requestAnimationFrame(tick);
+    if (playing) frame = requestAnimationFrame(tick);
   }
   btn.addEventListener("click", async () => {
     if (!(await load())) return;
     if (pos >= S[S.length - 1][0]) pos = 0;
     playing = !playing; last = null;
+    if (frame !== null) { cancelAnimationFrame(frame); frame = null; }
     if (playing && follow) view.start(at(pos).p);  // zoomer sur le point au lancement
     render();
-    if (playing) requestAnimationFrame(tick);
+    if (playing) frame = requestAnimationFrame(tick);
   });
   scrub.addEventListener("input", () => { if (!S) return; playing = false; pos = scrub.value / 1000 * S[S.length - 1][0]; render(); });
   box.querySelectorAll(".rp-speeds button").forEach(b => b.addEventListener("click", () => {
