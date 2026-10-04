@@ -71,7 +71,7 @@ function replayPlayer(map, points, cfg) {
   box.innerHTML = `<div class="rp-controls">
       <button type="button" class="rp-play primary" aria-label="Rejouer la sortie"><i class="ph ph-play" aria-hidden="true"></i></button>
       <input type="range" class="rp-scrub" min="0" max="1000" value="0" disabled aria-label="Position dans la sortie">
-      <div class="rp-speeds" role="group" aria-label="Vitesse de lecture">${[30, 100, 300, 1000].map(m => `<button type="button" data-m="${m}" aria-pressed="${m === mult}">×${m}</button>`).join("")}</div>
+      <div class="rp-speeds" role="group" aria-label="Vitesse de lecture">${[2, 10, 30, 100, 300, 1000].map(m => `<button type="button" data-m="${m}" aria-pressed="${m === mult}">×${m}</button>`).join("")}</div>
       <span class="rp-clock num">Rejouer la sortie</span>
       <button type="button" class="rp-follow" aria-pressed="true" title="La carte suit le point pendant la lecture"><i class="ph ph-crosshair" aria-hidden="true"></i>Suivre</button>
       ${cfg.extraControls || ""}

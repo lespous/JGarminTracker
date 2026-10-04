@@ -4,7 +4,7 @@ slug: jgarmintracker
 summary: Un outil personnel qui récupère les données de ma montre Garmin (activités, sommeil, santé), les garde en local et montre ma progression semaine après semaine.
 year: 2026
 status: active
-version: 0.19.1
+version: 0.19.2
 featured: true
 published: true
 sortOrder: 1
@@ -23,7 +23,7 @@ Les données de santé ne quittent jamais le PC : seuls les jetons de session Ga
 - **Sports classés par des règles** : chaque activité reçoit un sport d'après son type Garmin ou son nom (« Trail des crêtes » va dans Trail). Corriger un sport peut créer une règle, appliquée aux synchros suivantes. Familles, couleurs et icônes réglables.
 - **Progression** : volume par semaine et par sport, allure ou vitesse de chaque sortie avec sa tendance, records (plus longue sortie, meilleurs 1 km, 5 km et 40 km mesurés par la montre), sur la période de mon choix et comparés à la période précédente.
 - **Santé** : FC au repos avec moyenne glissante, sommeil par phase, plage de Body Battery, stress, pas, VO2max, et suivi du poids avec rappel de pesée, IMC et objectif.
-- **Cartes** : parcours de chaque sortie sur fond OpenStreetMap, carte de tous mes parcours centrée sur la maison (et en carte de chaleur), export GPX pour refaire un parcours, et lecture de chaque sortie sur sa carte (le point avance au vrai rythme, avec altitude, pente, allure et FC à chaque instant, et survol 3D en relief).
+- **Cartes** : parcours de chaque sortie sur fond OpenStreetMap, carte de tous mes parcours centrée sur la maison (et en carte de chaleur), export GPX pour refaire un parcours, et lecture de chaque sortie sur sa carte (le point avance au vrai rythme, de ×2 à ×1000, avec altitude, pente, allure et FC à chaque instant, et survol 3D en relief).
 - **Vérifications** : repère les sorties suspectes (allure impossible, pointe de GPS, montre prêtée à quelqu'un de plus rapide) pour les exclure des statistiques sans les supprimer.
 - **Matériel** : vélos et chaussures avec photo, usure et coût au km, affectés en bloc aux sorties d'une période ou posés par défaut selon le sport, avec rappels d'entretien (chaîne, pneus, révision).
 - **Parcours répétés et météo** : les sorties faites sur le même tracé sont reconnues et classées au temps, et chaque sortie garde la météo du départ (allure selon la température et le vent).

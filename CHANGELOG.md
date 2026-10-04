@@ -3,6 +3,11 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.19.2 — 2026-10-04
+
+### Modifié
+- Lecture d'une sortie (carte 2D et survol 3D) : vitesses ×2 et ×10 en plus de ×30, ×100, ×300 et ×1000.
+
 ## 0.19.1 — 2026-10-03
 
 ### Corrigé
