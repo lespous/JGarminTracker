@@ -36,6 +36,7 @@ NEW_COLUMNS: dict[str, dict[str, str]] = {
     "sport_families": {"icon": "VARCHAR(40)"},  # 0.8.0 : icônes
     "sports": {"icon": "VARCHAR(40)"},
     "friends": {"nickname": "VARCHAR(40) NOT NULL DEFAULT ''"},  # 0.9.1 : pseudo
+    "sport_rules": {"min_km": "FLOAT", "min_elev": "FLOAT", "cond_all": "BOOLEAN NOT NULL DEFAULT 0"},  # 0.20.0
     "daily_health": {  # 0.15.0 : VFC
         "hrv_night": "FLOAT", "hrv_week": "FLOAT", "hrv_status": "VARCHAR(20)", "hrv_low": "FLOAT", "hrv_high": "FLOAT",
         "raw_hrv": "TEXT",

@@ -26,6 +26,7 @@ from ..classifier import (
     fold,
     learn_rule,
     reclassify,
+    rule_text,
     validate_rule,
 )
 from .. import checks, icons, photos, settings, themes, tracks, weight
@@ -225,7 +226,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         VERSION=__version__, FIELDS=FIELDS, MATCH_TYPES=MATCH_TYPES, PACE_UNITS=PACE_UNITS, SOURCES=SOURCES,
         ORIGINS=ORIGINS, units_bpm=units.bpm, units_h=lambda h: units.hmm(h * 3600), units_int=units.number,
         units_hmm=units.hmm, units_m=units.meters, km_int=lambda m: units.km(m, 0), ICONS=icons.ICONS,
-        initials=photos.initials, hue=photos.hue,
+        initials=photos.initials, hue=photos.hue, rule_text=rule_text,
         GEAR_KINDS=gear_mod.KINDS, GEAR_ICONS=gear_mod.ICONS, gear_icon=gear_mod.icon_of,
         NAV=nav.NAV, GOAL_METRICS=goals_mod.METRICS, GOAL_PERIODS=goals_mod.PERIODS, goal_fmt=goals_mod.fmt, goal_title=goals_mod.title,
         TASK_SUGGESTIONS=maintenance.SUGGESTIONS, sky=weather_mod.sky_label, compass=weather_mod.compass,
@@ -1405,9 +1406,14 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
             pattern=(form.get("pattern") or "").strip(), sport_id=form.get("sport_id", type=int),
             priority=form.get("priority", type=int) or PRIORITY_MANUAL,
             enabled=form.get("enabled", "on") == "on", id=None,
+            min_km=parse_float(form.get("min_km")), min_elev=parse_float(form.get("min_elev")),
+            cond_all=form.get("cond_all") == "all",
         )
         err = validate_rule(data.field, data.match_type, data.pattern)
-        return data, [err] if err else []
+        errors = [err] if err else []
+        if data.min_km is not None and data.min_km <= 0 or data.min_elev is not None and data.min_elev <= 0:
+            errors.append("Distance et dénivelé : un nombre plus grand que 0, ou vide.")
+        return data, errors
 
     @app.get("/sports")
     def sports():
@@ -1458,7 +1464,7 @@ def create_app(db_path: str | Path | None = None, init: bool = True) -> Flask:
         if rule is None:
             rule = SportRule(origin="manual")
             s.add(rule)
-        for key in ("field", "match_type", "pattern", "sport_id", "priority", "enabled"):
+        for key in ("field", "match_type", "pattern", "sport_id", "priority", "enabled", "min_km", "min_elev", "cond_all"):
             setattr(rule, key, getattr(data, key))
         n = reclassify(s)
         s.commit()

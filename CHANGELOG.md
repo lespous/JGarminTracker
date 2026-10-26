@@ -3,6 +3,14 @@
 Numérotation `MAJEUR.MINEUR.CORRECTIF` : une nouvelle fonctionnalité augmente le chiffre du milieu,
 une simple correction le dernier. Le numéro vit dans `jgarmintracker/__init__.py` ; chaque version a son tag Git (`v0.1.0`).
 
+## 0.20.0 — 2026-10-26
+
+### Ajouté
+- **Règles de sport avec distance et dénivelé** (page Sports) : en plus du type Garmin ou du nom, une règle peut
+  exiger une distance supérieure à N km et/ou un dénivelé positif supérieur à N m (l'une suffit, ou les deux).
+  Par ex. « Type Garmin contient « walk » si distance > 12 km ou D+ > 100 m » → Randonnée. Le test en direct
+  montre la distance et le D+ des sorties concernées.
+
 ## 0.19.3 — 2026-10-04
 
 ### Corrigé

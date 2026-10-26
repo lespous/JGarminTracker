@@ -43,6 +43,25 @@ def field_text(activity, field: str) -> str:
     raise ValueError(f"champ inconnu : {field}")
 
 
+def conditions_text(rule) -> str:
+    """« distance > 12 km ou D+ > 100 m » ; vide sans condition."""
+    from . import units
+
+    parts = []
+    if getattr(rule, "min_km", None):
+        parts.append(f"distance > {units.number(rule.min_km, 1 if rule.min_km % 1 else 0)} km")
+    if getattr(rule, "min_elev", None):
+        parts.append(f"D+ > {units.number(rule.min_elev)} m")
+    return (" et " if getattr(rule, "cond_all", False) else " ou ").join(parts)
+
+
+def rule_text(rule) -> str:
+    """Description lisible : « Type Garmin contient « walk » si distance > 12 km ou D+ > 100 m »."""
+    text = f"{FIELDS.get(rule.field, rule.field)} {MATCH_TYPES.get(rule.match_type, rule.match_type)} « {rule.pattern} »"
+    cond = conditions_text(rule)
+    return f"{text} si {cond}" if cond else text
+
+
 def validate_rule(field: str, match_type: str, pattern: str) -> str | None:
     """Renvoie un message d'erreur, ou None si la règle est valide."""
     if field not in FIELDS:
@@ -78,12 +97,25 @@ class CompiledRule:
         text = field_text(activity, self.rule.field)
         match self.rule.match_type:
             case "equals":
-                return text == self.pattern
+                ok = text == self.pattern
             case "contains":
-                return self.pattern in text
+                ok = self.pattern in text
             case "regex":
-                return bool(self.rx.search(text))
-        return False
+                ok = bool(self.rx.search(text))
+            case _:
+                ok = False
+        return ok and self.conditions_met(activity)
+
+    def conditions_met(self, activity) -> bool:
+        """Distance strictement au-dessus de min_km, D+ strictement au-dessus de min_elev (donnée absente = non)."""
+        checks = []
+        if getattr(self.rule, "min_km", None):
+            checks.append((activity.distance_m or 0) > self.rule.min_km * 1000)
+        if getattr(self.rule, "min_elev", None):
+            checks.append((activity.elevation_gain_m or 0) > self.rule.min_elev)
+        if not checks:
+            return True
+        return all(checks) if getattr(self.rule, "cond_all", False) else any(checks)
 
 
 def compile_rules(rules) -> list[CompiledRule]:

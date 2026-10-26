@@ -59,7 +59,9 @@ Base : `jgarmin.db` dans le dossier courant, ou `--db chemin`, ou `$JGARMIN_DB`.
 Chaque activité reçoit un sport par des règles sur le **type Garmin** (`running`, `trail_running`,
 `road_biking`, `lap_swimming`…) ou sur le **nom** de l'activité. La règle de plus haute priorité gagne ;
 sans règle, l'activité va dans « Autre ». Une correction à la main est verrouillée et peut créer une règle
-(par type ou par nom). Page **Sports** : couleurs, unités d'allure, règles avec test en direct.
+(par type ou par nom). Une règle peut aussi exiger une distance ou un dénivelé minimum (par ex. une marche
+de plus de 12 km ou 100 m de D+ devient une randonnée). Page **Sports** : couleurs, unités d'allure, règles avec
+test en direct.
 
 Règles personnelles hors du dépôt (noms de parcours, de clubs) : `sports.local.json`, lu à la création de la base.
 

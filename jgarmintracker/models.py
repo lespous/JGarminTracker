@@ -99,6 +99,11 @@ class SportRule(Base):
     priority: Mapped[int] = mapped_column(Integer, default=100)
     origin: Mapped[str] = mapped_column(String(10), default="manual")  # seed | learned | manual
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    # 0.20.0 : conditions facultatives en plus du motif (distance en km, dénivelé + en m) ;
+    # cond_all : toutes doivent être remplies, sinon une seule suffit.
+    min_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    min_elev: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cond_all: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     sport: Mapped[Sport] = relationship()

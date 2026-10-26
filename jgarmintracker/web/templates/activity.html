@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <h2>Sport</h2>
     <p><span class="sport-chip"><i class="ph ph-{{ a.sport.icon_name }} sicon" style="color: {{ a.sport.color }}" aria-hidden="true"></i>{{ a.sport.label }}</span>
       <span class="muted small">·
-      {% if a.sport_locked %}corrigé à la main{% elif a.sport_source == 'rule' and a.rule %}règle #{{ a.rule.id }} : {{ FIELDS[a.rule.field] }} {{ MATCH_TYPES[a.rule.match_type] }} « {{ a.rule.pattern }} »{% else %}aucune règle, sport par défaut{% endif %}</span></p>
+      {% if a.sport_locked %}corrigé à la main{% elif a.sport_source == 'rule' and a.rule %}règle #{{ a.rule.id }} : {{ rule_text(a.rule) }}{% else %}aucune règle, sport par défaut{% endif %}</span></p>
     <div class="filters">
       <label>Changer le sport
         <select name="sport_id" hx-get="{{ url_for('sport_form', act_id=a.id) }}" hx-trigger="change" hx-target="#pop-{{ a.id }}" data-orig="{{ a.sport_id }}" class="sport">

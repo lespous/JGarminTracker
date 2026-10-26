@@ -10,10 +10,10 @@
   {% if matches %}
   <div class="tbl">
   <table>
-    <thead><tr><th>Date</th><th>Activité</th><th>Type Garmin</th><th>Sport actuel</th></tr></thead>
+    <thead><tr><th>Date</th><th>Activité</th><th>Type Garmin</th><th class="r">Distance</th><th class="r">D+</th><th>Sport actuel</th></tr></thead>
     <tbody>
     {% for a in matches[:15] %}
-      <tr><td class="num">{{ a.start.strftime('%d/%m/%y') }}</td><td>{{ a.name }}</td><td class="mono">{{ a.type_key }}</td>
+      <tr><td class="num">{{ a.start.strftime('%d/%m/%y') }}</td><td>{{ a.name }}</td><td class="mono">{{ a.type_key }}</td><td class="r num">{{ a.distance_m|km if a.distance_m else '—' }}</td><td class="r num">{{ a.elevation_gain_m|meters if a.elevation_gain_m else '—' }}</td>
         <td>{{ a.sport.label if a.sport else '—' }}{% if a.sport_locked %} <span class="muted">(manuel)</span>{% endif %}</td></tr>
     {% endfor %}
     </tbody>
